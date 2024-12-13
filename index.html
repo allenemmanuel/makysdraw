@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <title>Annual Grand Dinner - Name/Number Drawing Program</title>
+    <style>
+        body {
+            background-color: #030637;
+            font-family: 'Roboto', sans-serif;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #5a5a5a;
+            text-align: center;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-top: 50px;
+            position: relative; /* Ensure relative positioning for absolute children */
+            overflow: hidden; /* Hide overflow */
+        }
+        #container1 {
+            background-color: #3C0753;
+            padding: 80px;
+            margin-top: 100px;
+            box-shadow:0 10px 16px 0 rgba(0,0,0,0.7)
+        }
+        #backgroundVideo {
+            position: absolute; /* Position the video absolutely */
+            top: 0;
+            left: 0;
+            width: 100%; /* Make the video cover the entire width */
+            height: 100%; /* Make the video cover the entire height */
+            object-fit: cover; /* Cover the container without stretching */
+            z-index: -1; /* Place the video behind other content */
+        }
+        #videoOverlay {
+            position: fixed; /* Position fixed to cover the entire viewport */
+            top: 0;
+            left: 0;
+            width: 100vw; /* Use viewport width */
+            height: 100vh; /* Use viewport height */
+            object-fit: cover; /* Cover the container without stretching */
+            z-index: 10; /* Ensure video is above content */
+            display: none; /* Initially hidden */
+            opacity: 0; /* Start with opacity 0 for fade effect */
+            transition: opacity 1s ease; /* Transition for fade effect */
+        }
+        #container2 {
+            background-color: #720455;
+            box-shadow:0 10px 16px 0 rgba(0,0,0,0.7);
+            padding: 50px;
+            margin-bottom: 50px;
+        }
+        #result {
+            margin-top: 20px; /* Margin on top */
+        }
+        .card {
+            border: 1px solid #007bff; /* Card border color */
+            border-radius: 10px; /* Rounded corners */
+            padding: 15px; /* Padding inside the card */
+            margin: 10px; /* Margin around the card */
+            background-color: #ffffff; /* Card background color */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Shadow effect */
+            display: inline-block; /* Display cards inline */
+            width: calc(10% - 20px); /* Adjust width to fit 10 cards in a row */
+            text-align: center; /* Center align text */
+        }
+        .results-container {
+            display: flex; /* Use flexbox for layout */
+            flex-wrap: wrap; /* Allow wrapping to the next line */
+            justify-content: center; /* Center align the cards horizontally */
+            align-items: center; /* Center align the cards vertically */
+            margin: 0 auto; /* Center the container itself */
+        }
+        .hidden {
+            opacity: 0; /* Hidden state */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="container1">
+        <video autoplay muted loop id="backgroundVideo">
+            <source src="movingnums1.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <p style="color: antiquewhite; font-size: 50px; text-align: center;">MAKYS LUCKY DRAW</p>
+        
+        <h2 style="color: antiquewhite;">Results:</h2>
+        <div id="result" style="display:none;"></div>
+        <br>
+        <div class="text-center mb-4">
+            <button class="btn btn-primary" id="drawButton">Draw </button>
+            <button class="btn btn-danger" id="removeButton" style="display:none;">Remove Drawn Items</button>
+            <i class="fas fa-expand btn btn-fullscreen" id="fullscreenButton" style="color: #525252; cursor: pointer; font-size: 24px; position: absolute; bottom: 20px; right: 20px;"></i>
+        </div>
+
+        <video id="videoOverlay" autoplay muted>
+            <source src="countdown2.mp4" type="video/mp4"> <!-- Replace with your countdown video file -->
+            Your browser does not support the video tag.
+        </video>
+    </div>
+
+    <div class="container" id="container2">
+        <h1 style="color: antiquewhite;">The Mechanics</h1>
+        <div class="form-group">
+            <label for="inputNames" style="color: antiquewhite;">Enter Names/Numbers (separated by commas or line breaks):</label>
+            <textarea class="form-control" id="inputNames" rows="5" placeholder="Enter names or numbers here..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="numberOfDraws" style="color: antiquewhite;">Number of Draws:</label>
+            <input type="number" class="form-control" id="numberOfDraws" min="1" value="1">
+        </div>
+        
+        <h3 style="color: antiquewhite;">Previous Draws:</h3>
+        <ul id="previousResults" class="list-group" style="display:none;"></ul>
+
+        <br><br>
+        <button class="btn btn-danger" id="resetButton">Reset All Data</button>
+        <button class="btn btn-success" id="exportButton">Export Results to CSV</button>
+    </div>
+
+    
+
+    <script>
+        let items = [];
+        let drawnItems = [];
+        let allResults = [];
+
+        // Load data from localStorage on page load
+        window.onload = function() {
+            const storedItems = localStorage.getItem('items');
+            const storedDrawnItems = localStorage.getItem('drawnItems');
+            const storedResults = localStorage.getItem('allResults');
+
+            if (storedItems) {
+                items = JSON.parse(storedItems);
+                document.getElementById('inputNames').value = items.join(', ');
+            }
+            if (storedDrawnItems) {
+                drawnItems = JSON.parse(storedDrawnItems);
+            }
+            if (storedResults) {
+                allResults = JSON.parse(storedResults);
+                updatePreviousResults();
+            }
+        };
+
+        document.getElementById('inputNames').addEventListener('input', function() {
+            const input = this.value;
+            items = input.split(/[\n,]+/).map(item => item.trim()).filter(item => item);
+            localStorage.setItem('items', JSON.stringify(items)); // Save items to localStorage
+        });
+
+        document.getElementById('drawButton').addEventListener('click', function() {
+            const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
+            const resultDiv = document.getElementById('result');
+
+            if (numberOfDraws > items.length) {
+                alert("Number of draws cannot exceed the number of unique items.");
+                return;
+            }
+
+            // Function to play the countdown video
+        function playCountdownVideo() {
+            const videoOverlay = document.getElementById('videoOverlay');
+            videoOverlay.style.display = 'block';
+            videoOverlay.style.opacity = '1';
+            videoOverlay.currentTime = 0; // Restart the video
+            videoOverlay.play(); // Play the video
+
+            // Hide the video when it ends
+            videoOverlay.addEventListener('ended', function () {
+                videoOverlay.style.opacity = '0'; // Fade out
+                videoOverlay.addEventListener('transitionend', function () {
+                    videoOverlay.style.display = 'none'; // Hide the video after fade out
+                    videoOverlay.pause(); // Pause the video
+                    videoOverlay.currentTime = 0; // Reset video to start
+                }, { once: true });
+            });
+        }
+
+            // Show the video overlay
+            const video = document.getElementById('videoOverlay');
+            video.style.display = 'block';
+            video.style.opacity = '1'; // Fade in
+            video.play();
+
+            // Fade out after 3 seconds (or the duration of your video)
+            setTimeout(function() {
+                video.style.opacity = '0'; // Fade out
+                video.addEventListener('transitionend', function() {
+                    video.style.display = 'none'; // Hide the video after fade out
+                    video.pause(); // Pause the video
+                    video.currentTime = 0; // Reset video to start
+                }, { once: true }); // Ensure the event listener is only called once
+            }, 3000); // Adjust this time to match your video duration
+
+            // Shuffle the items array and select the first 'numberOfDraws' items
+            const availableItems = items.filter(item => !drawnItems.includes(item));
+            const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
+            const selectedItems = shuffledItems.slice(0, numberOfDraws);
+
+            // Update drawn items
+            drawnItems.push(...selectedItems);
+            allResults.push(selectedItems.join(', ')); // Store the entire draw as a single entry
+
+            // Save drawn items and results to localStorage
+            localStorage.setItem('drawnItems', JSON.stringify(drawnItems));
+            localStorage.setItem('allResults', JSON.stringify (allResults));
+
+            // Clear previous results
+            resultDiv.innerHTML = '';
+            
+            // Create a container for results
+            const resultsContainer = document.createElement('div');
+            resultsContainer.className = 'results-container';
+
+            // Create cards for each selected item
+            selectedItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.textContent = item; // Set the text of the card
+                resultsContainer.appendChild(card); // Append card to results container
+            });
+
+            // Append results container to result div
+            resultDiv.appendChild(resultsContainer);
+            resultDiv.style.display = 'block';
+            document.getElementById('removeButton').style.display = 'inline-block';
+
+            // Update previous results section
+            updatePreviousResults();
+        });
+
+        document.getElementById('removeButton').addEventListener('click', function() {
+            drawnItems.forEach(item => {
+                items = items.filter(i => i !== item);
+            });
+            drawnItems = []; // Clear drawn items after removal
+            localStorage.setItem('items', JSON.stringify(items)); // Update localStorage
+            localStorage.setItem('drawnItems', JSON.stringify(drawnItems)); // Clear drawn items in localStorage
+            document.getElementById('inputNames').value = items.join(', ');
+            document.getElementById('result').style.display = 'none';
+            this.style.display = 'none';
+        });
+
+        // Function to update the previous results section
+        function updatePreviousResults() {
+            const previousResultsList = document.getElementById('previousResults');
+            previousResultsList.innerHTML = '';
+            allResults.forEach((result, index) => {
+                const listItem = document.createElement('li');
+                listItem.className = 'list-group-item';
+                listItem.textContent = `Draw ${index + 1}: ${result}`;
+                previousResultsList.appendChild(listItem);
+            });
+            previousResultsList.style.display = 'block';
+        }
+
+        document.getElementById('resetButton').addEventListener('click', function() {
+            // Clear all data
+            items = [];
+            drawnItems = [];
+            allResults = [];
+
+            // Clear localStorage
+            localStorage.removeItem('items');
+            localStorage.removeItem('drawnItems');
+            localStorage.removeItem('allResults');
+
+            // Reset the input field and results display
+            document.getElementById('inputNames').value = '';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('previousResults').innerHTML = '';
+            document.getElementById('previousResults').style.display = 'none';
+            this.style.display = 'none'; // Hide the reset button after resetting
+        });
+
+        // Event listener for the fullscreen button
+        document.getElementById('fullscreenButton').addEventListener('click', function () {
+            const container1 = document.getElementById('container1');
+
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                if (container1.requestFullscreen) {
+                    container1.requestFullscreen();
+                } else if (container1.mozRequestFullScreen) { // Firefox
+                    container1.mozRequestFullScreen();
+                } else if (container1.webkitRequestFullscreen) { // Chrome, Safari, Opera
+                    container1.webkitRequestFullscreen();
+                } else if (container1.msRequestFullscreen) { // IE/Edge
+                    container1.msRequestFullscreen();
+                }
+
+                // Ensure the countdown video is played after entering fullscreen
+                document.getElementById('videoOverlay').addEventListener('fullscreenchange', function () {
+                    if (document.fullscreenElement) {
+                        playCountdownVideo(); // Trigger countdown video when entering fullscreen
+                    }
+                });
+            }
+        });
+
+        // Export results to CSV
+        document.getElementById('exportButton').addEventListener('click', function() {
+            if (allResults.length === 0) {
+                alert("No results to export.");
+                return;
+            }
+
+            // Convert allResults to CSV format
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Draw Number,Results\n"; // Header row
+
+            allResults.forEach((result, index) => {
+                const row = `Draw ${index + 1},"${result}" \n`; // Format each row
+                csvContent += row;
+            });
+
+            // Create a link element to trigger the download
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "draw_results.csv"); // Name of the file
+            document.body.appendChild(link); // Required for Firefox
+
+            link.click(); // Trigger the download
+            document.body.removeChild(link); // Clean up
+        });
+    </script>
+</body>
+</html>
