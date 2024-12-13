@@ -36,11 +36,28 @@
             padding: 50px;
             margin-bottom: 50px;
         }
+        .card {
+            padding: 15px;
+            margin: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: scale(1.05);
+        }
+        .loading {
+            display: none;
+            color: #fff;
+            text-align: center;
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
     <script type="module">
-        // Your web app's Firebase configuration
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
             authDomain: "makysdraw-87237.firebaseapp.com",
@@ -90,15 +107,25 @@
         document.getElementById('drawButton').addEventListener('click', function () {
             const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
             const resultDiv = document.getElementById('result');
+            const loadingDiv = document.getElementById('loading');
+
+            // Check if input names are empty
+            if (items.length === 0) {
+                alert("Please enter at least one name or number.");
+                return;
+            }
 
             if (numberOfDraws > items.length) {
                 alert("Number of draws cannot exceed the number of unique items.");
                 return;
             }
 
+            loadingDiv.style.display = 'block'; // Show loading indicator
+
+            // Shuffle available items and select random ones
             const availableItems = items.filter(item => !drawnItems.includes(item));
-            const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
-            const selectedItems = shuffledItems.slice(0, numberOfDraws);
+            shuffleArray(availableItems);
+            const selectedItems = availableItems.slice(0, numberOfDraws);
 
             drawnItems.push(...selectedItems);
             allResults.push(selectedItems.join(', '));
@@ -106,9 +133,20 @@
             writeDataToFirebase();
             updatePreviousResults();
 
-            resultDiv.innerHTML = selectedItems.map(item => `<div class='card'>${item}</div>`).join('');
-            resultDiv.style.display = 'block';
+            setTimeout(() => {
+                resultDiv.innerHTML = selectedItems.map(item => `<div class='card'>${item}</div>`).join('');
+                resultDiv.style.display = 'block';
+                loadingDiv.style.display = 'none'; // Hide loading indicator
+            }, 500);
         });
+
+        // Fisher-Yates Shuffle
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+        }
 
         function updatePreviousResults() {
             const previousResultsList = document.getElementById('previousResults');
@@ -125,6 +163,7 @@
         <div class="text-center mb-4">
             <button class="btn btn-primary" id="drawButton">Draw</button>
         </div>
+        <div id="loading" class="loading">Loading...</div>
     </div>
     <div class="container" id="container2">
         <h2 style="color: antiquewhite;">The Mechanics</h2>
