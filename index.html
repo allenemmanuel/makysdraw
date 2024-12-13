@@ -36,6 +36,23 @@
             padding: 50px;
             margin-bottom: 50px;
         }
+        /* Media Queries for mobile responsiveness */
+        @media (max-width: 767px) {
+            #container1, #container2 {
+                padding: 20px;
+                margin-top: 20px;
+            }
+            h1, h2, h3 {
+                font-size: 1.2rem;
+            }
+            #inputNames {
+                font-size: 0.9rem;
+            }
+            .btn {
+                font-size: 0.9rem;
+                padding: 8px 15px;
+            }
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
