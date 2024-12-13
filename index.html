@@ -107,8 +107,9 @@
         document.getElementById('inputNames').addEventListener('input', function () {
             const input = this.value;
             items = input.split(/[\n,]+/).map(item => item.trim()).filter(item => item);
-            writeDataToFirebase });
-        
+            writeDataToFirebase();
+        });
+
         document.getElementById('drawButton').addEventListener('click', function () {
             const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
             const resultDiv = document.getElementById('result');
@@ -142,6 +143,17 @@
             resultDiv.style.display = 'block';
         });
 
+        document.getElementById('removeDrawnButton').addEventListener('click', function () {
+            // Remove drawn items from the main list
+            items = items.filter(item => !drawnItems.includes(item));
+            drawnItems = [];
+            writeDataToFirebase();
+
+            // Update the input field and notify user
+            document.getElementById('inputNames').value = items.join(', ');
+            alert("Drawn items have been removed from the list.");
+        });
+
         function updatePreviousResults() {
             const previousResultsList = document.getElementById('previousResults');
             if (allResults.length === 0) {
@@ -161,6 +173,7 @@
         <div id="result" style="display:none;"></div>
         <div class="text-center mb-4 mt-4">
             <button class="btn btn-primary" id="drawButton">Draw</button>
+            <button class="btn btn-secondary" id="removeDrawnButton">Remove Drawn Items</button>
         </div>
     </div>
     <div class="container" id="container2">
