@@ -192,12 +192,22 @@
 
         document.getElementById('fullscreenButton').addEventListener('click', function () {
             const container1 = document.getElementById('container1');
-            if (container1.requestFullscreen) {
-                container1.requestFullscreen();
-            } else if (container1.webkitRequestFullscreen) { /* Safari */
-                container1.webkitRequestFullscreen();
-            } else if (container1.msRequestFullscreen) { /* IE11 */
-                container1.msRequestFullscreen();
+            if (!document.fullscreenElement) {
+                if (container1.requestFullscreen) {
+                    container1.requestFullscreen();
+                } else if (container1.webkitRequestFullscreen) { /* Safari */
+                    container1.webkitRequestFullscreen();
+                } else if (container1.msRequestFullscreen) { /* IE11 */
+                    container1.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) { /* Safari */
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) { /* IE11 */
+                    document.msExitFullscreen();
+                }
             }
         });
 
