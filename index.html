@@ -62,6 +62,23 @@
         .results-row .card {
             flex: 1 1 9%; /* Allows for 10 cards per row */
             margin-bottom: 15px;
+            box-sizing: border-box;
+        }
+        /* Ensure that cards are responsive and look good on smaller screens */
+        @media (max-width: 1200px) {
+            .results-row .card {
+                flex: 1 1 12%; /* Adjust to 8-9 cards per row on medium screens */
+            }
+        }
+        @media (max-width: 768px) {
+            .results-row .card {
+                flex: 1 1 30%; /* Adjust to 4-5 cards per row on smaller screens */
+            }
+        }
+        @media (max-width: 576px) {
+            .results-row .card {
+                flex: 1 1 45%; /* Adjust to 3 cards per row on very small screens */
+            }
         }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
