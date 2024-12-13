@@ -60,25 +60,8 @@
             justify-content: space-between;
         }
         .results-row .card {
-            flex: 1 1 9%; /* Allows for 10 cards per row */
+            flex: 1 1 8%; /* Allows for 11 cards per row */
             margin-bottom: 15px;
-            box-sizing: border-box;
-        }
-        /* Ensure that cards are responsive and look good on smaller screens */
-        @media (max-width: 1200px) {
-            .results-row .card {
-                flex: 1 1 12%; /* Adjust to 8-9 cards per row on medium screens */
-            }
-        }
-        @media (max-width: 768px) {
-            .results-row .card {
-                flex: 1 1 30%; /* Adjust to 4-5 cards per row on smaller screens */
-            }
-        }
-        @media (max-width: 576px) {
-            .results-row .card {
-                flex: 1 1 45%; /* Adjust to 3 cards per row on very small screens */
-            }
         }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
@@ -175,10 +158,10 @@
             }
         }
 
-        // Format the results to display in cards horizontally, breaking every 10 cards
+        // Format the results to display in cards horizontally, breaking every 11 cards
         function formatDrawResults(results) {
             let groupedResults = '';
-            const groupSize = 10;
+            const groupSize = 11; // Set to 11 cards per row
             for (let i = 0; i < results.length; i += groupSize) {
                 const group = results.slice(i, i + groupSize);
                 groupedResults += `<div class="results-row">${group.map(item => `<div class="card">${item}</div>`).join('')}</div>`;
