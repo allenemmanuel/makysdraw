@@ -59,6 +59,9 @@
             color: #aaa;
             font-style: italic;
         }
+        #removeDrawnButton {
+            display: none;
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
@@ -106,7 +109,8 @@
 
         document.getElementById('inputNames').addEventListener('input', function () {
             const input = this.value;
-            items = input.split(/[\n,]+/).map(item => item.trim()).filter(item => item);
+            items = input.split(/[
+,]+/).map(item => item.trim()).filter(item => item);
             writeDataToFirebase();
         });
 
@@ -141,6 +145,9 @@
                 }
             });
             resultDiv.style.display = 'block';
+
+            // Show the remove button
+            document.getElementById('removeDrawnButton').style.display = 'inline-block';
         });
 
         document.getElementById('removeDrawnButton').addEventListener('click', function () {
@@ -152,6 +159,9 @@
             // Update the input field and notify user
             document.getElementById('inputNames').value = items.join(', ');
             alert("Drawn items have been removed from the list.");
+
+            // Hide the remove button
+            document.getElementById('removeDrawnButton').style.display = 'none';
         });
 
         document.getElementById('exportButton').addEventListener('click', function () {
@@ -194,6 +204,7 @@
         <div class="text-center mb-4 mt-4">
             <button class="btn btn-primary" id="drawButton">Draw</button>
             <button class="btn btn-secondary" id="removeDrawnButton">Remove Drawn Items</button>
+            <button class="btn btn-success" id="exportButton">Export Results to CSV</button>
         </div>
     </div>
     <div class="container" id="container2">
@@ -202,11 +213,6 @@
         <input type="number" class="form-control" id="numberOfDraws" min="1" value="1" style="margin-top: 20px;">
         <h3 style="color: antiquewhite;">Previous Draws:</h3>
         <ul id="previousResults" class="list-group" style="display:none;"></ul>
-
-        <br><br>
-
-        <button class="btn btn-success" id="exportButton">Export Results to CSV</button>
-        
     </div>
 </body>
 </html>
