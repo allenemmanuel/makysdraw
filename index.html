@@ -69,6 +69,24 @@
             background: linear-gradient(135deg, #2E7D32, #1B5E20);
         }
 
+        /* Fullscreen Icon Button */
+        #fullscreenButton {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.3s, color 0.3s;
+        }
+
+        #fullscreenButton:hover {
+            transform: scale(1.2);
+            color: #ffcc00;
+        }
+
         /* Result Card Animation */
         @keyframes fadeInUp {
             from {
@@ -207,7 +225,7 @@
 
             // Update the input field and notify user
             document.getElementById('inputNames').value = items.join(', ');
-            alert("Drawn items have been removed from the list.");
+            // alert("Drawn items have been removed from the list.");
 
             // Hide the remove button
             document.getElementById('removeDrawnButton').style.display = 'none';
@@ -254,8 +272,8 @@
         <div class="text-center mb-4 mt-4">
             <button class="btn" id="drawButton"><i class="fas fa-random"></i> Draw</button>
             <button class="btn" id="removeDrawnButton"><i class="fas fa-trash-alt"></i> Clear Drawn</button>
-            <button class="btn btn-dark" id="fullscreenButton"><i class="fas fa-expand"></i> Fullscreen</button>
         </div>
+        <button id="fullscreenButton"><i class="fas fa-expand"></i></button>
     </div>
     <div class="container" id="container2">
         <h2 style="color: antiquewhite;">The Mechanics</h2>
@@ -263,6 +281,8 @@
         <input type="number" class="form-control" id="numberOfDraws" min="1" value="1" style="margin-top: 20px;">
         <h3 style="color: antiquewhite;">Previous Draws:</h3>
         <ul id="previousResults" class="list-group" style="display:none"></ul>
+        
+        <br><br>
         <button class="btn btn-success mt-4" id="exportButton">Export Results to CSV</button>
     </div>
 </body>
