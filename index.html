@@ -37,8 +37,8 @@
             margin-bottom: 50px;
         }
     </style>
-    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
     <script>
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -83,8 +83,7 @@
 
         document.getElementById('inputNames').addEventListener('input', function () {
             const input = this.value;
-            items = input.split(/[
-,]+/).map(item => item.trim()).filter(item => item);
+            items = input.split(/[\n,]+/).map(item => item.trim()).filter(item => item);
             writeDataToFirebase();
         });
 
