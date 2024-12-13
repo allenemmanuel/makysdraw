@@ -44,6 +44,8 @@
             border-radius: 5px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s ease;
+            width: 100px;
+            text-align: center;
         }
         .card:hover {
             transform: scale(1.05);
@@ -53,8 +55,17 @@
             color: #fff;
             text-align: center;
         }
-        .group {
+        .results-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
             margin-bottom: 30px;
+        }
+        .group {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
         }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
@@ -151,13 +162,13 @@
             }
         }
 
-        // Format the results to display every 10 items in a group
+        // Format the results to display horizontally every 10 items
         function formatDrawResults(results) {
             let groupedResults = '';
             const groupSize = 10;
             for (let i = 0; i < results.length; i += groupSize) {
                 const group = results.slice(i, i + groupSize);
-                groupedResults += `<div class="group"><div class="card">${group.join('<br>')}</div></div>`;
+                groupedResults += `<div class="group"><div class="results-group">${group.map(item => `<div class="card">${item}</div>`).join('')}</div></div>`;
             }
             return groupedResults;
         }
