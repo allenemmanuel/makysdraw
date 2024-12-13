@@ -53,6 +53,11 @@
                 padding: 8px 15px;
             }
         }
+        /* Placeholder for empty results */
+        #previousResults.empty {
+            color: #aaa;
+            font-style: italic;
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
@@ -129,8 +134,13 @@
 
         function updatePreviousResults() {
             const previousResultsList = document.getElementById('previousResults');
-            previousResultsList.innerHTML = allResults.map((result, index) => `<li class='list-group-item'>Draw ${index + 1}: ${result}</li>`).join('');
-            previousResultsList.style.display = 'block';
+            if (allResults.length === 0) {
+                previousResultsList.innerHTML = "<li class='list-group-item empty'>No results yet</li>";
+                previousResultsList.style.display = 'block';
+            } else {
+                previousResultsList.innerHTML = allResults.map((result, index) => `<li class='list-group-item'>Draw ${index + 1}: ${result}</li>`).join('');
+                previousResultsList.style.display = 'block';
+            }
         }
     </script>
 </head>
