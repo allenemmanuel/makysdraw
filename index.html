@@ -36,38 +36,29 @@
             padding: 50px;
             margin-bottom: 50px;
         }
+        .results-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* Adjust based on screen size */
+            gap: 10px;
+        }
         .card {
-            padding: 15px;
-            margin: 10px;
             background-color: #f8f9fa;
             border: 1px solid #ddd;
+            padding: 10px;
             border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
             text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
-        .card:hover {
-            transform: scale(1.05);
-        }
-        .loading {
+        #loading {
             display: none;
-            color: #fff;
             text-align: center;
-        }
-        .results-row {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-        }
-        .results-row .card {
-            flex: 1 1 8%; /* Allows for 11 cards per row */
-            margin-bottom: 15px;
+            color: white;
         }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
     <script type="module">
-        // Firebase Configuration
+        // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
             authDomain: "makysdraw-87237.firebaseapp.com",
@@ -85,10 +76,16 @@
         let items = [];
         let drawnItems = [];
         let allResults = [];
+        let currentPage = 1;
+        const resultsPerPage = 5;
+
+        // Loading state
+        const loadingDiv = document.getElementById('loading');
 
         // Load data from Firebase on page load
-        window.onload = function () {
-            firebase.database().ref('drawResults').on('value', (snapshot) => {
+        window.onload = async function () {
+            try {
+                const snapshot = await firebase.database().ref('drawResults').once('value');
                 const data = snapshot.val();
                 if (data) {
                     items = data.items || [];
@@ -97,9 +94,24 @@
                     document.getElementById('inputNames').value = items.join(', ');
                     updatePreviousResults();
                 }
-            });
+            } catch (error) {
+                console.error('Error loading data from Firebase:', error);
+                alert("An error occurred while loading data. Please try again.");
+            }
         };
 
+        // Debounced Firebase write operation
+        let debounceTimeout;
+        document.getElementById('inputNames').addEventListener('input', function () {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => {
+                const input = this.value;
+                items = input.split(/[\n,]+/).map(item => item.trim()).filter(item => item);
+                writeDataToFirebase();
+            }, 500); // Debounce for 500ms
+        });
+
+        // Write data to Firebase
         function writeDataToFirebase() {
             firebase.database().ref('drawResults').set({
                 items: items,
@@ -108,90 +120,87 @@
             });
         }
 
-        document.getElementById('inputNames').addEventListener('input', function () {
-            const input = this.value;
-            items = input.split(/[\n,]+/).map(item => item.trim()).filter(item => item);
-            writeDataToFirebase();
-        });
-
+        // Draw button functionality
         document.getElementById('drawButton').addEventListener('click', function () {
             const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
             const resultDiv = document.getElementById('result');
-            const loadingDiv = document.getElementById('loading');
-
-            // Check if input names are empty
-            if (items.length === 0) {
-                alert("Please enter at least one name or number.");
-                return;
-            }
 
             if (numberOfDraws > items.length) {
                 alert("Number of draws cannot exceed the number of unique items.");
                 return;
             }
 
-            loadingDiv.style.display = 'block'; // Show loading indicator
-
-            // Shuffle available items and select random ones
-            const availableItems = items.filter(item => !drawnItems.includes(item));
-            shuffleArray(availableItems);
-            const selectedItems = availableItems.slice(0, numberOfDraws);
-
-            drawnItems.push(...selectedItems);
-            allResults.push(selectedItems.join(', '));
-
-            writeDataToFirebase();
-            updatePreviousResults();
+            // Show loading state
+            loadingDiv.style.display = 'block';
 
             setTimeout(() => {
-                resultDiv.innerHTML = formatDrawResults(selectedItems);
+                const availableItems = items.filter(item => !drawnItems.includes(item));
+                const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
+                const selectedItems = shuffledItems.slice(0, numberOfDraws);
+
+                drawnItems.push(...selectedItems);
+                allResults.push(selectedItems.join(', '));
+
+                writeDataToFirebase();
+                updatePreviousResults();
+
+                resultDiv.innerHTML = selectedItems.map(item => `<div class="card">${item}</div>`).join('');
                 resultDiv.style.display = 'block';
-                loadingDiv.style.display = 'none'; // Hide loading indicator
-            }, 500);
+
+                // Hide loading state after drawing
+                loadingDiv.style.display = 'none';
+            }, 1000); // Simulate drawing delay
         });
 
-        // Fisher-Yates Shuffle
-        function shuffleArray(arr) {
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-        }
-
-        // Format the results to display in cards horizontally, breaking every 11 cards
-        function formatDrawResults(results) {
-            let groupedResults = '';
-            const groupSize = 11; // Set to 11 cards per row
-            for (let i = 0; i < results.length; i += groupSize) {
-                const group = results.slice(i, i + groupSize);
-                groupedResults += `<div class="results-row">${group.map(item => `<div class="card">${item}</div>`).join('')}</div>`;
-            }
-            return groupedResults;
-        }
-
+        // Update previous results and paginate
         function updatePreviousResults() {
             const previousResultsList = document.getElementById('previousResults');
-            previousResultsList.innerHTML = allResults.map((result, index) => `<li class='list-group-item'>Draw ${index + 1}: ${result}</li>`).join('');
+            const paginatedResults = allResults.slice((currentPage - 1) * resultsPerPage, currentPage * resultsPerPage);
+            previousResultsList.innerHTML = paginatedResults.map((result, index) => `<li class="list-group-item">Draw ${index + 1}: ${result}</li>`).join('');
             previousResultsList.style.display = 'block';
+            updatePaginationControls();
+        }
+
+        // Pagination controls
+        function updatePaginationControls() {
+            const pagination = document.getElementById('paginationControls');
+            const totalPages = Math.ceil(allResults.length / resultsPerPage);
+            pagination.innerHTML = `
+                <button onclick="goToPage(1)">First</button>
+                <button onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Prev</button>
+                <button onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+                <button onclick="goToPage(${totalPages})">Last</button>
+            `;
+        }
+
+        // Change page on pagination
+        function goToPage(page) {
+            currentPage = page;
+            updatePreviousResults();
         }
     </script>
 </head>
 <body>
+    <div id="loading" class="loading">
+        <div class="spinner-border text-light" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
     <div class="container" id="container1">
         <h1 style="color: antiquewhite;">MAKYS LUCKY DRAW</h1>
         <h2 style="color: antiquewhite;">Results:</h2>
         <div id="result" style="display:none;"></div>
         <div class="text-center mb-4">
-            <button class="btn btn-primary" id="drawButton">Draw</button>
+            <button class="btn btn-primary" id="drawButton" aria-label="Start draw">Draw</button>
         </div>
-        <div id="loading" class="loading">Loading...</div>
     </div>
     <div class="container" id="container2">
         <h2 style="color: antiquewhite;">The Mechanics</h2>
         <textarea class="form-control" id="inputNames" rows="5" placeholder="Enter names or numbers here..."></textarea>
         <input type="number" class="form-control" id="numberOfDraws" min="1" value="1" style="margin-top: 20px;">
-        <h3 style="color: antiquewhite;">Previous Draws:</h3>
-        <ul id="previousResults" class="list-group" style="display:none;"></ul>
+        <h3 style="color: antiquewhite;">Previous Results:</h3>
+        <ul id="previousResults" class="list-group"></ul>
+        <div id="paginationControls" class="text-center mt-3"></div>
     </div>
 </body>
 </html>
