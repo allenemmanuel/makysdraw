@@ -30,6 +30,7 @@
             margin-top: 100px;
             box-shadow: 0 10px 16px 0 rgba(0,0,0,0.7);
             text-align: center;
+            position: relative;
         }
         #container2 {
             background-color: #720455;
@@ -61,6 +62,12 @@
         }
         #removeDrawnButton {
             display: none;
+        }
+        #fullscreenButton {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            z-index: 10;
         }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
@@ -183,6 +190,17 @@
             document.body.removeChild(link);
         });
 
+        document.getElementById('fullscreenButton').addEventListener('click', function () {
+            const container1 = document.getElementById('container1');
+            if (container1.requestFullscreen) {
+                container1.requestFullscreen();
+            } else if (container1.webkitRequestFullscreen) { /* Safari */
+                container1.webkitRequestFullscreen();
+            } else if (container1.msRequestFullscreen) { /* IE11 */
+                container1.msRequestFullscreen();
+            }
+        });
+
         function updatePreviousResults() {
             const previousResultsList = document.getElementById('previousResults');
             if (allResults.length === 0) {
@@ -203,7 +221,9 @@
         <div class="text-center mb-4 mt-4">
             <button class="btn btn-primary" id="drawButton">Draw</button>
             <button class="btn btn-secondary" id="removeDrawnButton">Remove Drawn Items</button>
+            
         </div>
+        <button class="btn btn-dark" id="fullscreenButton"><i class="fas fa-expand"></i></button>
     </div>
     <div class="container" id="container2">
         <h2 style="color: antiquewhite;">The Mechanics</h2>
@@ -214,9 +234,7 @@
 
         <br><br>
 
-        
         <button class="btn btn-success" id="exportButton">Export Results to CSV</button>
-        
     </div>
 </body>
 </html>
