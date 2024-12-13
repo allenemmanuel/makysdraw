@@ -1,1 +1,137 @@
-index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <title>Annual Grand Dinner - Name/Number Drawing Program</title>
+    <style>
+        body {
+            background-color: #030637;
+            font-family: 'Roboto', sans-serif;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #5a5a5a;
+            text-align: center;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-top: 50px;
+        }
+        #container1 {
+            background-color: #3C0753;
+            padding: 80px;
+            margin-top: 100px;
+            box-shadow: 0 10px 16px 0 rgba(0,0,0,0.7);
+        }
+        #container2 {
+            background-color: #720455;
+            box-shadow: 0 10px 16px 0 rgba(0,0,0,0.7);
+            padding: 50px;
+            margin-bottom: 50px;
+        }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
+    <script type="module">
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
+            authDomain: "makysdraw-87237.firebaseapp.com",
+            databaseURL: "https://makysdraw-87237-default-rtdb.firebaseio.com",
+            projectId: "makysdraw-87237",
+            storageBucket: "makysdraw-87237.firebasestorage.app",
+            messagingSenderId: "1044977366090",
+            appId: "1:1044977366090:web:37af3eaa9c3f5bfc7822b3"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let items = [];
+        let drawnItems = [];
+        let allResults = [];
+
+        // Load data from Firebase on page load
+        window.onload = function () {
+            firebase.database().ref('drawResults').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    items = data.items || [];
+                    drawnItems = data.drawnItems || [];
+                    allResults = data.allResults || [];
+                    document.getElementById('inputNames').value = items.join(', ');
+                    updatePreviousResults();
+                }
+            });
+        };
+
+        function writeDataToFirebase() {
+            firebase.database().ref('drawResults').set({
+                items: items,
+                drawnItems: drawnItems,
+                allResults: allResults
+            });
+        }
+
+        document.getElementById('inputNames').addEventListener('input', function () {
+            const input = this.value;
+            items = input.split(/[\n,]+/).map(item => item.trim()).filter(item => item);
+            writeDataToFirebase();
+        });
+
+        document.getElementById('drawButton').addEventListener('click', function () {
+            const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
+            const resultDiv = document.getElementById('result');
+
+            if (numberOfDraws > items.length) {
+                alert("Number of draws cannot exceed the number of unique items.");
+                return;
+            }
+
+            const availableItems = items.filter(item => !drawnItems.includes(item));
+            const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
+            const selectedItems = shuffledItems.slice(0, numberOfDraws);
+
+            drawnItems.push(...selectedItems);
+            allResults.push(selectedItems.join(', '));
+
+            writeDataToFirebase();
+            updatePreviousResults();
+
+            resultDiv.innerHTML = selectedItems.map(item => `<div class='card'>${item}</div>`).join('');
+            resultDiv.style.display = 'block';
+        });
+
+        function updatePreviousResults() {
+            const previousResultsList = document.getElementById('previousResults');
+            previousResultsList.innerHTML = allResults.map((result, index) => `<li class='list-group-item'>Draw ${index + 1}: ${result}</li>`).join('');
+            previousResultsList.style.display = 'block';
+        }
+    </script>
+</head>
+<body>
+    <div class="container" id="container1">
+        <h1 style="color: antiquewhite;">MAKYS LUCKY DRAW</h1>
+        <h2 style="color: antiquewhite;">Results:</h2>
+        <div id="result" style="display:none;"></div>
+        <div class="text-center mb-4">
+            <button class="btn btn-primary" id="drawButton">Draw</button>
+        </div>
+    </div>
+    <div class="container" id="container2">
+        <h2 style="color: antiquewhite;">The Mechanics</h2>
+        <textarea class="form-control" id="inputNames" rows="5" placeholder="Enter names or numbers here..."></textarea>
+        <input type="number" class="form-control" id="numberOfDraws" min="1" value="1" style="margin-top: 20px;">
+        <h3 style="color: antiquewhite;">Previous Draws:</h3>
+        <ul id="previousResults" class="list-group" style="display:none;"></ul>
+    </div>
+</body>
+</html>
