@@ -13,67 +13,116 @@
             font-family: 'Roboto', sans-serif;
             color: #333;
         }
-        h1, h2, h3 {
-            color: #5a5a5a;
-            text-align: center;
-        }
-        .container {
-            background-color: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            margin-top: 50px;
-        }
+
         #container1 {
-            background-color: #3C0753;
+            background: linear-gradient(135deg, #6A0572, #3C0753);
             padding: 80px;
             margin-top: 100px;
-            box-shadow: 0 10px 16px 0 rgba(0,0,0,0.7);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
             text-align: center;
             position: relative;
+            color: #f5f5f5;
         }
+
+        #container1 h1, #container1 h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+
+        #container1 h2 {
+            font-size: 1.8rem;
+        }
+
+        #result .card {
+            background: #ffffff;
+            color: #3C0753;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-weight: bold;
+            font-size: 1rem;
+            animation: fadeInUp 0.5s ease-in-out;
+            padding: 10px;
+            margin: 5px;
+            display: inline-block;
+        }
+
+        #container1 button {
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin: 10px;
+            padding: 12px 20px;
+            border-radius: 30px;
+            border: none;
+            color: #fff;
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+        }
+
+        #container1 button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(135deg, #2E7D32, #1B5E20);
+        }
+
+        /* Result Card Animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         #container2 {
             background-color: #720455;
-            box-shadow: 0 10px 16px 0 rgba(0,0,0,0.7);
+            box-shadow: 0 10px 16px 0 rgba(0, 0, 0, 0.7);
             padding: 50px;
             margin-bottom: 50px;
+            border-radius: 10px;
         }
+
+        #container2 h2, #container2 h3 {
+            color: #fff;
+        }
+
+        #previousResults.empty {
+            color: #aaa;
+            font-style: italic;
+        }
+
         /* Media Queries for mobile responsiveness */
         @media (max-width: 767px) {
             #container1, #container2 {
                 padding: 20px;
                 margin-top: 20px;
             }
+
             h1, h2, h3 {
                 font-size: 1.2rem;
             }
+
             #inputNames {
                 font-size: 0.9rem;
             }
+
             .btn {
                 font-size: 0.9rem;
                 padding: 8px 15px;
             }
         }
-        /* Placeholder for empty results */
-        #previousResults.empty {
-            color: #aaa;
-            font-style: italic;
-        }
-        #removeDrawnButton {
-            display: none;
-        }
-        #fullscreenButton {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            z-index: 10;
-        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
     <script type="module">
-        // Your web app's Firebase configuration
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
             authDomain: "makysdraw-87237.firebaseapp.com",
@@ -139,76 +188,15 @@
             writeDataToFirebase();
             updatePreviousResults();
 
-            // Create cards for each selected item and add line breaks every 10 items
             resultDiv.innerHTML = '';
             selectedItems.forEach((item, index) => {
-                const card = `<div class='card' style='display: inline-block; margin: 5px; padding: 10px;'>${item}</div>`;
+                const card = `<div class='card'>${item}</div>`;
                 resultDiv.innerHTML += card;
-
-                // Add a line break after every 10 items
                 if ((index + 1) % 10 === 0) {
                     resultDiv.innerHTML += '<br>';
                 }
             });
             resultDiv.style.display = 'block';
-
-            // Show the remove button
-            document.getElementById('removeDrawnButton').style.display = 'inline-block';
-        });
-
-        document.getElementById('removeDrawnButton').addEventListener('click', function () {
-            // Remove drawn items from the main list
-            items = items.filter(item => !drawnItems.includes(item));
-            drawnItems = [];
-            writeDataToFirebase();
-
-            // Update the input field and notify user
-            document.getElementById('inputNames').value = items.join(', ');
-            // alert("Drawn items have been removed from the list.");
-
-            // Hide the remove button
-            document.getElementById('removeDrawnButton').style.display = 'none';
-        });
-
-        document.getElementById('exportButton').addEventListener('click', function () {
-            // Create CSV content
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Draw Number,Results\n";
-            allResults.forEach((result, index) => {
-                csvContent += `Draw ${index + 1},${result}\n`;
-            });
-
-            // Create a downloadable link
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "draw_results.csv");
-            document.body.appendChild(link);
-
-            // Trigger download
-            link.click();
-            document.body.removeChild(link);
-        });
-
-        document.getElementById('fullscreenButton').addEventListener('click', function () {
-            const container1 = document.getElementById('container1');
-            if (!document.fullscreenElement) {
-                if (container1.requestFullscreen) {
-                    container1.requestFullscreen();
-                } else if (container1.webkitRequestFullscreen) { /* Safari */
-                    container1.webkitRequestFullscreen();
-                } else if (container1.msRequestFullscreen) { /* IE11 */
-                    container1.msRequestFullscreen();
-                }
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) { /* Safari */
-                    document.webkitExitFullscreen();
-                } else if (document.msExitFullscreen) { /* IE11 */
-                    document.msExitFullscreen();
-                }
-            }
         });
 
         function updatePreviousResults() {
@@ -225,26 +213,21 @@
 </head>
 <body>
     <div class="container" id="container1">
-        <h1 style="color: antiquewhite;">MAKYS LUCKY DRAW</h1>
-        <h2 style="color: antiquewhite;">Results:</h2>
+        <h1>🎉 MAKYS LUCKY DRAW 🎉</h1>
+        <h2>Check the Results Below:</h2>
         <div id="result" style="display:none;"></div>
         <div class="text-center mb-4 mt-4">
-            <button class="btn btn-primary" id="drawButton">Draw</button>
-            <button class="btn btn-secondary" id="removeDrawnButton">Remove Drawn Items</button>
-            
+            <button class="btn" id="drawButton"><i class="fas fa-random"></i> Draw</button>
+            <button class="btn" id="removeDrawnButton"><i class="fas fa-trash-alt"></i> Clear Drawn</button>
         </div>
-        <button class="btn btn-dark" id="fullscreenButton"><i class="fas fa-expand"></i></button>
     </div>
     <div class="container" id="container2">
         <h2 style="color: antiquewhite;">The Mechanics</h2>
         <textarea class="form-control" id="inputNames" rows="5" placeholder="Enter names or numbers here..."></textarea>
         <input type="number" class="form-control" id="numberOfDraws" min="1" value="1" style="margin-top: 20px;">
         <h3 style="color: antiquewhite;">Previous Draws:</h3>
-        <ul id="previousResults" class="list-group" style="display:none;"></ul>
-
-        <br><br>
-
-        <button class="btn btn-success" id="exportButton">Export Results to CSV</button>
+        <ul id="previousResults" class="list-group" style="display:none"></ul>
+        <button class="btn btn-success mt-4" id="exportButton">Export Results to CSV</button>
     </div>
 </body>
 </html>
