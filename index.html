@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -53,11 +54,6 @@
                 padding: 8px 15px;
             }
         }
-        /* Placeholder for empty results */
-        #previousResults.empty {
-            color: #aaa;
-            font-style: italic;
-        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
@@ -106,8 +102,9 @@
         document.getElementById('inputNames').addEventListener('input', function () {
             const input = this.value;
             items = input.split(/[\n,]+/).map(item => item.trim()).filter(item => item);
-            writeDataToFirebase });
-        
+            writeDataToFirebase();
+        });
+
         document.getElementById('drawButton').addEventListener('click', function () {
             const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
             const resultDiv = document.getElementById('result');
@@ -127,29 +124,14 @@
             writeDataToFirebase();
             updatePreviousResults();
 
-            // Create cards for each selected item and add line breaks every 10 items
-            resultDiv.innerHTML = '';
-            selectedItems.forEach((item, index) => {
-                const card = `<div class='card' style='display: inline-block; margin: 5px; padding: 10px;'>${item}</div>`;
-                resultDiv.innerHTML += card;
-
-                // Add a line break after every 10 items
-                if ((index + 1) % 10 === 0) {
-                    resultDiv.innerHTML += '<br>';
-                }
-            });
+            resultDiv.innerHTML = selectedItems.map(item => `<div class='card'>${item}</div>`).join('');
             resultDiv.style.display = 'block';
         });
 
         function updatePreviousResults() {
             const previousResultsList = document.getElementById('previousResults');
-            if (allResults.length === 0) {
-                previousResultsList.innerHTML = "<li class='list-group-item empty'>No results yet</li>";
-                previousResultsList.style.display = 'block';
-            } else {
-                previousResultsList.innerHTML = allResults.map((result, index) => `<li class='list-group-item'>Draw ${index + 1}: ${result}</li>`).join('');
-                previousResultsList.style.display = 'block';
-            }
+            previousResultsList.innerHTML = allResults.map((result, index) => `<li class='list-group-item'>Draw ${index + 1}: ${result}</li>`).join('');
+            previousResultsList.style.display = 'block';
         }
     </script>
 </head>
