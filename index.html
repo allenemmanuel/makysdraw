@@ -53,6 +53,9 @@
             color: #fff;
             text-align: center;
         }
+        .group {
+            margin-bottom: 30px;
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
@@ -134,7 +137,7 @@
             updatePreviousResults();
 
             setTimeout(() => {
-                resultDiv.innerHTML = selectedItems.map(item => `<div class='card'>${item}</div>`).join('');
+                resultDiv.innerHTML = formatDrawResults(selectedItems);
                 resultDiv.style.display = 'block';
                 loadingDiv.style.display = 'none'; // Hide loading indicator
             }, 500);
@@ -146,6 +149,17 @@
                 const j = Math.floor(Math.random() * (i + 1));
                 [arr[i], arr[j]] = [arr[j], arr[i]];
             }
+        }
+
+        // Format the results to display every 10 items in a group
+        function formatDrawResults(results) {
+            let groupedResults = '';
+            const groupSize = 10;
+            for (let i = 0; i < results.length; i += groupSize) {
+                const group = results.slice(i, i + groupSize);
+                groupedResults += `<div class="group"><div class="card">${group.join('<br>')}</div></div>`;
+            }
+            return groupedResults;
         }
 
         function updatePreviousResults() {
