@@ -199,6 +199,41 @@
             resultDiv.style.display = 'block';
         });
 
+        document.getElementById('removeDrawnButton').addEventListener('click', function () {
+            // Remove drawn items from the main list
+            items = items.filter(item => !drawnItems.includes(item));
+            drawnItems = [];
+            writeDataToFirebase();
+
+            // Update the input field and notify user
+            document.getElementById('inputNames').value = items.join(', ');
+            alert("Drawn items have been removed from the list.");
+
+            // Hide the remove button
+            document.getElementById('removeDrawnButton').style.display = 'none';
+        });
+
+        document.getElementById('fullscreenButton').addEventListener('click', function () {
+            const container1 = document.getElementById('container1');
+            if (!document.fullscreenElement) {
+                if (container1.requestFullscreen) {
+                    container1.requestFullscreen();
+                } else if (container1.webkitRequestFullscreen) { /* Safari */
+                    container1.webkitRequestFullscreen();
+                } else if (container1.msRequestFullscreen) { /* IE11 */
+                    container1.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) { /* Safari */
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) { /* IE11 */
+                    document.msExitFullscreen();
+                }
+            }
+        });
+
         function updatePreviousResults() {
             const previousResultsList = document.getElementById('previousResults');
             if (allResults.length === 0) {
@@ -219,6 +254,7 @@
         <div class="text-center mb-4 mt-4">
             <button class="btn" id="drawButton"><i class="fas fa-random"></i> Draw</button>
             <button class="btn" id="removeDrawnButton"><i class="fas fa-trash-alt"></i> Clear Drawn</button>
+            <button class="btn btn-dark" id="fullscreenButton"><i class="fas fa-expand"></i> Fullscreen</button>
         </div>
     </div>
     <div class="container" id="container2">
