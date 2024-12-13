@@ -55,17 +55,15 @@
             color: #fff;
             text-align: center;
         }
-        .results-group {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-around;
-            margin-bottom: 30px;
-        }
-        .group {
-            margin-bottom: 20px;
+        .results-row {
             display: flex;
             flex-wrap: wrap;
             justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .results-row .card {
+            flex: 1 1 9%; /* Adjusts the width to fit 10 cards per row */
+            margin-bottom: 15px; /* Adds spacing between rows */
         }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
@@ -162,13 +160,13 @@
             }
         }
 
-        // Format the results to display horizontally every 10 items
+        // Format the results to display in cards horizontally, breaking every 10 cards
         function formatDrawResults(results) {
             let groupedResults = '';
             const groupSize = 10;
             for (let i = 0; i < results.length; i += groupSize) {
                 const group = results.slice(i, i + groupSize);
-                groupedResults += `<div class="group"><div class="results-group">${group.map(item => `<div class="card">${item}</div>`).join('')}</div></div>`;
+                groupedResults += `<div class="results-row">${group.map(item => `<div class="card">${item}</div>`).join('')}</div>`;
             }
             return groupedResults;
         }
