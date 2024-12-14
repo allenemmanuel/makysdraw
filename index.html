@@ -1,181 +1,181 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Roboto:wght@400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <title>Annual Grand Dinner - Name/Number Drawing Program</title>
-    <style>
+!DOCTYPE html
+html lang=en
+head
+    meta charset=UTF-8
+    meta name=viewport content=width=device-width, initial-scale=1.0
+    link rel=stylesheet href=httpsstackpath.bootstrapcdn.combootstrap4.5.2cssbootstrap.min.css
+    link href=httpsfonts.googleapis.comcss2family=Playfair+Displaywght@700&family=Robotowght@400&display=swap rel=stylesheet
+    link rel=stylesheet href=httpscdnjs.cloudflare.comajaxlibsfont-awesome5.15.4cssall.min.css
+    titleAnnual Grand Dinner - NameNumber Drawing Programtitle
+    style
         body {
-            background-color: #030637;
-            font-family: 'Roboto', sans-serif;
-            color: #333;
+            background-color #030637;
+            font-family 'Roboto', sans-serif;
+            color #333;
         }
 
         #container1 {
-            background: linear-gradient(135deg, #6A0572, #3C0753);
-            padding: 80px;
-            margin-top: 100px;
-            margin-bottom: 70px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
-            border-radius: 15px;
-            text-align: center;
-            position: relative;
-            color: #f5f5f5;
+            background linear-gradient(135deg, #6A0572, #3C0753);
+            padding 80px;
+            margin-top 100px;
+            margin-bottom 70px;
+            box-shadow 0 10px 25px rgba(0, 0, 0, 0.7);
+            border-radius 15px;
+            text-align center;
+            position relative;
+            color #f5f5f5;
         }
 
         #container1 h1, #container1 h2 {
-            font-family: 'Playfair Display', serif;
-            font-size: 2.5rem;
-            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
-            margin-bottom: 20px;
+            font-family 'Playfair Display', serif;
+            font-size 2.5rem;
+            text-shadow 2px 2px 5px rgba(0, 0, 0, 0.3);
+            margin-bottom 20px;
         }
 
         #container1 h2 {
-            font-size: 1.8rem;
+            font-size 1.8rem;
         }
 
         #backgroundVideo {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: -1;
+            position absolute;
+            top 0;
+            left 0;
+            width 100%;
+            height 100%;
+            object-fit cover;
+            z-index -1;
         }
 
         #videoOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
-            z-index: 10;
-            display: none;
-            opacity: 0;
-            transition: opacity 1.5s ease;
+            position fixed;
+            top 0;
+            left 0;
+            width 100vw;
+            height 100vh;
+            object-fit cover;
+            z-index 10;
+            display none;
+            opacity 0;
+            transition opacity 1.5s ease;
         }
 
         #result .card {
-            background: #ffffff;
-            color: #3C0753;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            font-weight: bold;
-            font-size: 1rem;
-            animation: fadeInUp 0.5s ease-in-out;
-            padding: 10px;
-            margin: 5px;
-            display: inline-block;
+            background #ffffff;
+            color #3C0753;
+            border-radius 8px;
+            box-shadow 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-weight bold;
+            font-size 1rem;
+            animation fadeInUp 0.5s ease-in-out;
+            padding 10px;
+            margin 5px;
+            display inline-block;
         }
 
         #container1 button {
-            font-size: 1.1rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin: 10px;
-            padding: 12px 20px;
-            border-radius: 30px;
-            border: none;
-            color: #fff;
-            background: linear-gradient(135deg, #4CAF50, #2E7D32);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
-            transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+            font-size 1.1rem;
+            font-weight bold;
+            text-transform uppercase;
+            margin 10px;
+            padding 12px 20px;
+            border-radius 30px;
+            border none;
+            color #fff;
+            background linear-gradient(135deg, #4CAF50, #2E7D32);
+            box-shadow 0 5px 15px rgba(0, 0, 0, 0.4);
+            transition transform 0.3s, box-shadow 0.3s, background 0.3s;
         }
 
-        #container1 button:hover {
-            transform: scale(1.1);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
-            background: linear-gradient(135deg, #2E7D32, #1B5E20);
+        #container1 buttonhover {
+            transform scale(1.1);
+            box-shadow 0 10px 20px rgba(0, 0, 0, 0.5);
+            background linear-gradient(135deg, #2E7D32, #1B5E20);
         }
 
-        /* Fullscreen Icon Button */
+         Fullscreen Icon Button 
         #fullscreenButton {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: transform 0.3s, color 0.3s;
+            position absolute;
+            bottom 10px;
+            right 10px;
+            background none;
+            border none;
+            color #fff;
+            font-size 1.5rem;
+            cursor pointer;
+            transition transform 0.3s, color 0.3s;
         }
 
-        #fullscreenButton:hover {
-            transform: scale(1.2);
-            color: #ffcc00;
+        #fullscreenButtonhover {
+            transform scale(1.2);
+            color #ffcc00;
         }
 
-        /* Result Card Animation */
+         Result Card Animation 
         @keyframes fadeInUp {
             from {
-                opacity: 0;
-                transform: translateY(20px);
+                opacity 0;
+                transform translateY(20px);
             }
             to {
-                opacity: 1;
-                transform: translateY(0);
+                opacity 1;
+                transform translateY(0);
             }
         }
 
         #container2 {
-            background-color: #720455;
-            box-shadow: 0 10px 16px 0 rgba(0, 0, 0, 0.7);
-            padding: 50px;
-            margin-bottom: 50px;
-            border-radius: 10px;
+            background-color #720455;
+            box-shadow 0 10px 16px 0 rgba(0, 0, 0, 0.7);
+            padding 50px;
+            margin-bottom 50px;
+            border-radius 10px;
         }
 
         #container2 h2, #container2 h3 {
-            color: #fff;
+            color #fff;
         }
 
         #previousResults.empty {
-            color: #aaa;
-            font-style: italic;
+            color #aaa;
+            font-style italic;
         }
 
-        /* Media Queries for mobile responsiveness */
-        @media (max-width: 767px) {
+         Media Queries for mobile responsiveness 
+        @media (max-width 767px) {
             #container1, #container2 {
-                padding: 20px;
-                margin-top: 20px;
+                padding 20px;
+                margin-top 20px;
             }
 
             h1, h2, h3 {
-                font-size: 1.2rem;
+                font-size 1.2rem;
             }
 
             #inputNames {
-                font-size: 0.9rem;
+                font-size 0.9rem;
             }
 
             .btn {
-                font-size: 0.9rem;
-                padding: 8px 15px;
+                font-size 0.9rem;
+                padding 8px 15px;
             }
         }
-    </style>
-    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
-    <script type="module">
-        // Firebase configuration
+    style
+    script src=httpswww.gstatic.comfirebasejs9.21.0firebase-app-compat.jsscript
+    script src=httpswww.gstatic.comfirebasejs9.21.0firebase-database-compat.jsscript
+    script type=module
+         Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
-            authDomain: "makysdraw-87237.firebaseapp.com",
-            databaseURL: "https://makysdraw-87237-default-rtdb.firebaseio.com",
-            projectId: "makysdraw-87237",
-            storageBucket: "makysdraw-87237.firebasestorage.app",
-            messagingSenderId: "1044977366090",
-            appId: "1:1044977366090:web:37af3eaa9c3f5bfc7822b3"
+            apiKey AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA,
+            authDomain makysdraw-87237.firebaseapp.com,
+            databaseURL httpsmakysdraw-87237-default-rtdb.firebaseio.com,
+            projectId makysdraw-87237,
+            storageBucket makysdraw-87237.firebasestorage.app,
+            messagingSenderId 1044977366090,
+            appId 11044977366090web37af3eaa9c3f5bfc7822b3
         };
 
-        // Initialize Firebase
+         Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
@@ -183,14 +183,14 @@
         let drawnItems = [];
         let allResults = [];
 
-        // Load data from Firebase on page load
+         Load data from Firebase on page load
         window.onload = function () {
-            firebase.database().ref('drawResults').on('value', (snapshot) => {
+            firebase.database().ref('drawResults').on('value', (snapshot) = {
                 const data = snapshot.val();
                 if (data) {
-                    items = data.items || [];
-                    drawnItems = data.drawnItems || [];
-                    allResults = data.allResults || [];
+                    items = data.items  [];
+                    drawnItems = data.drawnItems  [];
+                    allResults = data.allResults  [];
                     document.getElementById('inputNames').value = items.join(', ');
                     updatePreviousResults();
                 }
@@ -199,80 +199,149 @@
 
         function writeDataToFirebase() {
             firebase.database().ref('drawResults').set({
-                items: items,
-                drawnItems: drawnItems,
-                allResults: allResults
+                items items,
+                drawnItems drawnItems,
+                allResults allResults
             });
         }
 
         document.getElementById('inputNames').addEventListener('input', function () {
             const input = this.value;
-            items = input.split(/[,|\n]+/).map(item => item.trim()).filter(item => item);
+            items = input.split([,]+).map(item = item.trim()).filter(item = item);
             writeDataToFirebase();
         });
 
-        document.getElementById('exportButton').addEventListener('click', function () {
-            // Check if there are results to export
-            if (allResults.length === 0) {
-                alert("No results to export!");
+        function playCountdownVideo() {
+            const videoOverlay = document.getElementById('videoOverlay');
+            const fadeOutTime = 1800;  Fade-out duration in milliseconds (adjustable)
+
+            videoOverlay.style.display = 'block';
+            videoOverlay.style.opacity = '1';
+            videoOverlay.currentTime = 0;  Restart the video
+            videoOverlay.play();
+
+             Calculate fade-out start time
+            const videoDuration = videoOverlay.duration  1000;  Convert video duration to milliseconds
+            const fadeOutStart = videoDuration - fadeOutTime;  Time to start fading out
+
+            setTimeout(() = {
+                videoOverlay.style.opacity = '0';
+                videoOverlay.addEventListener('transitionend', function () {
+                    videoOverlay.style.display = 'none';
+                    videoOverlay.pause();
+                    videoOverlay.currentTime = 0;
+                }, { once true });
+            }, fadeOutStart);
+        }
+
+        document.getElementById('drawButton').addEventListener('click', function () {
+            const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
+            const resultDiv = document.getElementById('result');
+
+            if (numberOfDraws  items.length) {
+                alert(Number of draws cannot exceed the number of unique items.);
                 return;
             }
 
-            // Create CSV data
-            let csvContent = "data:text/csv;charset=utf-8,Draw #,Results\n"; // Add header row
+            playCountdownVideo();  Play countdown video
 
-            allResults.forEach((result, index) => {
-                csvContent += `${index + 1},"${result}"\n`; // Add each draw result
+            const availableItems = items.filter(item = !drawnItems.includes(item));
+            const shuffledItems = availableItems.sort(() = 0.5 - Math.random());
+            const selectedItems = shuffledItems.slice(0, numberOfDraws);
+
+            drawnItems.push(...selectedItems);
+            allResults.push(selectedItems.join(', '));
+
+            writeDataToFirebase();
+            updatePreviousResults();
+
+            resultDiv.innerHTML = '';
+            selectedItems.forEach((item, index) = {
+                const card = `div class='card'${item}div`;
+                resultDiv.innerHTML += card;
+                if ((index + 1) % 10 === 0) {
+                    resultDiv.innerHTML += 'br';
+                }
             });
+            resultDiv.style.display = 'block';
 
-            // Create a link element to trigger the CSV file download
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement('a');
-            link.setAttribute('href', encodedUri);
-            link.setAttribute('download', 'draw_results.csv'); // Set the filename for the CSV file
-            link.click(); // Trigger the download
+             Show the remove button
+            document.getElementById('removeDrawnButton').style.display = 'inline-block';
+        });
+
+        document.getElementById('removeDrawnButton').addEventListener('click', function () {
+             Remove drawn items from the main list
+            items = items.filter(item = !drawnItems.includes(item));
+            drawnItems = [];
+            writeDataToFirebase();
+
+             Update the input field
+            document.getElementById('inputNames').value = items.join(', ');
+
+             Hide the remove button
+            document.getElementById('removeDrawnButton').style.display = 'none';
+        });
+
+        document.getElementById('fullscreenButton').addEventListener('click', function () {
+            const container1 = document.getElementById('container1');
+            if (!document.fullscreenElement) {
+                if (container1.requestFullscreen) {
+                    container1.requestFullscreen();
+                } else if (container1.webkitRequestFullscreen) {  Safari 
+                    container1.webkitRequestFullscreen();
+                } else if (container1.msRequestFullscreen) {  IE11 
+                    container1.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {  Safari 
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {  IE11 
+                    document.msExitFullscreen();
+                }
+            }
         });
 
         function updatePreviousResults() {
             const previousResultsList = document.getElementById('previousResults');
             if (allResults.length === 0) {
-                previousResultsList.innerHTML = "<li class='list-group-item empty'>No results yet</li>";
+                previousResultsList.innerHTML = li class='list-group-item empty'No results yetli;
                 previousResultsList.style.display = 'block';
             } else {
-                previousResultsList.innerHTML = allResults.map((result, index) => `<li class='list-group-item'>Draw ${index + 1}: ${result}</li>`).join('');
+                previousResultsList.innerHTML = allResults.map((result, index) = `li class='list-group-item'Draw ${index + 1} ${result}li`).join('');
                 previousResultsList.style.display = 'block';
             }
         }
-    </script>
-</head>
+    script
+head
 
-<body>
-    <div class="container" id="container1">
-        <video autoplay muted loop id="backgroundVideo">
-            <source src="movingnums1.mp4" type="video/mp4">
+body
+    div class=container id=container1
+        video autoplay muted loop id=backgroundVideo
+            source src=movingnums1.mp4 type=videomp4
             Your browser does not support the video tag.
-        </video>
-        <h1>🎉 MAKYS LUCKY DRAW 🎉</h1>
-        <h2>Check the Results Below:</h2>
-        <div id="result" style="display:none;"></div>
-        <div class="text-center mb-4 mt-4">
-            <button class="btn" id="drawButton"><i class="fas fa-random"></i> Draw</button>
-            <button class="btn" id="removeDrawnButton" style="display: none;"><i class="fas fa-trash-alt"></i> Clear Drawn</button>
-        </div>
-        <button id="fullscreenButton"><i class="fas fa-expand"></i></button>
-        <video id="videoOverlay" autoplay muted>
-            <source src="countdown2.mp4" type="video/mp4">
+        video
+        h1🎉 MAKYS LUCKY DRAW 🎉h1
+        h2Check the Results Belowh2
+        div id=result style=displaynone;div
+        div class=text-center mb-4 mt-4
+            button class=btn id=drawButtoni class=fas fa-randomi Drawbutton
+            button class=btn id=removeDrawnButton style=display none;i class=fas fa-trash-alti Clear Drawnbutton
+        div
+        button id=fullscreenButtoni class=fas fa-expandibutton
+        video id=videoOverlay autoplay muted
+            source src=countdown2.mp4 type=videomp4
             Your browser does not support the video tag.
-        </video>
-    </div>
-    <div class="container" id="container2">
-        <h2 style="color: antiquewhite;">The Mechanics</h2>
-        <textarea class="form-control" id="inputNames" rows="5" placeholder="Enter names or numbers here..."></textarea>
-        <input type="number" class="form-control" id="numberOfDraws" min="1" value="1" style="margin-top: 20px;">
-        <h3 style="color: antiquewhite;">Previous Draws:</h3>
-        <ul id="previousResults" class="list-group" style="display:none"></ul>
-        <button class="btn" id="exportButton"><i class="fas fa-download"></i> Export Results to CSV</button>
-    </div>
-
-</body>
-</html>
+        video
+    div
+    div class=container id=container2
+        h2 style=color antiquewhite;The Mechanicsh2
+        textarea class=form-control id=inputNames rows=5 placeholder=Enter names or numbers here...textarea
+        input type=number class=form-control id=numberOfDraws min=1 value=1 style=margin-top 20px;
+        h3 style=color antiquewhite;Previous Drawsh3
+        ul id=previousResults class=list-group style=displaynoneul
+        button class=btn btn-success mt-4 id=exportButtonExport Results to CSVbutton
+    div
+body
+html
