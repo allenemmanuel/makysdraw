@@ -207,7 +207,7 @@
 
         document.getElementById('inputNames').addEventListener('input', function () {
             const input = this.value;
-            items = input.split(/[,]+/).map(item => item.trim()).filter(item => item);
+            items = input.split(/[,|\n]+/).map(item => item.trim()).filter(item => item);
             writeDataToFirebase();
         });
 
