@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+n<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -56,7 +56,7 @@
             z-index: 10;
             display: none;
             opacity: 0;
-            transition: opacity 3s ease;
+            transition: opacity 1s ease;
         }
 
         #result .card {
@@ -206,26 +206,31 @@
 
         document.getElementById('inputNames').addEventListener('input', function () {
             const input = this.value;
-            items = input.split(/[\n,]+/).map(item => item.trim()).filter(item => item);
+            items = input.split(/[,]+/).map(item => item.trim()).filter(item => item);
             writeDataToFirebase();
         });
 
         function playCountdownVideo() {
             const videoOverlay = document.getElementById('videoOverlay');
+            const fadeOutTime = 1000; // Fade-out duration in milliseconds (adjustable)
+
             videoOverlay.style.display = 'block';
             videoOverlay.style.opacity = '1';
             videoOverlay.currentTime = 0; // Restart the video
             videoOverlay.play();
 
-            // Hide the video when it ends
-            videoOverlay.addEventListener('ended', function () {
+            // Calculate fade-out start time
+            const videoDuration = videoOverlay.duration * 1000; // Convert video duration to milliseconds
+            const fadeOutStart = videoDuration - fadeOutTime; // Time to start fading out
+
+            setTimeout(() => {
                 videoOverlay.style.opacity = '0';
                 videoOverlay.addEventListener('transitionend', function () {
                     videoOverlay.style.display = 'none';
                     videoOverlay.pause();
                     videoOverlay.currentTime = 0;
                 }, { once: true });
-            });
+            }, fadeOutStart);
         }
 
         document.getElementById('drawButton').addEventListener('click', function () {
@@ -309,6 +314,7 @@
         }
     </script>
 </head>
+
 <body>
     <div class="container" id="container1">
         <video autoplay muted loop id="backgroundVideo">
