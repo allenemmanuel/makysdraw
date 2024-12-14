@@ -211,96 +211,26 @@
             writeDataToFirebase();
         });
 
-        function playCountdownVideo() {
-            const videoOverlay = document.getElementById('videoOverlay');
-            const fadeOutTime = 1800; // Fade-out duration in milliseconds (adjustable)
-
-            videoOverlay.style.display = 'block';
-            videoOverlay.style.opacity = '1';
-            videoOverlay.currentTime = 0; // Restart the video
-            videoOverlay.play();
-
-            // Calculate fade-out start time
-            const videoDuration = videoOverlay.duration * 1000; // Convert video duration to milliseconds
-            const fadeOutStart = videoDuration - fadeOutTime; // Time to start fading out
-
-            setTimeout(() => {
-                videoOverlay.style.opacity = '0';
-                videoOverlay.addEventListener('transitionend', function () {
-                    videoOverlay.style.display = 'none';
-                    videoOverlay.pause();
-                    videoOverlay.currentTime = 0;
-                }, { once: true });
-            }, fadeOutStart);
-        }
-
-        document.getElementById('drawButton').addEventListener('click', function () {
-            const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
-            const resultDiv = document.getElementById('result');
-
-            if (numberOfDraws > items.length) {
-                alert("Number of draws cannot exceed the number of unique items.");
+        document.getElementById('exportButton').addEventListener('click', function () {
+            // Check if there are results to export
+            if (allResults.length === 0) {
+                alert("No results to export!");
                 return;
             }
 
-            playCountdownVideo(); // Play countdown video
+            // Create CSV data
+            let csvContent = "data:text/csv;charset=utf-8,Draw #,Results\n"; // Add header row
 
-            const availableItems = items.filter(item => !drawnItems.includes(item));
-            const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
-            const selectedItems = shuffledItems.slice(0, numberOfDraws);
-
-            drawnItems.push(...selectedItems);
-            allResults.push(selectedItems.join(', '));
-
-            writeDataToFirebase();
-            updatePreviousResults();
-
-            resultDiv.innerHTML = '';
-            selectedItems.forEach((item, index) => {
-                const card = `<div class='card'>${item}</div>`;
-                resultDiv.innerHTML += card;
-                if ((index + 1) % 10 === 0) {
-                    resultDiv.innerHTML += '<br>';
-                }
+            allResults.forEach((result, index) => {
+                csvContent += `${index + 1},"${result}"\n`; // Add each draw result
             });
-            resultDiv.style.display = 'block';
 
-            // Show the remove button
-            document.getElementById('removeDrawnButton').style.display = 'inline-block';
-        });
-
-        document.getElementById('removeDrawnButton').addEventListener('click', function () {
-            // Remove drawn items from the main list
-            items = items.filter(item => !drawnItems.includes(item));
-            drawnItems = [];
-            writeDataToFirebase();
-
-            // Update the input field
-            document.getElementById('inputNames').value = items.join(', ');
-
-            // Hide the remove button
-            document.getElementById('removeDrawnButton').style.display = 'none';
-        });
-
-        document.getElementById('fullscreenButton').addEventListener('click', function () {
-            const container1 = document.getElementById('container1');
-            if (!document.fullscreenElement) {
-                if (container1.requestFullscreen) {
-                    container1.requestFullscreen();
-                } else if (container1.webkitRequestFullscreen) { /* Safari */
-                    container1.webkitRequestFullscreen();
-                } else if (container1.msRequestFullscreen) { /* IE11 */
-                    container1.msRequestFullscreen();
-                }
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) { /* Safari */
-                    document.webkitExitFullscreen();
-                } else if (document.msExitFullscreen) { /* IE11 */
-                    document.msExitFullscreen();
-                }
-            }
+            // Create a link element to trigger the CSV file download
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', 'draw_results.csv'); // Set the filename for the CSV file
+            link.click(); // Trigger the download
         });
 
         function updatePreviousResults() {
@@ -341,7 +271,8 @@
         <input type="number" class="form-control" id="numberOfDraws" min="1" value="1" style="margin-top: 20px;">
         <h3 style="color: antiquewhite;">Previous Draws:</h3>
         <ul id="previousResults" class="list-group" style="display:none"></ul>
-        <button class="btn btn-success mt-4" id="exportButton">Export Results to CSV</button>
+        <button class="btn" id="exportButton"><i class="fas fa-download"></i> Export Results to CSV</button>
     </div>
+
 </body>
 </html>
