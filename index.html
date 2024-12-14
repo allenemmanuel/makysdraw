@@ -1,4 +1,4 @@
-n<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -212,7 +212,7 @@ n<!DOCTYPE html>
 
         function playCountdownVideo() {
             const videoOverlay = document.getElementById('videoOverlay');
-            const fadeOutTime = 1000; // Fade-out duration in milliseconds (adjustable)
+            const fadeOutTime = 300; // Fade-out duration in milliseconds (adjustable)
 
             videoOverlay.style.display = 'block';
             videoOverlay.style.opacity = '1';
@@ -220,7 +220,7 @@ n<!DOCTYPE html>
             videoOverlay.play();
 
             // Calculate fade-out start time
-            const videoDuration = videoOverlay.duration * 7000; // Convert video duration to milliseconds
+            const videoDuration = videoOverlay.duration * 1000; // Convert video duration to milliseconds
             const fadeOutStart = videoDuration - fadeOutTime; // Time to start fading out
 
             setTimeout(() => {
