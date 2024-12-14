@@ -18,7 +18,6 @@
             background: linear-gradient(135deg, #6A0572, #3C0753);
             padding: 80px;
             margin-top: 100px;
-            margin-bottom: 70px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
             border-radius: 15px;
             text-align: center;
@@ -35,6 +34,29 @@
 
         #container1 h2 {
             font-size: 1.8rem;
+        }
+
+        #backgroundVideo {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+        }
+
+        #videoOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            z-index: 10;
+            display: none;
+            opacity: 0;
+            transition: opacity 1s ease;
         }
 
         #result .card {
@@ -188,6 +210,24 @@
             writeDataToFirebase();
         });
 
+        function playCountdownVideo() {
+            const videoOverlay = document.getElementById('videoOverlay');
+            videoOverlay.style.display = 'block';
+            videoOverlay.style.opacity = '1';
+            videoOverlay.currentTime = 0; // Restart the video
+            videoOverlay.play();
+
+            // Hide the video when it ends
+            videoOverlay.addEventListener('ended', function () {
+                videoOverlay.style.opacity = '0';
+                videoOverlay.addEventListener('transitionend', function () {
+                    videoOverlay.style.display = 'none';
+                    videoOverlay.pause();
+                    videoOverlay.currentTime = 0;
+                }, { once: true });
+            });
+        }
+
         document.getElementById('drawButton').addEventListener('click', function () {
             const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
             const resultDiv = document.getElementById('result');
@@ -196,6 +236,8 @@
                 alert("Number of draws cannot exceed the number of unique items.");
                 return;
             }
+
+            playCountdownVideo(); // Play countdown video
 
             const availableItems = items.filter(item => !drawnItems.includes(item));
             const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
@@ -269,6 +311,10 @@
 </head>
 <body>
     <div class="container" id="container1">
+        <video autoplay muted loop id="backgroundVideo">
+            <source src="movingnums1.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
         <h1>🎉 MAKYS LUCKY DRAW 🎉</h1>
         <h2>Check the Results Below:</h2>
         <div id="result" style="display:none;"></div>
@@ -277,6 +323,10 @@
             <button class="btn" id="removeDrawnButton" style="display: none;"><i class="fas fa-trash-alt"></i> Clear Drawn</button>
         </div>
         <button id="fullscreenButton"><i class="fas fa-expand"></i></button>
+        <video id="videoOverlay" autoplay muted>
+            <source src="countdown2.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
     </div>
     <div class="container" id="container2">
         <h2 style="color: antiquewhite;">The Mechanics</h2>
@@ -284,8 +334,6 @@
         <input type="number" class="form-control" id="numberOfDraws" min="1" value="1" style="margin-top: 20px;">
         <h3 style="color: antiquewhite;">Previous Draws:</h3>
         <ul id="previousResults" class="list-group" style="display:none"></ul>
-
-        <br><br>
         <button class="btn btn-success mt-4" id="exportButton">Export Results to CSV</button>
     </div>
 </body>
