@@ -206,10 +206,12 @@
         }
 
         document.getElementById('inputNames').addEventListener('input', function () {
-            const input = this.value;
-            items = input.split(/[,|\n]+/).map(item => item.trim()).filter(item => item);
-            writeDataToFirebase();
-        });
+    const input = this.value;
+    // Prevent duplicates using a Set
+    items = [...new Set(input.split(/[,|\n]+/).map(item => item.trim()).filter(item => item))];
+    writeDataToFirebase();
+});
+
 
         function playCountdownVideo() {
             const videoOverlay = document.getElementById('videoOverlay');
