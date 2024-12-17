@@ -238,6 +238,12 @@
                         card.style.transform = 'translateY(0)'; // Move to original position
                     });
                 }, index * 500); // Delay based on index (500ms for each card)
+
+                // Add a line break after every 10 cards
+                if ((index + 1) % 10 === 0) {
+                    const lineBreak = document.createElement('br');
+                    resultDiv.appendChild(lineBreak);
+                }
             });
 
             // Show the remove button
