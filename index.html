@@ -67,10 +67,12 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             font-weight: bold;
             font-size: 3rem;
-            animation: fadeInUp 0.5s ease-in-out;
             padding: 10px;
             margin: 5px;
             display: inline-block;
+            opacity: 0; /* Start with opacity 0 */
+            transform: translateY(20px); /* Start position for animation */
+            transition: opacity 0.5s, transform 0.5s; /* Transition for fade-in */
         }
 
         #container1 button {
@@ -109,18 +111,6 @@
         #fullscreenButton:hover {
             transform: scale(1.2);
             color: #ffcc00;
-        }
-
-        /* Result Card Animation */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         #container2 {
@@ -211,29 +201,6 @@
             writeDataToFirebase();
         });
 
-        function playCountdownVideo() {
-            const videoOverlay = document.getElementById('videoOverlay');
-            const fadeOutTime = 1800; // Fade-out duration in milliseconds (adjustable)
-
-            videoOverlay.style.display = 'block';
-            videoOverlay.style.opacity = '1';
-            videoOverlay.currentTime = 0; // Restart the video
-            videoOverlay.play();
-
-            // Calculate fade-out start time
-            const videoDuration = videoOverlay.duration * 1000; // Convert video duration to milliseconds
-            const fadeOutStart = videoDuration - fadeOutTime; // Time to start fading out
-
-            setTimeout(() => {
-                videoOverlay.style.opacity = '0';
-                videoOverlay.addEventListener('transitionend', function () {
-                    videoOverlay.style.display = 'none';
-                    videoOverlay.pause();
-                    videoOverlay.currentTime = 0;
-                }, { once: true });
-            }, fadeOutStart);
-        }
-
         document.getElementById('drawButton').addEventListener('click', function () {
             const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
             const resultDiv = document.getElementById('result');
@@ -242,8 +209,6 @@
                 alert("Number of draws cannot exceed the number of unique items.");
                 return;
             }
-
-            // playCountdownVideo(); // Play countdown video
 
             const availableItems = items.filter(item => !drawnItems.includes(item));
             const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
@@ -255,15 +220,25 @@
             writeDataToFirebase();
             updatePreviousResults();
 
-            resultDiv.innerHTML = '';
+            resultDiv.innerHTML = ''; // Clear previous results
+            resultDiv.style.display = 'block'; // Show the result div
+
+            // Show each card with a delay
             selectedItems.forEach((item, index) => {
-                const card = `<div class='card'>${item}</div>`;
-                resultDiv.innerHTML += card;
-                if ((index + 1) % 10 === 0) {
-                    resultDiv.innerHTML += '<br>';
-                }
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerText = item;
+                resultDiv.appendChild(card);
+
+                // Add a delay for the fade-in effect
+                setTimeout(() => {
+                    card.style.opacity = 0; // Start with opacity 0
+                    requestAnimationFrame(() => {
+                        card.style.opacity = 1; // Fade in
+                        card.style.transform = 'translateY(0)'; // Move to original position
+                    });
+                }, index * 500); // Delay based on index (500ms for each card)
             });
-            resultDiv.style.display = 'block';
 
             // Show the remove button
             document.getElementById('removeDrawnButton').style.display = 'inline-block';
@@ -315,31 +290,30 @@
         }
 
         document.getElementById('exportButton').addEventListener('click', function () {
-    if (allResults.length === 0) {
-        alert("No results to export.");
-        return;
-    }
+            if (allResults.length === 0) {
+                alert("No results to export.");
+                return;
+            }
 
-    // Convert allResults to CSV format
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Draw Number,Results\n"; // Header row
+            // Convert allResults to CSV format
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Draw Number,Results\n"; // Header row
 
-    allResults.forEach((result, index) => {
-        const row = `Draw ${index + 1},"${result}" \n`; // Format each row
-        csvContent += row;
-    });
+            allResults.forEach((result, index) => {
+                const row = `Draw ${index + 1},"${result}" \n`; // Format each row
+                csvContent += row;
+            });
 
-    // Create a link element to trigger the download
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "draw_results.csv"); // Name of the file
-    document.body.appendChild(link); // Required for Firefox
+            // Create a link element to trigger the download
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "draw_results.csv"); // Name of the file
+            document.body.appendChild(link); // Required for Firefox
 
-    link.click(); // Trigger the download
-    document.body.removeChild(link); // Clean up
-});
-
+            link.click(); // Trigger the download
+            document.body.removeChild(link); // Clean up
+        });
     </script>
 </head>
 
@@ -349,7 +323,7 @@
             <source src="movingnums1.mp4" type="video/mp4">
             Your browser does not support the video tag.
         </video>
-        <h1 style="text-align: center; color: antiquewhite; "> MALAM ANUGERAH </h1>
+        <h1 style="text-align: center; color: antiquewhite;"> MALAM ANUGERAH </h1>
         <h1 style="text-align: center; color: antiquewhite;"> KUMPULAN YAYASAN SABAH 2025 </h1>
         <h1 style="text-align: center; color: antiquewhite;"> CABUTAN TIKET BERTUAH </h1>
         
@@ -358,7 +332,6 @@
             <button class="btn" id="removeDrawnButton" style="display: none;"><i class="fas fa-trash-alt"></i> Clear Drawn</button>
         </div>
 
-<!--         <h2>Check the Results Below:</h2> -->
         <div id="result" style="display:none;"></div>
         
         <button id="fullscreenButton"><i class="fas fa-expand"></i></button>
