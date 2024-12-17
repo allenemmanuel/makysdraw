@@ -160,28 +160,7 @@
                 padding: 8px 15px;
             }
         }
-
-        /* Animation for cards */
-        .animated-card {
-            opacity: 0;
-            transform: translateY(50px);
-            animation: fadeInUp 0.5s ease-in-out forwards;
-        }
-        
-        /* Keyframes for fade-in-up animation */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
     </style>
-    
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
     <script type="module">
@@ -228,11 +207,9 @@
 
         document.getElementById('inputNames').addEventListener('input', function () {
             const input = this.value;
-            // Prevent duplicates using a Set
-            items = [...new Set(input.split(/[,|\n]+/).map(item => item.trim()).filter(item => item))];
+            items = input.split(/[,|\n]+/).map(item => item.trim()).filter(item => item);
             writeDataToFirebase();
         });
-
 
         function playCountdownVideo() {
             const videoOverlay = document.getElementById('videoOverlay');
@@ -279,25 +256,14 @@
             updatePreviousResults();
 
             resultDiv.innerHTML = '';
-            resultDiv.style.display = 'block';
-            
-            // Loop through selected items with a delay for transitions
             selectedItems.forEach((item, index) => {
-                setTimeout(() => {
-                    const card = document.createElement('div');
-                    card.className = 'card animated-card'; // Apply the animation class
-                    card.innerText = item;
-                    resultDiv.appendChild(card);
-            
-                    // Add a line break after every 10 items
-                    if ((index + 1) % 10 === 0) {
-                        const lineBreak = document.createElement('br');
-                        resultDiv.appendChild(lineBreak);
-                    }
-                }, index * 200); // Delay increases for each card (200ms per card)
+                const card = `<div class='card'>${item}</div>`;
+                resultDiv.innerHTML += card;
+                if ((index + 1) % 10 === 0) {
+                    resultDiv.innerHTML += '<br>';
+                }
             });
-
-
+            resultDiv.style.display = 'block';
 
             // Show the remove button
             document.getElementById('removeDrawnButton').style.display = 'inline-block';
