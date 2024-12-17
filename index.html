@@ -164,15 +164,15 @@
         /* Animation for cards */
         .animated-card {
             opacity: 0;
-            transform: translateY(30px);
+            transform: translateY(50px);
             animation: fadeInUp 0.5s ease-in-out forwards;
         }
         
-        /* Fade-in animation */
+        /* Keyframes for fade-in-up animation */
         @keyframes fadeInUp {
             from {
                 opacity: 0;
-                transform: translateY(30px);
+                transform: translateY(50px);
             }
             to {
                 opacity: 1;
@@ -285,7 +285,7 @@
             selectedItems.forEach((item, index) => {
                 setTimeout(() => {
                     const card = document.createElement('div');
-                    card.className = 'card animated-card';
+                    card.className = 'card animated-card'; // Apply the animation class
                     card.innerText = item;
                     resultDiv.appendChild(card);
             
@@ -294,8 +294,9 @@
                         const lineBreak = document.createElement('br');
                         resultDiv.appendChild(lineBreak);
                     }
-                }, index * 150); // 150ms delay per card for smooth animation
+                }, index * 200); // Delay increases for each card (200ms per card)
             });
+
 
 
             // Show the remove button
