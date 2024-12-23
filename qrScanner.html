@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <title>QR Code Scanner - Lucky Draw Program</title>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Roboto', sans-serif;
+            color: #333;
+        }
+        #container {
+            padding: 40px;
+            margin: 50px auto;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        h2 {
+            color: #6A0572;
+        }
+        #scanner {
+            display: none; /* Hidden by default */
+        }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script type="module">
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
+            authDomain: "makysdraw-87237.firebaseapp.com",
+            databaseURL: "https://makysdraw-87237-default-rtdb.firebaseio.com",
+            projectId: "makysdraw-87237",
+            storageBucket: "makysdraw-87237.firebasestorage.app",
+            messagingSenderId: "1044977366090",
+            appId: "1:1044977366090:web:37af3eaa9c3f5bfc7822b3"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let items = [];
+
+        // Load items from Firebase on page load
+        window.onload = function () {
+            firebase.database().ref('items').on('value', (snapshot) => {
+                const data = snapshot.val();
+                items = data ? data : [];
+                updateItemList();
+            });
+        };
+
+        function writeDataToFirebase() {
+            firebase.database().ref('items').set(items);
+        }
+
+        function updateItemList() {
+            const itemList = document.getElementById('itemList');
+            itemList.innerHTML = items.map(item => `<li class="list-group-item">${item}</li>`).join('');
+        }
+
+        function startScanner() {
+            const codeReader = new ZXing.BrowserQRCodeReader();
+            codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+                if (result) {
+                    const scannedValue = result.text;
+                    if (!items.includes(scannedValue)) {
+                        items.push(scannedValue);
+                        writeDataToFirebase();
+                    }
+                }
+                if (err && !(err instanceof ZXing.NotFoundException)) {
+                    console.error(err);
+                }
+            });
+            document.getElementById('scanner').style.display = 'block'; // Show the scanner
+        }
+    </script>
+</head>
+
+<body>
+    <div class="container" id="container">
+        <h2>QR Code Scanner</h2>
+        <button class="btn btn-primary" onclick="startScanner()">Start QR Code Scanner</button>
+        
+        <div id="scanner">
+ <video id="video" width="300" height="200" style="border: 1px solid black;"></video>
+        </div>
+        
+        <h3>Obtained Names/Numbers:</h3>
+        <ul id="itemList" class="list-group"></ul>
+    </div>
+</body>
+</html>
