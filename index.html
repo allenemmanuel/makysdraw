@@ -150,6 +150,13 @@
                 padding: 8px 15px;
             }
         }
+
+        #settingsContainer {
+            background-color: #720455;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 16px 0 rgba(0, 0, 0, 0.7);
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
@@ -321,6 +328,22 @@
             link.click(); // Trigger the download
             document.body.removeChild(link); // Clean up
         });
+
+        // Get references to the settings elements
+        const fontSizeInput = document.getElementById('fontSize');
+        const fontTypeSelect = document.getElementById('fontType');
+        
+        // Function to update font size
+        fontSizeInput.addEventListener('input', function () {
+            const newSize = this.value + 'px';
+            document.body.style.fontSize = newSize; // Change body font size
+        });
+        
+        // Function to update font type
+        fontTypeSelect.addEventListener('change', function () {
+            const newFont = this.value;
+            document.body.style.fontFamily = newFont; // Change body font family
+        });
     </script>
 </head>
 
@@ -355,5 +378,22 @@
         <ul id="previousResults" class="list-group" style="display:none"></ul>
         <button class="btn btn-success mt-4" id="exportButton">Export Results to CSV</button>
     </div>
+
+    <div class="container" id="settingsContainer" style="margin-top: 20px;">
+    <h2 style="color: antiquewhite;">Settings</h2>
+    
+    <label for="fontSize">Font Size:</label>
+    <input type="range" id="fontSize" min="1" max="100" value="16" style="width: 100%;">
+    
+    <label for="fontType">Font Type:</label>
+    <select id="fontType" class="form-control" style="margin-top: 10px;">
+        <option value="Roboto">Roboto</option>
+        <option value="Playfair Display">Playfair Display</option>
+        <option value="Arial">Arial</option>
+        <option value="Courier New">Courier New</option>
+        <option value="Georgia">Georgia</option>
+        <option value="Times New Roman">Times New Roman</option>
+    </select>
+</div>
 </body>
 </html>
