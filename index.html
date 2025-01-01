@@ -241,7 +241,6 @@
 
                 // Add a line break after every 10 cards
                 if ((index + 1) % 10 === 0) {
-                if ((index + 1) % 5 === 0) {
                     const lineBreak = document.createElement('br');
                     resultDiv.appendChild(lineBreak);
                 }
@@ -333,14 +332,14 @@
         <h1 style="text-align: center; color: antiquewhite;"> MALAM ANUGERAH </h1>
         <h1 style="text-align: center; color: antiquewhite;"> KUMPULAN YAYASAN SABAH 2025 </h1>
         <h1 style="text-align: center; color: antiquewhite;"> CABUTAN TIKET BERTUAH </h1>
-
+        
         <div class="text-center mb-4 mt-4">
             <button class="btn" id="drawButton"><i class="fas fa-random"></i> Draw</button>
             <button class="btn" id="removeDrawnButton" style="display: none;"><i class="fas fa-trash-alt"></i> Clear Drawn</button>
         </div>
 
         <div id="result" style="display:none;"></div>
-
+        
         <button id="fullscreenButton"><i class="fas fa-expand"></i></button>
         <video id="videoOverlay" autoplay muted>
             <source src="countdown2.mp4" type="video/mp4">
