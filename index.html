@@ -150,13 +150,6 @@
                 padding: 8px 15px;
             }
         }
-
-        #settingsContainer {
-            background-color: #720455;
-            box-shadow: 0 10px 16px 0 rgba(0, 0, 0, 0.7);
-            padding: 20px;
-            border-radius: 10px;
-        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
@@ -247,6 +240,7 @@
                 }, index * 500); // Delay based on index (500ms for each card)
 
                 // Add a line break after every 10 cards
+                if ((index + 1) % 10 === 0) {
                 if ((index + 1) % 5 === 0) {
                     const lineBreak = document.createElement('br');
                     resultDiv.appendChild(lineBreak);
@@ -327,21 +321,6 @@
             link.click(); // Trigger the download
             document.body.removeChild(link); // Clean up
         });
-
-        document.getElementById('fontSize').addEventListener('change', function() {
-            const selectedSize = this.value;
-            document.body.style.fontSize = selectedSize; // Apply new font size
-        });
-        
-        document.getElementById('fontType').addEventListener('change', function() {
-            const selectedFont = this.value;
-            document.body.style.fontFamily = selectedFont; // Apply new font type
-        });
-        
-        document.getElementById('fontColor').addEventListener('input', function() {
-            const selectedColor = this.value;
-            document.body.style.color = selectedColor; // Apply new font color
-        });
     </script>
 </head>
 
@@ -354,14 +333,14 @@
         <h1 style="text-align: center; color: antiquewhite;"> MALAM ANUGERAH </h1>
         <h1 style="text-align: center; color: antiquewhite;"> KUMPULAN YAYASAN SABAH 2025 </h1>
         <h1 style="text-align: center; color: antiquewhite;"> CABUTAN TIKET BERTUAH </h1>
-        
+
         <div class="text-center mb-4 mt-4">
             <button class="btn" id="drawButton"><i class="fas fa-random"></i> Draw</button>
             <button class="btn" id="removeDrawnButton" style="display: none;"><i class="fas fa-trash-alt"></i> Clear Drawn</button>
         </div>
 
         <div id="result" style="display:none;"></div>
-        
+
         <button id="fullscreenButton"><i class="fas fa-expand"></i></button>
         <video id="videoOverlay" autoplay muted>
             <source src="countdown2.mp4" type="video/mp4">
@@ -376,24 +355,5 @@
         <ul id="previousResults" class="list-group" style="display:none"></ul>
         <button class="btn btn-success mt-4" id="exportButton">Export Results to CSV</button>
     </div>
-
-    <div class="container" id="settingsContainer">
-    <h2 style="color: antiquewhite;">Settings</h2>
-    <label for="fontSize">Font Size:</label>
-    <select id="fontSize" class="form-control" style="margin-bottom: 20px;">
-        <option value="1rem">Small</option>
-        <option value="1.5rem">Medium</option>
-        <option value="2rem">Large</option>
-    </select>
-
-    <label for="fontType">Font Type:</label>
-    <select id="fontType" class="form-control" style="margin-bottom: 20px;">
-        <option value="Roboto">Roboto</option>
-        <option value="Playfair Display">Playfair Display</option>
-    </select>
-
-    <label for="fontColor">Font Color:</label>
-    <input type="color" id="fontColor" class="form-control" style="margin-bottom: 20px;" value="#ffffff">
-</div>
 </body>
 </html>
