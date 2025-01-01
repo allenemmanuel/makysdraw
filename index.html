@@ -201,6 +201,30 @@
             writeDataToFirebase();
         });
 
+        function fadeInCharacterByCharacter(text, container) {
+            container.innerHTML = ''; // Clear the container
+            let index = 0;
+
+            const interval = setInterval(() => {
+                if (index < text.length) {
+                    const span = document.createElement('span');
+                    span.innerText = text[index];
+                    span.style.opacity = 0; // Start with opacity 0
+                    container.appendChild(span);
+
+                    // Fade in effect for the character
+                    setTimeout(() => {
+                        span.style.transition = 'opacity 0.5s';
+                        span.style.opacity = 1; // Fade in
+                    }, 50 * index); // Delay based on index
+
+                    index++;
+                } else {
+                    clearInterval(interval); // Stop the interval when done
+                }
+            }, 300); // Delay between each character
+        }
+
         document.getElementById('drawButton').addEventListener('click', function () {
             const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
             const resultDiv = document.getElementById('result');
@@ -223,28 +247,45 @@
             resultDiv.innerHTML = ''; // Clear previous results
             resultDiv.style.display = 'block'; // Show the result div
 
-            // Show each card with a delay
-            selectedItems.forEach((item, index) => {
+            // Check if only one item is drawn
+            if (numberOfDraws === 1) {
                 const card = document.createElement('div');
                 card.className = 'card';
-                card.innerText = item;
                 resultDiv.appendChild(card);
 
-                // Add a delay for the fade-in effect
-                setTimeout(() => {
-                    card.style.opacity = 0; // Start with opacity 0
-                    requestAnimationFrame(() => {
-                        card.style.opacity = 1; // Fade in
-                        card.style.transform = 'translateY(0)'; // Move to original position
-                    });
-                }, index * 500); // Delay based on index (500ms for each card)
+                // Fade in the card normally
+                card.style.opacity = 0; // Start with opacity 0
+                requestAnimationFrame(() => {
+                    card.style.transition = 'opacity 0.5s';
+                    card.style.opacity = 1; // Fade in the card
+                });
 
-                // Add a line break after every 10 cards
-                if ((index + 1) % 10 === 0) {
-                    const lineBreak = document.createElement('br');
-                    resultDiv.appendChild(lineBreak);
-                }
-            });
+                // Call the function to fade in the content character by character
+                fadeInCharacterByCharacter(selectedItems[0], card);
+            } else {
+                // Show each card with a delay for multiple items
+                selectedItems.forEach((item, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerText = item;
+                    resultDiv.appendChild(card);
+
+                    // Add a delay for the fade-in effect
+                    setTimeout(() => {
+                        card.style.opacity = 0; // Start with opacity 0
+                        requestAnimationFrame(() => {
+                            card.style.opacity = 1; // Fade in
+                            card.style.transform = 'translateY(0)'; // Move to original position
+                        });
+                    }, index * 500); // Delay based on index (500ms for each card)
+
+                    // Add a line break after every 10 cards
+                    if ((index + 1) % 10 === 0) {
+                        const lineBreak = document.createElement('br');
+                        resultDiv.appendChild(lineBreak);
+                    }
+                });
+            }
 
             // Show the remove button
             document.getElementById('removeDrawnButton').style.display = 'inline-block';
