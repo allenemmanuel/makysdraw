@@ -216,13 +216,13 @@
                     setTimeout(() => {
                         span.style.transition = 'opacity 0.5s';
                         span.style.opacity = 1; // Fade in
-                    }, 100 * index); // Delay based on index
+                    }, 50 * index); // Delay based on index
 
                     index++;
                 } else {
                     clearInterval(interval); // Stop the interval when done
                 }
-            }, 300); // Delay between each character
+            }, 3000); // Delay between each character
         }
 
         document.getElementById('drawButton').addEventListener('click', function () {
