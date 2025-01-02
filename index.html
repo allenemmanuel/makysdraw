@@ -169,6 +169,12 @@
         let drawnItems = [];
         let allResults = [];
 
+        // Function to play sound effects
+        function playSound(soundFile) {
+            const audio = new Audio(soundFile);
+            audio.play();
+        }
+
         window.onload = function () {
             firebase.database().ref('drawResults').on('value', (snapshot) => {
                 const data = snapshot.val();
@@ -201,6 +207,9 @@
         });
 
         document.getElementById('drawButton').addEventListener('click', function () {
+            // Play draw sound effect
+            playSound('draw-sound.mp3');
+
             const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
             const resultDiv = document.getElementById('result');
 
@@ -256,6 +265,11 @@
                 });
             }
 
+            // Play result sound effect after displaying results
+            setTimeout(() => {
+                playSound('result-sound.mp3');
+            }, 1000);
+
             document.getElementById('removeDrawnButton').style.display = 'inline-block';
         });
 
@@ -290,13 +304,10 @@
 
         function updatePreviousResults() {
             const previousResultsList = document.getElementById('previousResults');
-            if (allResults.length === 0) {
-                previousResultsList.innerHTML = "<li class='list-group-item empty'>No results yet</li>";
-                previousResultsList.style.display = 'block';
-            } else {
-                previousResultsList.innerHTML = allResults.map((result, index) => `<li class='list-group-item'>Draw ${index + 1}: ${result}</li>`).join('');
-                previousResultsList.style.display = 'block';
-            }
+            previousResultsList.innerHTML = allResults.length === 0
+                ? `<li class='list-group-item empty'>No results yet</li>`
+                : allResults.map((result, index) => `<li class='list-group-item'>Draw ${index + 1}: ${result}</li>`).join('');
+            previousResultsList.style.display = 'block';
         }
 
         document.getElementById('exportButton').addEventListener('click', function () {
