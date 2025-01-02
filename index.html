@@ -151,6 +151,7 @@
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script type="module">
         const firebaseConfig = {
             apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
@@ -222,42 +223,35 @@
             resultDiv.innerHTML = '';
             resultDiv.style.display = 'block';
 
-            if (numberOfDraws === 1) {
+            // Trigger confetti fireworks
+            triggerConfetti();
+
+            selectedItems.forEach((item, index) => {
                 const card = document.createElement('div');
                 card.className = 'card';
+                card.innerText = item;
                 resultDiv.appendChild(card);
 
-                card.style.opacity = 0;
-                requestAnimationFrame(() => {
-                    card.style.transition = 'opacity 0.5s';
-                    card.style.opacity = 1;
-                });
-
-                fadeInCharacterByCharacter(selectedItems[0], card);
-            } else {
-                selectedItems.forEach((item, index) => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.innerText = item;
-                    resultDiv.appendChild(card);
-
-                    setTimeout(() => {
-                        card.style.opacity = 0;
-                        requestAnimationFrame(() => {
-                            card.style.opacity = 1;
-                            card.style.transform = 'translateY(0)';
-                        });
-                    }, index * 500);
-
-                    if ((index + 1) % 5 === 0) {
-                        const lineBreak = document.createElement('br');
-                        resultDiv.appendChild(lineBreak);
-                    }
-                });
-            }
+                setTimeout(() => {
+                    card.style.opacity = 0;
+                    requestAnimationFrame(() => {
+                        card.style.opacity = 1;
+                        card.style.transform = 'translateY(0)';
+                    });
+                }, index * 500);
+            });
 
             document.getElementById('removeDrawnButton').style.display = 'inline-block';
         });
+
+        function triggerConfetti() {
+            confetti({
+                particleCount: 150,
+                spread: 90,
+                origin: { y: 0.6 },
+                colors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff']
+            });
+        }
 
         document.getElementById('removeDrawnButton').addEventListener('click', function () {
             items = items.filter(item => !drawnItems.includes(item));
@@ -320,29 +314,6 @@
             link.click();
             document.body.removeChild(link);
         });
-
-        function fadeInCharacterByCharacter(text, container) {
-            container.innerHTML = '';
-            let index = 0;
-
-            const interval = setInterval(() => {
-                if (index < text.length) {
-                    const span = document.createElement('span');
-                    span.innerText = text[index];
-                    span.style.opacity = 0;
-                    container.appendChild(span);
-
-                    setTimeout(() => {
-                        span.style.transition = 'opacity 0.5s';
-                        span.style.opacity = 1;
-                    }, 50 * index);
-
-                    index++;
-                } else {
-                    clearInterval(interval);
-                }
-            }, 2000);
-        }
     </script>
 </head>
 
