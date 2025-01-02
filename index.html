@@ -70,9 +70,9 @@
             padding: 10px;
             margin: 5px;
             display: inline-block;
-            opacity: 0; /* Start with opacity 0 */
-            transform: translateY(20px); /* Start position for animation */
-            transition: opacity 0.5s, transform 0.5s; /* Transition for fade-in */
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s, transform 0.5s;
         }
 
         #container1 button {
@@ -95,7 +95,6 @@
             background: linear-gradient(135deg, #2E7D32, #1B5E20);
         }
 
-        /* Fullscreen Icon Button */
         #fullscreenButton {
             position: absolute;
             bottom: 10px;
@@ -130,7 +129,6 @@
             font-style: italic;
         }
 
-        /* Media Queries for mobile responsiveness */
         @media (max-width: 767px) {
             #container1, #container2 {
                 padding: 20px;
@@ -154,7 +152,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
     <script type="module">
-        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
             authDomain: "makysdraw-87237.firebaseapp.com",
@@ -165,7 +162,6 @@
             appId: "1:1044977366090:web:37af3eaa9c3f5bfc7822b3"
         };
 
-        // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
@@ -173,7 +169,6 @@
         let drawnItems = [];
         let allResults = [];
 
-        // Load data from Firebase on page load
         window.onload = function () {
             firebase.database().ref('drawResults').on('value', (snapshot) => {
                 const data = snapshot.val();
@@ -195,35 +190,15 @@
             });
         }
 
+        function removeDuplicates(array) {
+            return [...new Set(array)];
+        }
+
         document.getElementById('inputNames').addEventListener('input', function () {
             const input = this.value;
-            items = input.split(/[,|\n]+/).map(item => item.trim()).filter(item => item);
+            items = removeDuplicates(input.split(/[,|\n]+/).map(item => item.trim()).filter(item => item));
             writeDataToFirebase();
         });
-
-        function fadeInCharacterByCharacter(text, container) {
-            container.innerHTML = ''; // Clear the container
-            let index = 0;
-
-            const interval = setInterval(() => {
-                if (index < text.length) {
-                    const span = document.createElement('span');
-                    span.innerText = text[index];
-                    span.style.opacity = 0; // Start with opacity 0
-                    container.appendChild(span);
-
-                    // Fade in effect for the character
-                    setTimeout(() => {
-                        span.style.transition = 'opacity 0.5s';
-                        span.style.opacity = 1; // Fade in
-                    }, 50 * index); // Delay based on index
-
-                    index++;
-                } else {
-                    clearInterval(interval); // Stop the interval when done
-                }
-            }, 2000); // Delay between each character
-        }
 
         document.getElementById('drawButton').addEventListener('click', function () {
             const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
@@ -244,42 +219,36 @@
             writeDataToFirebase();
             updatePreviousResults();
 
-            resultDiv.innerHTML = ''; // Clear previous results
-            resultDiv.style.display = 'block'; // Show the result div
+            resultDiv.innerHTML = '';
+            resultDiv.style.display = 'block';
 
-            // Check if only one item is drawn
             if (numberOfDraws === 1) {
                 const card = document.createElement('div');
                 card.className = 'card';
                 resultDiv.appendChild(card);
 
-                // Fade in the card normally
-                card.style.opacity = 0; // Start with opacity 0
+                card.style.opacity = 0;
                 requestAnimationFrame(() => {
                     card.style.transition = 'opacity 0.5s';
-                    card.style.opacity = 1; // Fade in the card
+                    card.style.opacity = 1;
                 });
 
-                // Call the function to fade in the content character by character
                 fadeInCharacterByCharacter(selectedItems[0], card);
             } else {
-                // Show each card with a delay for multiple items
                 selectedItems.forEach((item, index) => {
                     const card = document.createElement('div');
                     card.className = 'card';
                     card.innerText = item;
                     resultDiv.appendChild(card);
 
-                    // Add a delay for the fade-in effect
                     setTimeout(() => {
-                        card.style.opacity = 0; // Start with opacity 0
+                        card.style.opacity = 0;
                         requestAnimationFrame(() => {
-                            card.style.opacity = 1; // Fade in
-                            card.style.transform = 'translateY(0)'; // Move to original position
+                            card.style.opacity = 1;
+                            card.style.transform = 'translateY(0)';
                         });
-                    }, index * 500); // Delay based on index (500ms for each card)
+                    }, index * 500);
 
-                    // Add a line break after every 10 cards
                     if ((index + 1) % 5 === 0) {
                         const lineBreak = document.createElement('br');
                         resultDiv.appendChild(lineBreak);
@@ -287,20 +256,14 @@
                 });
             }
 
-            // Show the remove button
             document.getElementById('removeDrawnButton').style.display = 'inline-block';
         });
 
         document.getElementById('removeDrawnButton').addEventListener('click', function () {
-            // Remove drawn items from the main list
             items = items.filter(item => !drawnItems.includes(item));
             drawnItems = [];
             writeDataToFirebase();
-
-            // Update the input field
             document.getElementById('inputNames').value = items.join(', ');
-
-            // Hide the remove button
             document.getElementById('removeDrawnButton').style.display = 'none';
         });
 
@@ -309,17 +272,17 @@
             if (!document.fullscreenElement) {
                 if (container1.requestFullscreen) {
                     container1.requestFullscreen();
-                } else if (container1.webkitRequestFullscreen) { /* Safari */
+                } else if (container1.webkitRequestFullscreen) {
                     container1.webkitRequestFullscreen();
-                } else if (container1.msRequestFullscreen) { /* IE11 */
+                } else if (container1.msRequestFullscreen) {
                     container1.msRequestFullscreen();
                 }
             } else {
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) { /* Safari */
+                } else if (document.webkitExitFullscreen) {
                     document.webkitExitFullscreen();
-                } else if (document.msExitFullscreen) { /* IE11 */
+                } else if (document.msExitFullscreen) {
                     document.msExitFullscreen();
                 }
             }
@@ -342,25 +305,44 @@
                 return;
             }
 
-            // Convert allResults to CSV format
             let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Draw Number,Results\n"; // Header row
-
+            csvContent += "Draw Number,Results\n";
             allResults.forEach((result, index) => {
-                const row = `Draw ${index + 1},"${result}" \n`; // Format each row
+                const row = `Draw ${index + 1},"${result}" \n`;
                 csvContent += row;
             });
 
-            // Create a link element to trigger the download
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "draw_results.csv"); // Name of the file
-            document.body.appendChild(link); // Required for Firefox
-
-            link.click(); // Trigger the download
-            document.body.removeChild(link); // Clean up
+            link.setAttribute("download", "draw_results.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         });
+
+        function fadeInCharacterByCharacter(text, container) {
+            container.innerHTML = '';
+            let index = 0;
+
+            const interval = setInterval(() => {
+                if (index < text.length) {
+                    const span = document.createElement('span');
+                    span.innerText = text[index];
+                    span.style.opacity = 0;
+                    container.appendChild(span);
+
+                    setTimeout(() => {
+                        span.style.transition = 'opacity 0.5s';
+                        span.style.opacity = 1;
+                    }, 50 * index);
+
+                    index++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 2000);
+        }
     </script>
 </head>
 
