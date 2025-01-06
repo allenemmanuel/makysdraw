@@ -208,87 +208,90 @@
         });
 
         document.getElementById('drawButton').addEventListener('click', function () {
-            const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
-            const resultDiv = document.getElementById('result');
+            const videoOverlay = document.getElementById('videoOverlay');
 
-            if (numberOfDraws > items.length) {
-                alert("Number of draws cannot exceed the number of unique items.");
-                return;
-            }
+            // Show and play the countdown video
+            videoOverlay.style.display = 'block';
+            videoOverlay.style.opacity = 1;
+            videoOverlay.play();
 
-            const availableItems = items.filter(item => !drawnItems.includes(item));
-            const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
-            const selectedItems = shuffledItems.slice(0, numberOfDraws);
+            // Wait for the video to finish before proceeding with the draw
+            videoOverlay.onended = function () {
+                videoOverlay.style.display = 'none';
+                videoOverlay.style.opacity = 0;
 
-            drawnItems.push(...selectedItems);
-            allResults.push(selectedItems.join(', '));
+                // Proceed with the draw logic
+                const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
+                const resultDiv = document.getElementById('result');
 
-            writeDataToFirebase();
-            updatePreviousResults();
+                if (numberOfDraws > items.length) {
+                    alert("Number of draws cannot exceed the number of unique items.");
+                    return;
+                }
 
-            resultDiv.innerHTML = '';
-            resultDiv.style.display = 'block';
+                const availableItems = items.filter(item => !drawnItems.includes(item));
+                const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
+                const selectedItems = shuffledItems.slice(0, numberOfDraws);
 
-            if (numberOfDraws === 1) {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.style.fontSize = currentFontSize + 'px'; // Apply font size
-                resultDiv.appendChild(card);
+                drawnItems.push(...selectedItems);
+                allResults.push(selectedItems.join(', '));
 
-                card.style.opacity = 0;
-                requestAnimationFrame(() => {
-                    card.style.transition = 'opacity 0.5s';
-                    card.style.opacity = 1;
-                });
+                writeDataToFirebase();
+                updatePreviousResults();
 
-                fadeInCharacterByCharacter(selectedItems[0], card);
-            } else {
-                selectedItems.forEach((item, index) => {
+                resultDiv.innerHTML = '';
+                resultDiv.style.display = 'block';
+
+                if (numberOfDraws === 1) {
                     const card = document.createElement('div');
                     card.className = 'card';
-                    card.style.fontSize = currentFontSize + 'px'; // Apply font size
-                    card.innerText = item;
+                    card.style.fontSize = currentFontSize + 'px';
                     resultDiv.appendChild(card);
 
-                    setTimeout(() => {
-                        card.style.opacity = 0;
-                        requestAnimationFrame(() => {
-                            card.style.opacity = 1;
-                            card.style.transform = 'translateY(0)';
-                        });
-                    }, index * 800);
+                    card.style.opacity = 0;
+                    requestAnimationFrame(() => {
+                        card.style.transition = 'opacity 0.5s';
+                        card.style.opacity = 1;
+                    });
 
-                    if ((index + 1) % 5 === 0) {
-                        const lineBreak = document.createElement('br');
-                        resultDiv.appendChild(lineBreak);
-                    }
-                });
-            }
+                    fadeInCharacterByCharacter(selectedItems[0], card);
+                } else {
+                    selectedItems.forEach((item, index) => {
+                        const card = document.createElement('div');
+                        card.className = 'card';
+                        card.style.fontSize = currentFontSize + 'px';
+                        card.innerText = item;
+                        resultDiv.appendChild(card);
 
-            setTimeout(() => {
-                playSound('result-sound.mp3');
-            }, 300);
+                        setTimeout(() => {
+                            card.style.opacity = 0;
+                            requestAnimationFrame(() => {
+                                card.style.opacity = 1;
+                                card.style.transform = 'translateY(0)';
+                            });
+                        }, index * 800);
 
-            document.getElementById('removeDrawnButton').style.display = 'inline-block';
+                        if ((index + 1) % 5 === 0) {
+                            const lineBreak = document.createElement('br');
+                            resultDiv.appendChild(lineBreak);
+                        }
+                    });
+                }
+
+                setTimeout(() => {
+                    playSound('result-sound.mp3');
+                }, 300);
+
+                document.getElementById('removeDrawnButton').style.display = 'inline-block';
+            };
         });
 
         document.getElementById('removeDrawnButton').addEventListener('click', function () {
-            // Remove drawn items from the main list
             items = items.filter(item => !drawnItems.includes(item));
-
-            // Clear the drawn items list
             drawnItems = [];
-
-            // Clear the drawn cards from the display area
             document.getElementById('result').innerHTML = '';
-
-            // Update Firebase with the new data
             writeDataToFirebase();
-
-            // Update the input field to reflect the remaining items
             document.getElementById('inputNames').value = items.join(', ');
-
-            // Hide the "Clear Drawn" button
             document.getElementById('removeDrawnButton').style.display = 'none';
         });
 
@@ -343,7 +346,6 @@
             document.body.removeChild(link);
         });
 
-        // Clear History Functionality
         document.getElementById('clearHistoryButton').addEventListener('click', function () {
             const confirmClear = confirm("Are you sure you want to clear the draw history? This action cannot be undone.");
             if (!confirmClear) return;
@@ -354,9 +356,8 @@
             alert("Draw history has been cleared.");
         });
 
-        // Font Size Adjustment Functionality
         document.getElementById('fontSizeInput').addEventListener('input', function () {
-            currentFontSize = parseInt(this.value, 10); // Update global font size
+            currentFontSize = parseInt(this.value, 10);
         });
 
         function fadeInCharacterByCharacter(text, container) {
