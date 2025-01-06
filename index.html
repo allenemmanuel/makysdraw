@@ -47,6 +47,12 @@
             z-index: -1;
         }
 
+        #result {
+            display: block; /* Ensure it's visible */
+            border: 2px solid red; /* Temporary debug border */
+            background-color: yellow; /* Temporary debug background */
+        }
+
         #result .card {
             background: #ffffff;
             color: black;
@@ -60,6 +66,7 @@
             transform: translateY(20px);
             transition: opacity 0.5s, transform 0.5s;
             text-align: center;
+            border: 2px solid blue; /* Temporary debug border */
         }
 
         #container1 button {
@@ -169,19 +176,19 @@
         function scrollAndStop(items, resultDiv, finalResult) {
             let scrollCount = 0;
             const scrollInterval = setInterval(() => {
-                // Scroll through items
                 const randomItem = items[Math.floor(Math.random() * items.length)];
+                console.log("Scrolling:", randomItem); // Debugging
                 resultDiv.innerHTML = `<div class="card">${randomItem}</div>`;
-                playSound('ticking-sound.mp3'); // Add ticking sound
+                playSound('ticking-sound.mp3');
 
                 scrollCount++;
-                if (scrollCount >= 20) { // Adjust the number of scrolls
+                if (scrollCount >= 20) {
                     clearInterval(scrollInterval);
-                    // Display the final result
+                    console.log("Final result:", finalResult); // Debugging
                     resultDiv.innerHTML = `<div class="card">${finalResult}</div>`;
-                    playSound('fanfare-sound.mp3'); // Add fanfare sound
+                    playSound('fanfare-sound.mp3');
                 }
-            }, 100); // Adjust the speed of the scroll
+            }, 100);
         }
 
         // Function to simulate a scrolling effect for multiple winners
@@ -194,25 +201,25 @@
                     let scrollCount = 0;
 
                     const scrollInterval = setInterval(() => {
-                        // Scroll through items
                         const randomItem = items[Math.floor(Math.random() * items.length)];
+                        console.log("Scrolling:", randomItem); // Debugging
                         resultDiv.innerHTML = `<div class="card">${randomItem}</div>`;
-                        playSound('ticking-sound.mp3'); // Add ticking sound
+                        playSound('ticking-sound.mp3');
 
                         scrollCount++;
-                        if (scrollCount >= 20) { // Adjust the number of scrolls
+                        if (scrollCount >= 20) {
                             clearInterval(scrollInterval);
-                            // Display the final result for this winner
+                            console.log("Final result:", finalResult); // Debugging
                             resultDiv.innerHTML = `<div class="card">Winner ${currentIndex + 1}: ${finalResult}</div>`;
-                            playSound('fanfare-sound.mp3'); // Add fanfare sound
+                            playSound('fanfare-sound.mp3');
 
                             // Move to the next winner after a delay
                             setTimeout(() => {
                                 currentIndex++;
                                 scrollForNextWinner(); // Process the next winner
-                            }, 2000); // Delay before starting the next winner's scroll
+                            }, 2000);
                         }
-                    }, 100); // Adjust the speed of the scroll
+                    }, 100);
                 }
             }
 
@@ -270,21 +277,20 @@
             writeDataToFirebase();
             updatePreviousResults();
 
-            resultDiv.innerHTML = '';
+            resultDiv.innerHTML = ''; // Clear the result div
+            console.log("Result div cleared"); // Debugging
             resultDiv.style.display = 'block';
 
             if (numberOfDraws === 1) {
-                // Single-winner scrolling effect
                 resultDiv.innerHTML = `<div class="card">Selecting a random winner...</div>`;
                 setTimeout(() => {
                     scrollAndStop(availableItems, resultDiv, selectedItems[0]);
-                }, 1000); // Delay before starting the scroll
+                }, 1000);
             } else {
-                // Multiple-winner scrolling effect
                 resultDiv.innerHTML = `<div class="card">Selecting ${numberOfDraws} winners...</div>`;
                 setTimeout(() => {
                     scrollAndStopMultiple(availableItems, resultDiv, selectedItems);
-                }, 1000); // Delay before starting the scroll
+                }, 1000);
             }
 
             document.getElementById('removeDrawnButton').style.display = 'inline-block';
