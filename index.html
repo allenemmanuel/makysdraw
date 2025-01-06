@@ -52,6 +52,7 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
+            z-index: 1; /* Ensure shapes are behind the content */
         }
 
         .floating-shapes div {
@@ -115,6 +116,7 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
+            z-index: 1; /* Ensure sparkles are behind the content */
         }
 
         .sparkles div {
@@ -162,6 +164,7 @@
 
         #result {
             display: block; /* Ensure it's visible */
+            z-index: 10; /* Ensure result is above the background elements */
         }
 
         #result .card {
@@ -190,6 +193,7 @@
             background: linear-gradient(135deg, #4CAF50, #2E7D32);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
             transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+            z-index: 10; /* Ensure buttons are above the background elements */
         }
 
         #container1 button:hover {
@@ -208,6 +212,7 @@
             font-size: 1.5rem;
             cursor: pointer;
             transition: transform 0.3s, color 0.3s;
+            z-index: 10; /* Ensure fullscreen button is above the background elements */
         }
 
         #fullscreenButton:hover {
@@ -334,6 +339,29 @@
             scrollForNextWinner();
         }
 
+        // Function to create sparkles with random positions
+        function createSparkles() {
+            const sparklesContainer = document.getElementById('sparkles');
+            const numSparkles = 20; // Number of sparkles
+
+            for (let i = 0; i < numSparkles; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.classList.add('sparkle');
+
+                // Randomize position
+                const x = Math.random() * window.innerWidth;
+                const y = Math.random() * window.innerHeight;
+                sparkle.style.left = `${x}px`;
+                sparkle.style.top = `${y}px`;
+
+                // Randomize animation delay
+                const delay = Math.random() * 2; // 0 to 2 seconds
+                sparkle.style.animationDelay = `${delay}s`;
+
+                sparklesContainer.appendChild(sparkle);
+            }
+        }
+
         window.onload = function () {
             firebase.database().ref('drawResults').on('value', (snapshot) => {
                 const data = snapshot.val();
@@ -345,6 +373,9 @@
                     updatePreviousResults();
                 }
             });
+
+            // Initialize sparkles
+            createSparkles();
         };
 
         function writeDataToFirebase() {
