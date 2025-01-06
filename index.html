@@ -176,8 +176,9 @@
             padding: 10px;
             margin: 5px;
             display: inline-block;
-            opacity: 1; /* Make cards fully visible */
-            transform: translateY(0); /* Reset vertical shift */
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s, transform 0.5s;
             text-align: center;
         }
 
@@ -282,62 +283,7 @@
         // Function to play sound effects
         function playSound(soundFile) {
             const audio = new Audio(soundFile);
-            audio.play().catch(error => {
-                console.error("Error playing sound:", error);
-            });
-        }
-
-        // Function to simulate a scrolling effect for a single winner
-        function scrollAndStop(items, resultDiv, finalResult) {
-            let scrollCount = 0;
-            const scrollInterval = setInterval(() => {
-                const randomItem = items[Math.floor(Math.random() * items.length)];
-                resultDiv.innerHTML = `<div class="card">${randomItem}</div>`;
-                playSound('ticking-sound.mp3');
-
-                scrollCount++;
-                if (scrollCount >= 20) {
-                    clearInterval(scrollInterval);
-                    // Display the final result
-                    resultDiv.innerHTML = `<div class="card">${finalResult}</div>`;
-                    playSound('fanfare-sound.mp3');
-                }
-            }, 100);
-        }
-
-        // Function to simulate a scrolling effect for multiple winners
-        function scrollAndStopMultiple(items, resultDiv, selectedItems) {
-            let currentIndex = 0;
-
-            function scrollForNextWinner() {
-                if (currentIndex < selectedItems.length) {
-                    const finalResult = selectedItems[currentIndex];
-                    let scrollCount = 0;
-
-                    const scrollInterval = setInterval(() => {
-                        const randomItem = items[Math.floor(Math.random() * items.length)];
-                        resultDiv.innerHTML = `<div class="card">${randomItem}</div>`;
-                        playSound('ticking-sound.mp3');
-
-                        scrollCount++;
-                        if (scrollCount >= 20) {
-                            clearInterval(scrollInterval);
-                            // Display the final result for this winner
-                            resultDiv.innerHTML = `<div class="card">Winner ${currentIndex + 1}: ${finalResult}</div>`;
-                            playSound('fanfare-sound.mp3');
-
-                            // Move to the next winner after a delay
-                            setTimeout(() => {
-                                currentIndex++;
-                                scrollForNextWinner(); // Process the next winner
-                            }, 2000);
-                        }
-                    }, 100);
-                }
-            }
-
-            // Start the scrolling effect for the first winner
-            scrollForNextWinner();
+            audio.play();
         }
 
         // Function to create sparkles with random positions
@@ -416,22 +362,48 @@
             writeDataToFirebase();
             updatePreviousResults();
 
-            resultDiv.innerHTML = ''; // Clear the result div
+            resultDiv.innerHTML = '';
             resultDiv.style.display = 'block';
 
             if (numberOfDraws === 1) {
-                // Single-winner scrolling effect
-                resultDiv.innerHTML = `<div class="card">Selecting a random winner...</div>`;
-                setTimeout(() => {
-                    scrollAndStop(availableItems, resultDiv, selectedItems[0]);
-                }, 1000);
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.style.fontSize = currentFontSize + 'px'; // Apply font size
+                resultDiv.appendChild(card);
+
+                card.style.opacity = 0;
+                requestAnimationFrame(() => {
+                    card.style.transition = 'opacity 0.5s';
+                    card.style.opacity = 1;
+                });
+
+                fadeInCharacterByCharacter(selectedItems[0], card);
             } else {
-                // Multiple-winner scrolling effect
-                resultDiv.innerHTML = `<div class="card">Selecting ${numberOfDraws} winners...</div>`;
-                setTimeout(() => {
-                    scrollAndStopMultiple(availableItems, resultDiv, selectedItems);
-                }, 1000);
+                selectedItems.forEach((item, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.style.fontSize = currentFontSize + 'px'; // Apply font size
+                    card.innerText = item;
+                    resultDiv.appendChild(card);
+
+                    setTimeout(() => {
+                        card.style.opacity = 0;
+                        requestAnimationFrame(() => {
+                            card.style.opacity = 1;
+                            card.style.transform = 'translateY(0)';
+                        });
+                    }, index * 800);
+
+                    if ((index + 1) % 5 === 0) {
+                        const lineBreak = document.createElement('br');
+                        resultDiv.appendChild(lineBreak);
+                    }
+                });
             }
+
+            setTimeout(() => {
+                playSound('result-sound.mp3');
+            }, 300);
 
             document.getElementById('removeDrawnButton').style.display = 'inline-block';
         });
@@ -509,11 +481,40 @@
         document.getElementById('fontSizeInput').addEventListener('input', function () {
             currentFontSize = parseInt(this.value, 10);
         });
+
+        function fadeInCharacterByCharacter(text, container) {
+            container.innerHTML = '';
+            let index = 0;
+
+            const interval = setInterval(() => {
+                if (index < text.length) {
+                    const span = document.createElement('span');
+                    span.innerText = text[index];
+                    span.style.opacity = 0;
+                    container.appendChild(span);
+
+                    setTimeout(() => {
+                        span.style.transition = 'opacity 0.5s';
+                        span.style.opacity = 1;
+                    }, 50 * index);
+
+                    index++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 2000);
+        }
     </script>
 </head>
 
 <body>
     <div class="container" id="container1">
+        <!-- Comment out the video background -->
+        <!-- <video autoplay muted loop id="backgroundVideo">
+            <source src="movingnums1.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video> -->
+
         <!-- Add the floating shapes and sparkles from BG4C1.html -->
         <div class="floating-shapes">
             <div></div>
@@ -535,6 +536,10 @@
         <div id="result" style="display:none;"></div>
         
         <button id="fullscreenButton"><i class="fas fa-expand"></i></button>
+        <video id="videoOverlay" autoplay muted>
+            <source src="countdown2.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
     </div>
     <div class="container" id="container2">
         <h2 style="color: antiquewhite;">The Mechanics</h2>
