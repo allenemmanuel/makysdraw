@@ -57,7 +57,7 @@
             z-index: 10;
             display: none;
             opacity: 0;
-            transition: opacity 1.5s ease;
+            transition: opacity 1.5s ease; /* Smooth fade-out transition */
         }
 
         #result .card {
@@ -215,10 +215,14 @@
             videoOverlay.style.opacity = 1;
             videoOverlay.play();
 
+            // Set a timeout to fade out the video sooner (e.g., after 2 seconds)
+            setTimeout(() => {
+                videoOverlay.style.opacity = 0; // Start fading out
+            }, 2000); // Adjust this value (in milliseconds) to control when the fade-out starts
+
             // Wait for the video to finish before proceeding with the draw
             videoOverlay.onended = function () {
-                videoOverlay.style.display = 'none';
-                videoOverlay.style.opacity = 0;
+                videoOverlay.style.display = 'none'; // Hide the video after it fades out
 
                 // Proceed with the draw logic
                 const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
