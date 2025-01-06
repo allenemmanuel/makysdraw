@@ -47,19 +47,6 @@
             z-index: -1;
         }
 
-        #videoOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
-            z-index: 10;
-            display: none;
-            opacity: 0;
-            transition: opacity 1.5s ease;
-        }
-
         #result .card {
             background: #ffffff;
             color: black;
@@ -227,79 +214,57 @@
         });
 
         document.getElementById('drawButton').addEventListener('click', function () {
-            const videoOverlay = document.getElementById('videoOverlay');
+            const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
+            const resultDiv = document.getElementById('result');
 
-            // Show and play the countdown video
-            videoOverlay.style.display = 'block';
-            videoOverlay.style.opacity = 1;
-            videoOverlay.play();
+            if (numberOfDraws > items.length) {
+                alert("Number of draws cannot exceed the number of unique items.");
+                return;
+            }
 
-            // Set a timeout to fade out the video sooner (e.g., after 2 seconds)
-            setTimeout(() => {
-                videoOverlay.style.opacity = 0; // Start fading out
-            }, 2000); // Adjust this value (in milliseconds) to control when the fade-out starts
+            const availableItems = items.filter(item => !drawnItems.includes(item));
+            const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
+            const selectedItems = shuffledItems.slice(0, numberOfDraws);
 
-            // Wait for the video to finish before proceeding with the draw
-            videoOverlay.onended = function () {
-                videoOverlay.style.display = 'none'; // Hide the video after it fades out
+            drawnItems.push(...selectedItems);
+            allResults.push(selectedItems.join(', '));
 
-                // Proceed with the draw logic
-                const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
-                const resultDiv = document.getElementById('result');
+            writeDataToFirebase();
+            updatePreviousResults();
 
-                if (numberOfDraws > items.length) {
-                    alert("Number of draws cannot exceed the number of unique items.");
-                    return;
-                }
+            resultDiv.innerHTML = '';
+            resultDiv.style.display = 'block';
 
-                const availableItems = items.filter(item => !drawnItems.includes(item));
-                const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
-                const selectedItems = shuffledItems.slice(0, numberOfDraws);
-
-                drawnItems.push(...selectedItems);
-                allResults.push(selectedItems.join(', '));
-
-                writeDataToFirebase();
-                updatePreviousResults();
-
-                resultDiv.innerHTML = '';
-                resultDiv.style.display = 'block';
-
-                if (numberOfDraws === 1) {
-                    // Add scrolling animation before displaying the final result
-                    resultDiv.innerHTML = `<div class="card">Selecting a random winner...</div>`;
-                    setTimeout(() => {
-                        scrollAndStop(availableItems, resultDiv, selectedItems[0]);
-                    }, 1000); // Delay before starting the scroll
-                } else {
-                    selectedItems.forEach((item, index) => {
-                        const card = document.createElement('div');
-                        card.className = 'card';
-                        card.style.fontSize = currentFontSize + 'px';
-                        card.innerText = item;
-                        resultDiv.appendChild(card);
-
-                        setTimeout(() => {
-                            card.style.opacity = 0;
-                            requestAnimationFrame(() => {
-                                card.style.opacity = 1;
-                                card.style.transform = 'translateY(0)';
-                            });
-                        }, index * 800);
-
-                        if ((index + 1) % 5 === 0) {
-                            const lineBreak = document.createElement('br');
-                            resultDiv.appendChild(lineBreak);
-                        }
-                    });
-                }
-
+            if (numberOfDraws === 1) {
+                // Add scrolling animation before displaying the final result
+                resultDiv.innerHTML = `<div class="card">Selecting a random winner...</div>`;
                 setTimeout(() => {
-                    playSound('result-sound.mp3');
-                }, 300);
+                    scrollAndStop(availableItems, resultDiv, selectedItems[0]);
+                }, 1000); // Delay before starting the scroll
+            } else {
+                selectedItems.forEach((item, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.style.fontSize = currentFontSize + 'px';
+                    card.innerText = item;
+                    resultDiv.appendChild(card);
 
-                document.getElementById('removeDrawnButton').style.display = 'inline-block';
-            };
+                    setTimeout(() => {
+                        card.style.opacity = 0;
+                        requestAnimationFrame(() => {
+                            card.style.opacity = 1;
+                            card.style.transform = 'translateY(0)';
+                        });
+                    }, index * 800);
+
+                    if ((index + 1) % 5 === 0) {
+                        const lineBreak = document.createElement('br');
+                        resultDiv.appendChild(lineBreak);
+                    }
+                });
+            }
+
+            document.getElementById('removeDrawnButton').style.display = 'inline-block';
         });
 
         document.getElementById('removeDrawnButton').addEventListener('click', function () {
@@ -419,10 +384,6 @@
         <div id="result" style="display:none;"></div>
         
         <button id="fullscreenButton"><i class="fas fa-expand"></i></button>
-        <video id="videoOverlay" autoplay muted>
-            <source src="countdown2.mp4" type="video/mp4">
-            Your browser does not support the video tag.
-        </video>
     </div>
     <div class="container" id="container2">
         <h2 style="color: antiquewhite;">The Mechanics</h2>
