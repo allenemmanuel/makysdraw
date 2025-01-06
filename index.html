@@ -255,7 +255,228 @@
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
     <script type="module">
-        // Firebase and other scripts remain unchanged
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
+            authDomain: "makysdraw-87237.firebaseapp.com",
+            databaseURL: "https://makysdraw-87237-default-rtdb.firebaseio.com",
+            projectId: "makysdraw-87237",
+            storageBucket: "makysdraw-87237.firebasestorage.app",
+            messagingSenderId: "1044977366090",
+            appId: "1:1044977366090:web:37af3eaa9c3f5bfc7822b3"
+        };
+
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let items = [];
+        let drawnItems = [];
+        let allResults = [];
+        let currentFontSize = 30; // Default font size
+
+        // Function to play sound effects
+        function playSound(soundFile) {
+            const audio = new Audio(soundFile);
+            audio.play().catch(error => {
+                console.error("Error playing sound:", error);
+            });
+        }
+
+        // Function to simulate a scrolling effect for a single winner
+        function scrollAndStop(items, resultDiv, finalResult) {
+            let scrollCount = 0;
+            const scrollInterval = setInterval(() => {
+                const randomItem = items[Math.floor(Math.random() * items.length)];
+                resultDiv.innerHTML = `<div class="card">${randomItem}</div>`;
+                playSound('ticking-sound.mp3');
+
+                scrollCount++;
+                if (scrollCount >= 20) {
+                    clearInterval(scrollInterval);
+                    // Display the final result
+                    resultDiv.innerHTML = `<div class="card">${finalResult}</div>`;
+                    playSound('fanfare-sound.mp3');
+                }
+            }, 100);
+        }
+
+        // Function to simulate a scrolling effect for multiple winners
+        function scrollAndStopMultiple(items, resultDiv, selectedItems) {
+            let currentIndex = 0;
+
+            function scrollForNextWinner() {
+                if (currentIndex < selectedItems.length) {
+                    const finalResult = selectedItems[currentIndex];
+                    let scrollCount = 0;
+
+                    const scrollInterval = setInterval(() => {
+                        const randomItem = items[Math.floor(Math.random() * items.length)];
+                        resultDiv.innerHTML = `<div class="card">${randomItem}</div>`;
+                        playSound('ticking-sound.mp3');
+
+                        scrollCount++;
+                        if (scrollCount >= 20) {
+                            clearInterval(scrollInterval);
+                            // Display the final result for this winner
+                            resultDiv.innerHTML = `<div class="card">Winner ${currentIndex + 1}: ${finalResult}</div>`;
+                            playSound('fanfare-sound.mp3');
+
+                            // Move to the next winner after a delay
+                            setTimeout(() => {
+                                currentIndex++;
+                                scrollForNextWinner(); // Process the next winner
+                            }, 2000);
+                        }
+                    }, 100);
+                }
+            }
+
+            // Start the scrolling effect for the first winner
+            scrollForNextWinner();
+        }
+
+        window.onload = function () {
+            firebase.database().ref('drawResults').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    items = data.items || [];
+                    drawnItems = data.drawnItems || [];
+                    allResults = data.allResults || [];
+                    document.getElementById('inputNames').value = items.join(', ');
+                    updatePreviousResults();
+                }
+            });
+        };
+
+        function writeDataToFirebase() {
+            firebase.database().ref('drawResults').set({
+                items: items,
+                drawnItems: drawnItems,
+                allResults: allResults
+            });
+        }
+
+        function removeDuplicates(array) {
+            return [...new Set(array)];
+        }
+
+        document.getElementById('inputNames').addEventListener('input', function () {
+            const input = this.value;
+            items = removeDuplicates(input.split(/[,|\n]+/).map(item => item.trim()).filter(item => item));
+            writeDataToFirebase();
+        });
+
+        document.getElementById('drawButton').addEventListener('click', function () {
+            const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
+            const resultDiv = document.getElementById('result');
+
+            if (numberOfDraws > items.length) {
+                alert("Number of draws cannot exceed the number of unique items.");
+                return;
+            }
+
+            const availableItems = items.filter(item => !drawnItems.includes(item));
+            const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
+            const selectedItems = shuffledItems.slice(0, numberOfDraws);
+
+            drawnItems.push(...selectedItems);
+            allResults.push(selectedItems.join(', '));
+
+            writeDataToFirebase();
+            updatePreviousResults();
+
+            resultDiv.innerHTML = ''; // Clear the result div
+            resultDiv.style.display = 'block';
+
+            if (numberOfDraws === 1) {
+                // Single-winner scrolling effect
+                resultDiv.innerHTML = `<div class="card">Selecting a random winner...</div>`;
+                setTimeout(() => {
+                    scrollAndStop(availableItems, resultDiv, selectedItems[0]);
+                }, 1000);
+            } else {
+                // Multiple-winner scrolling effect
+                resultDiv.innerHTML = `<div class="card">Selecting ${numberOfDraws} winners...</div>`;
+                setTimeout(() => {
+                    scrollAndStopMultiple(availableItems, resultDiv, selectedItems);
+                }, 1000);
+            }
+
+            document.getElementById('removeDrawnButton').style.display = 'inline-block';
+        });
+
+        document.getElementById('removeDrawnButton').addEventListener('click', function () {
+            items = items.filter(item => !drawnItems.includes(item));
+            drawnItems = [];
+            document.getElementById('result').innerHTML = '';
+            writeDataToFirebase();
+            document.getElementById('inputNames').value = items.join(', ');
+            document.getElementById('removeDrawnButton').style.display = 'none';
+        });
+
+        document.getElementById('fullscreenButton').addEventListener('click', function () {
+            const container1 = document.getElementById('container1');
+            if (!document.fullscreenElement) {
+                if (container1.requestFullscreen) {
+                    container1.requestFullscreen();
+                } else if (container1.webkitRequestFullscreen) {
+                    container1.webkitRequestFullscreen();
+                } else if (container1.msRequestFullscreen) {
+                    container1.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        });
+
+        function updatePreviousResults() {
+            const previousResultsList = document.getElementById('previousResults');
+            previousResultsList.innerHTML = allResults.length === 0
+                ? `<li class='list-group-item empty'>No results yet</li>`
+                : allResults.map((result, index) => `<li class='list-group-item'>Draw ${index + 1}: ${result}</li>`).join('');
+            previousResultsList.style.display = 'block';
+        }
+
+        document.getElementById('exportButton').addEventListener('click', function () {
+            if (allResults.length === 0) {
+                alert("No results to export.");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Draw Number,Results\n";
+            allResults.forEach((result, index) => {
+                const row = `Draw ${index + 1},"${result}" \n`;
+                csvContent += row;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "draw_results.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        document.getElementById('clearHistoryButton').addEventListener('click', function () {
+            const confirmClear = confirm("Are you sure you want to clear the draw history? This action cannot be undone.");
+            if (!confirmClear) return;
+
+            allResults = [];
+            writeDataToFirebase();
+            document.getElementById('previousResults').innerHTML = `<li class='list-group-item empty'>No results yet</li>`;
+            alert("Draw history has been cleared.");
+        });
+
+        document.getElementById('fontSizeInput').addEventListener('input', function () {
+            currentFontSize = parseInt(this.value, 10);
+        });
     </script>
 </head>
 
