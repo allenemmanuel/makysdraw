@@ -273,10 +273,22 @@
         });
 
         document.getElementById('removeDrawnButton').addEventListener('click', function () {
+            // Remove drawn items from the main list
             items = items.filter(item => !drawnItems.includes(item));
+
+            // Clear the drawn items list
             drawnItems = [];
+
+            // Clear the drawn cards from the display area
+            document.getElementById('result').innerHTML = '';
+
+            // Update Firebase with the new data
             writeDataToFirebase();
+
+            // Update the input field to reflect the remaining items
             document.getElementById('inputNames').value = items.join(', ');
+
+            // Hide the "Clear Drawn" button
             document.getElementById('removeDrawnButton').style.display = 'none';
         });
 
