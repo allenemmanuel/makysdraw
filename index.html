@@ -160,24 +160,26 @@
         // Function to play sound effects
         function playSound(soundFile) {
             const audio = new Audio(soundFile);
-            audio.play();
+            audio.play().catch(error => {
+                console.error("Error playing sound:", error);
+            });
         }
 
         // Function to simulate a scrolling effect
         function scrollAndStop(items, resultDiv, finalResult) {
             let scrollCount = 0;
             const scrollInterval = setInterval(() => {
-                // Scroll through items
+                console.log("Scrolling..."); // Debugging
                 const randomItem = items[Math.floor(Math.random() * items.length)];
                 resultDiv.innerHTML = `<div class="card">${randomItem}</div>`;
-                playSound('ticking-sound.mp3'); // Add ticking sound
+                playSound('ticking-sound.mp3');
 
                 scrollCount++;
                 if (scrollCount >= 20) { // Adjust the number of scrolls
                     clearInterval(scrollInterval);
-                    // Display the final result
+                    console.log("Final result:", finalResult); // Debugging
                     resultDiv.innerHTML = `<div class="card">${finalResult}</div>`;
-                    playSound('fanfare-sound.mp3'); // Add fanfare sound
+                    playSound('fanfare-sound.mp3');
                 }
             }, 100); // Adjust the speed of the scroll
         }
