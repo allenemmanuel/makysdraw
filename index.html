@@ -66,13 +66,13 @@
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             font-weight: bold;
-            font-size: 3rem;
             padding: 10px;
             margin: 5px;
             display: inline-block;
             opacity: 0;
             transform: translateY(20px);
             transition: opacity 0.5s, transform 0.5s;
+            text-align: center;
         }
 
         #container1 button {
@@ -339,6 +339,15 @@
             alert("Draw history has been cleared.");
         });
 
+        // Font Size Adjustment Functionality
+        document.getElementById('fontSizeInput').addEventListener('input', function () {
+            const fontSize = this.value + 'px';
+            const cards = document.querySelectorAll('#result .card');
+            cards.forEach(card => {
+                card.style.fontSize = fontSize;
+            });
+        });
+
         function fadeInCharacterByCharacter(text, container) {
             container.innerHTML = '';
             let index = 0;
@@ -395,6 +404,10 @@
         <ul id="previousResults" class="list-group" style="display:none"></ul>
         <button class="btn btn-success mt-4" id="exportButton">Export Results to CSV</button>
         <button class="btn btn-warning mt-4" id="clearHistoryButton">Clear History</button>
+        <div class="mt-4">
+            <label for="fontSizeInput" style="color: antiquewhite;">Font Size (px):</label>
+            <input type="number" class="form-control" id="fontSizeInput" min="10" value="30" style="margin-top: 10px;">
+        </div>
     </div>
 </body>
 </html>
