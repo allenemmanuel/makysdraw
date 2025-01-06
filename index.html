@@ -66,13 +66,13 @@
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             font-weight: bold;
-            font-size: 3rem;
             padding: 10px;
             margin: 5px;
             display: inline-block;
             opacity: 0;
             transform: translateY(20px);
             transition: opacity 0.5s, transform 0.5s;
+            text-align: center;
         }
 
         #container1 button {
@@ -168,6 +168,7 @@
         let items = [];
         let drawnItems = [];
         let allResults = [];
+        let currentFontSize = 30; // Default font size
 
         // Function to play sound effects
         function playSound(soundFile) {
@@ -231,6 +232,7 @@
             if (numberOfDraws === 1) {
                 const card = document.createElement('div');
                 card.className = 'card';
+                card.style.fontSize = currentFontSize + 'px'; // Apply font size
                 resultDiv.appendChild(card);
 
                 card.style.opacity = 0;
@@ -244,6 +246,7 @@
                 selectedItems.forEach((item, index) => {
                     const card = document.createElement('div');
                     card.className = 'card';
+                    card.style.fontSize = currentFontSize + 'px'; // Apply font size
                     card.innerText = item;
                     resultDiv.appendChild(card);
 
@@ -270,10 +273,22 @@
         });
 
         document.getElementById('removeDrawnButton').addEventListener('click', function () {
+            // Remove drawn items from the main list
             items = items.filter(item => !drawnItems.includes(item));
+
+            // Clear the drawn items list
             drawnItems = [];
+
+            // Clear the drawn cards from the display area
+            document.getElementById('result').innerHTML = '';
+
+            // Update Firebase with the new data
             writeDataToFirebase();
+
+            // Update the input field to reflect the remaining items
             document.getElementById('inputNames').value = items.join(', ');
+
+            // Hide the "Clear Drawn" button
             document.getElementById('removeDrawnButton').style.display = 'none';
         });
 
@@ -339,6 +354,11 @@
             alert("Draw history has been cleared.");
         });
 
+        // Font Size Adjustment Functionality
+        document.getElementById('fontSizeInput').addEventListener('input', function () {
+            currentFontSize = parseInt(this.value, 10); // Update global font size
+        });
+
         function fadeInCharacterByCharacter(text, container) {
             container.innerHTML = '';
             let index = 0;
@@ -395,6 +415,10 @@
         <ul id="previousResults" class="list-group" style="display:none"></ul>
         <button class="btn btn-success mt-4" id="exportButton">Export Results to CSV</button>
         <button class="btn btn-warning mt-4" id="clearHistoryButton">Clear History</button>
+        <div class="mt-4">
+            <label for="fontSizeInput" style="color: antiquewhite;">Font Size (px):</label>
+            <input type="number" class="form-control" id="fontSizeInput" min="10" value="30" style="margin-top: 10px;">
+        </div>
     </div>
 </body>
 </html>
