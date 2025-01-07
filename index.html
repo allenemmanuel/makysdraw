@@ -329,6 +329,45 @@
             writeDataToFirebase();
         });
 
+        // Function to generate a random number between min and max (inclusive)
+        function getRandomNumber(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        // Function to generate a list of unique 4-digit numbers
+        function generateNumbers(count, min, max) {
+            const numbers = new Set();
+            while (numbers.size < count) {
+                const num = getRandomNumber(min, max);
+                numbers.add(num.toString().padStart(4, '0')); // Ensure 4-digit format
+            }
+            return Array.from(numbers);
+        }
+
+        // Function to populate a carousel with numbers
+        function populateCarousel(carousel, numbers) {
+            numbers.forEach(num => {
+                const item = document.createElement('div');
+                item.className = 'carousel-item';
+                item.textContent = num;
+                carousel.appendChild(item);
+            });
+            // Duplicate items for seamless looping
+            numbers.forEach(num => {
+                const item = document.createElement('div');
+                item.className = 'carousel-item';
+                item.textContent = num;
+                carousel.appendChild(item);
+            });
+        }
+
+        // Function to start spinning a carousel with random speed and delay
+        function startCarousel(carousel, speed, delay) {
+            setTimeout(() => {
+                carousel.style.animation = `scroll ${speed}s linear infinite`;
+            }, delay);
+        }
+
         // Function to show the slot machine overlay and start the animation
         function showSlotMachineOverlay() {
             const overlay = document.getElementById('slotMachineOverlay');
@@ -355,14 +394,13 @@
                 setTimeout(() => {
                     overlay.style.display = 'none'; // Hide after fade-out
                     spinningSound.pause(); // Stop the sound
+                    performDraw(); // Proceed with the draw functionality
                 }, 1000); // Fade-out duration (1 second)
             }, 7000); // 7 seconds
         }
 
-        // Add event listener to the "Draw" button
-        document.getElementById('drawButton').addEventListener('click', function () {
-            showSlotMachineOverlay();
-            // Your existing draw functionality here
+        // Function to perform the actual draw
+        function performDraw() {
             const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
             const resultDiv = document.getElementById('result');
 
@@ -425,6 +463,11 @@
             }, 300);
 
             document.getElementById('removeDrawnButton').style.display = 'inline-block';
+        }
+
+        // Add event listener to the "Draw" button
+        document.getElementById('drawButton').addEventListener('click', function () {
+            showSlotMachineOverlay();
         });
 
         // Rest of your existing Firebase and draw functionality code
