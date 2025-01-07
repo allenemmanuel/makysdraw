@@ -394,75 +394,8 @@
                 setTimeout(() => {
                     overlay.style.display = 'none'; // Hide after fade-out
                     spinningSound.pause(); // Stop the sound
-                    performDraw(); // Proceed with the draw functionality
                 }, 1000); // Fade-out duration (1 second)
             }, 7000); // 7 seconds
-        }
-
-        // Function to perform the actual draw
-        function performDraw() {
-            const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
-            const resultDiv = document.getElementById('result');
-
-            if (numberOfDraws > items.length) {
-                alert("Number of draws cannot exceed the number of unique items.");
-                return;
-            }
-
-            const availableItems = items.filter(item => !drawnItems.includes(item));
-            const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
-            const selectedItems = shuffledItems.slice(0, numberOfDraws);
-
-            drawnItems.push(...selectedItems);
-            allResults.push(selectedItems.join(', '));
-
-            writeDataToFirebase();
-            updatePreviousResults();
-
-            resultDiv.innerHTML = '';
-            resultDiv.style.display = 'block';
-
-            if (numberOfDraws === 1) {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.style.fontSize = currentFontSize + 'px'; // Apply font size
-                resultDiv.appendChild(card);
-
-                card.style.opacity = 0;
-                requestAnimationFrame(() => {
-                    card.style.transition = 'opacity 0.5s';
-                    card.style.opacity = 1;
-                });
-
-                fadeInCharacterByCharacter(selectedItems[0], card);
-            } else {
-                selectedItems.forEach((item, index) => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.style.fontSize = currentFontSize + 'px'; // Apply font size
-                    card.innerText = item;
-                    resultDiv.appendChild(card);
-
-                    setTimeout(() => {
-                        card.style.opacity = 0;
-                        requestAnimationFrame(() => {
-                            card.style.opacity = 1;
-                            card.style.transform = 'translateY(0)';
-                        });
-                    }, index * 800);
-
-                    if ((index + 1) % 5 === 0) {
-                        const lineBreak = document.createElement('br');
-                        resultDiv.appendChild(lineBreak);
-                    }
-                });
-            }
-
-            setTimeout(() => {
-                playSound('result-sound.mp3');
-            }, 300);
-
-            document.getElementById('removeDrawnButton').style.display = 'inline-block';
         }
 
         // Add event listener to the "Draw" button
