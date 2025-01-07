@@ -268,44 +268,66 @@
     </audio>
 
     <script>
-        // Function to generate a random number between min and max (inclusive)
-        function getRandomNumber(min, max) {
-            return Math.floor(Math.random() * (max - min + 1)) + min;
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
+            authDomain: "makysdraw-87237.firebaseapp.com",
+            databaseURL: "https://makysdraw-87237-default-rtdb.firebaseio.com",
+            projectId: "makysdraw-87237",
+            storageBucket: "makysdraw-87237.firebasestorage.app",
+            messagingSenderId: "1044977366090",
+            appId: "1:1044977366090:web:37af3eaa9c3f5bfc7822b3"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let items = [];
+        let drawnItems = [];
+        let allResults = [];
+        let currentFontSize = 30; // Default font size
+
+        // Function to play sound effects
+        function playSound(soundFile) {
+            const audio = new Audio(soundFile);
+            audio.play();
         }
 
-        // Function to generate a list of unique 4-digit numbers
-        function generateNumbers(count, min, max) {
-            const numbers = new Set();
-            while (numbers.size < count) {
-                const num = getRandomNumber(min, max);
-                numbers.add(num.toString().padStart(4, '0')); // Ensure 4-digit format
-            }
-            return Array.from(numbers);
-        }
-
-        // Function to populate a carousel with numbers
-        function populateCarousel(carousel, numbers) {
-            numbers.forEach(num => {
-                const item = document.createElement('div');
-                item.className = 'carousel-item';
-                item.textContent = num;
-                carousel.appendChild(item);
+        // Load data from Firebase on page load
+        window.onload = function () {
+            firebase.database().ref('drawResults').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    items = data.items || [];
+                    drawnItems = data.drawnItems || [];
+                    allResults = data.allResults || [];
+                    document.getElementById('inputNames').value = items.join(', ');
+                    updatePreviousResults();
+                }
             });
-            // Duplicate items for seamless looping
-            numbers.forEach(num => {
-                const item = document.createElement('div');
-                item.className = 'carousel-item';
-                item.textContent = num;
-                carousel.appendChild(item);
+        };
+
+        // Function to write data to Firebase
+        function writeDataToFirebase() {
+            firebase.database().ref('drawResults').set({
+                items: items,
+                drawnItems: drawnItems,
+                allResults: allResults
             });
         }
 
-        // Function to start spinning a carousel with random speed and delay
-        function startCarousel(carousel, speed, delay) {
-            setTimeout(() => {
-                carousel.style.animation = `scroll ${speed}s linear infinite`;
-            }, delay);
+        // Function to remove duplicates from an array
+        function removeDuplicates(array) {
+            return [...new Set(array)];
         }
+
+        // Update inputNames when the user types
+        document.getElementById('inputNames').addEventListener('input', function () {
+            const input = this.value;
+            items = removeDuplicates(input.split(/[,|\n]+/).map(item => item.trim()).filter(item => item));
+            writeDataToFirebase();
+        });
 
         // Function to show the slot machine overlay and start the animation
         function showSlotMachineOverlay() {
@@ -340,7 +362,73 @@
         // Add event listener to the "Draw" button
         document.getElementById('drawButton').addEventListener('click', function () {
             showSlotMachineOverlay();
+            // Your existing draw functionality here
+            const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
+            const resultDiv = document.getElementById('result');
+
+            if (numberOfDraws > items.length) {
+                alert("Number of draws cannot exceed the number of unique items.");
+                return;
+            }
+
+            const availableItems = items.filter(item => !drawnItems.includes(item));
+            const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
+            const selectedItems = shuffledItems.slice(0, numberOfDraws);
+
+            drawnItems.push(...selectedItems);
+            allResults.push(selectedItems.join(', '));
+
+            writeDataToFirebase();
+            updatePreviousResults();
+
+            resultDiv.innerHTML = '';
+            resultDiv.style.display = 'block';
+
+            if (numberOfDraws === 1) {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.style.fontSize = currentFontSize + 'px'; // Apply font size
+                resultDiv.appendChild(card);
+
+                card.style.opacity = 0;
+                requestAnimationFrame(() => {
+                    card.style.transition = 'opacity 0.5s';
+                    card.style.opacity = 1;
+                });
+
+                fadeInCharacterByCharacter(selectedItems[0], card);
+            } else {
+                selectedItems.forEach((item, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.style.fontSize = currentFontSize + 'px'; // Apply font size
+                    card.innerText = item;
+                    resultDiv.appendChild(card);
+
+                    setTimeout(() => {
+                        card.style.opacity = 0;
+                        requestAnimationFrame(() => {
+                            card.style.opacity = 1;
+                            card.style.transform = 'translateY(0)';
+                        });
+                    }, index * 800);
+
+                    if ((index + 1) % 5 === 0) {
+                        const lineBreak = document.createElement('br');
+                        resultDiv.appendChild(lineBreak);
+                    }
+                });
+            }
+
+            setTimeout(() => {
+                playSound('result-sound.mp3');
+            }, 300);
+
+            document.getElementById('removeDrawnButton').style.display = 'inline-block';
         });
+
+        // Rest of your existing Firebase and draw functionality code
+        // (e.g., removeDrawnButton, fullscreenButton, exportButton, clearHistoryButton, etc.)
     </script>
 </body>
 </html>
