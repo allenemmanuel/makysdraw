@@ -15,15 +15,73 @@
         }
 
         #container1 {
-            background: linear-gradient(135deg, #6A0572, #3C0753);
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(45deg, #000000, #111111, #222222, #333333, #444444);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
             padding: 80px;
             margin-top: 100px;
             margin-bottom: 70px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
             border-radius: 15px;
             text-align: center;
-            position: relative;
             color: #f5f5f5;
+        }
+
+        @keyframes gradientBG {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .floating-shapes div {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 10s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-20px) rotate(180deg);
+            }
+            100% {
+                transform: translateY(0) rotate(360deg);
+            }
+        }
+
+        .sparkles div {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            animation: sparkle 2s infinite ease-in-out;
+        }
+
+        @keyframes sparkle {
+            0% {
+                opacity: 0;
+                transform: scale(0);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0);
+            }
         }
 
         #container1 h1, #container1 h2 {
@@ -35,44 +93,6 @@
 
         #container1 h2 {
             font-size: 1.8rem;
-        }
-
-        #backgroundVideo {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: -1;
-        }
-
-        #videoOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
-            z-index: 10;
-            display: none;
-            opacity: 0;
-            transition: opacity 1.5s ease;
-        }
-
-        #result .card {
-            background: #ffffff;
-            color: black;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            font-weight: bold;
-            padding: 10px;
-            margin: 5px;
-            display: inline-block;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.5s, transform 0.5s;
-            text-align: center;
         }
 
         #container1 button {
@@ -112,41 +132,22 @@
             color: #ffcc00;
         }
 
-        #container2 {
-            background-color: #720455;
-            box-shadow: 0 10px 16px 0 rgba(0, 0, 0, 0.7);
-            padding: 50px;
-            margin-bottom: 50px;
-            border-radius: 10px;
+        .sparkles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
         }
 
-        #container2 h2, #container2 h3 {
-            color: #fff;
-        }
-
-        #previousResults.empty {
-            color: #aaa;
-            font-style: italic;
-        }
-
-        @media (max-width: 767px) {
-            #container1, #container2 {
-                padding: 20px;
-                margin-top: 20px;
-            }
-
-            h1, h2, h3 {
-                font-size: 1.2rem;
-            }
-
-            #inputNames {
-                font-size: 0.9rem;
-            }
-
-            .btn {
-                font-size: 0.9rem;
-                padding: 8px 15px;
-            }
+        .floating-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
         }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
@@ -165,260 +166,49 @@
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        let items = [];
-        let drawnItems = [];
-        let allResults = [];
-        let currentFontSize = 30; // Default font size
+        function createSparkles() {
+            const sparklesContainer = document.getElementById('sparkles');
+            const numSparkles = 20;
 
-        // Function to play sound effects
-        function playSound(soundFile) {
-            const audio = new Audio(soundFile);
-            audio.play();
-        }
-
-        window.onload = function () {
-            firebase.database().ref('drawResults').on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    items = data.items || [];
-                    drawnItems = data.drawnItems || [];
-                    allResults = data.allResults || [];
-                    document.getElementById('inputNames').value = items.join(', ');
-                    updatePreviousResults();
-                }
-            });
-        };
-
-        function writeDataToFirebase() {
-            firebase.database().ref('drawResults').set({
-                items: items,
-                drawnItems: drawnItems,
-                allResults: allResults
-            });
-        }
-
-        function removeDuplicates(array) {
-            return [...new Set(array)];
-        }
-
-        document.getElementById('inputNames').addEventListener('input', function () {
-            const input = this.value;
-            items = removeDuplicates(input.split(/[,|\n]+/).map(item => item.trim()).filter(item => item));
-            writeDataToFirebase();
-        });
-
-        document.getElementById('drawButton').addEventListener('click', function () {
-            const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
-            const resultDiv = document.getElementById('result');
-
-            if (numberOfDraws > items.length) {
-                alert("Number of draws cannot exceed the number of unique items.");
-                return;
+            for (let i = 0; i < numSparkles; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.style.left = `${Math.random() * 100}%`;
+                sparkle.style.top = `${Math.random() * 100}%`;
+                sparkle.style.animationDelay = `${Math.random() * 2}s`;
+                sparklesContainer.appendChild(sparkle);
             }
-
-            const availableItems = items.filter(item => !drawnItems.includes(item));
-            const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
-            const selectedItems = shuffledItems.slice(0, numberOfDraws);
-
-            drawnItems.push(...selectedItems);
-            allResults.push(selectedItems.join(', '));
-
-            writeDataToFirebase();
-            updatePreviousResults();
-
-            resultDiv.innerHTML = '';
-            resultDiv.style.display = 'block';
-
-            if (numberOfDraws === 1) {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.style.fontSize = currentFontSize + 'px'; // Apply font size
-                resultDiv.appendChild(card);
-
-                card.style.opacity = 0;
-                requestAnimationFrame(() => {
-                    card.style.transition = 'opacity 0.5s';
-                    card.style.opacity = 1;
-                });
-
-                fadeInCharacterByCharacter(selectedItems[0], card);
-            } else {
-                selectedItems.forEach((item, index) => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.style.fontSize = currentFontSize + 'px'; // Apply font size
-                    card.innerText = item;
-                    resultDiv.appendChild(card);
-
-                    setTimeout(() => {
-                        card.style.opacity = 0;
-                        requestAnimationFrame(() => {
-                            card.style.opacity = 1;
-                            card.style.transform = 'translateY(0)';
-                        });
-                    }, index * 800);
-
-                    if ((index + 1) % 5 === 0) {
-                        const lineBreak = document.createElement('br');
-                        resultDiv.appendChild(lineBreak);
-                    }
-                });
-            }
-
-            setTimeout(() => {
-                playSound('result-sound.mp3');
-            }, 300);
-
-            document.getElementById('removeDrawnButton').style.display = 'inline-block';
-        });
-
-        document.getElementById('removeDrawnButton').addEventListener('click', function () {
-            // Remove drawn items from the main list
-            items = items.filter(item => !drawnItems.includes(item));
-
-            // Clear the drawn items list
-            drawnItems = [];
-
-            // Clear the drawn cards from the display area
-            document.getElementById('result').innerHTML = '';
-
-            // Update Firebase with the new data
-            writeDataToFirebase();
-
-            // Update the input field to reflect the remaining items
-            document.getElementById('inputNames').value = items.join(', ');
-
-            // Hide the "Clear Drawn" button
-            document.getElementById('removeDrawnButton').style.display = 'none';
-        });
-
-        document.getElementById('fullscreenButton').addEventListener('click', function () {
-            const container1 = document.getElementById('container1');
-            if (!document.fullscreenElement) {
-                if (container1.requestFullscreen) {
-                    container1.requestFullscreen();
-                } else if (container1.webkitRequestFullscreen) {
-                    container1.webkitRequestFullscreen();
-                } else if (container1.msRequestFullscreen) {
-                    container1.msRequestFullscreen();
-                }
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                } else if (document.msExitFullscreen) {
-                    document.msExitFullscreen();
-                }
-            }
-        });
-
-        function updatePreviousResults() {
-            const previousResultsList = document.getElementById('previousResults');
-            previousResultsList.innerHTML = allResults.length === 0
-                ? `<li class='list-group-item empty'>No results yet</li>`
-                : allResults.map((result, index) => `<li class='list-group-item'>Draw ${index + 1}: ${result}</li>`).join('');
-            previousResultsList.style.display = 'block';
         }
 
-        document.getElementById('exportButton').addEventListener('click', function () {
-            if (allResults.length === 0) {
-                alert("No results to export.");
-                return;
-            }
-
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Draw Number,Results\n";
-            allResults.forEach((result, index) => {
-                const row = `Draw ${index + 1},"${result}" \n`;
-                csvContent += row;
-            });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "draw_results.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        });
-
-        // Clear History Functionality
-        document.getElementById('clearHistoryButton').addEventListener('click', function () {
-            const confirmClear = confirm("Are you sure you want to clear the draw history? This action cannot be undone.");
-            if (!confirmClear) return;
-
-            allResults = [];
-            writeDataToFirebase();
-            document.getElementById('previousResults').innerHTML = `<li class='list-group-item empty'>No results yet</li>`;
-            alert("Draw history has been cleared.");
-        });
-
-        // Font Size Adjustment Functionality
-        document.getElementById('fontSizeInput').addEventListener('input', function () {
-            currentFontSize = parseInt(this.value, 10); // Update global font size
-        });
-
-        function fadeInCharacterByCharacter(text, container) {
-            container.innerHTML = '';
-            let index = 0;
-
-            const interval = setInterval(() => {
-                if (index < text.length) {
-                    const span = document.createElement('span');
-                    span.innerText = text[index];
-                    span.style.opacity = 0;
-                    container.appendChild(span);
-
-                    setTimeout(() => {
-                        span.style.transition = 'opacity 0.5s';
-                        span.style.opacity = 1;
-                    }, 50 * index);
-
-                    index++;
-                } else {
-                    clearInterval(interval);
-                }
-            }, 2000);
-        }
+        window.onload = createSparkles;
     </script>
 </head>
-
 <body>
     <div class="container" id="container1">
-        <video autoplay muted loop id="backgroundVideo">
+        <!-- Commented out movingnums1.mp4 background -->
+        <!-- <video autoplay muted loop id="backgroundVideo">
             <source src="movingnums1.mp4" type="video/mp4">
             Your browser does not support the video tag.
-        </video>
+        </video> -->
+        <div class="floating-shapes">
+            <div style="width: 120px; height: 120px; top: 20%; left: 10%; animation-duration: 8s;"></div>
+            <div style="width: 80px; height: 80px; top: 50%; left: 70%; animation-duration: 12s;"></div>
+            <div style="width: 100px; height: 100px; top: 80%; left: 30%; animation-duration: 10s;"></div>
+            <div style="width: 150px; height: 150px; top: 40%; left: 50%; animation-duration: 15s;"></div>
+        </div>
+        <div class="sparkles" id="sparkles"></div>
+
         <h1 style="text-align: center; color: antiquewhite;"> MALAM ANUGERAH </h1>
         <h1 style="text-align: center; color: antiquewhite;"> KUMPULAN YAYASAN SABAH </h1>
         <h1 style="text-align: center; color: antiquewhite;"> CABUTAN TIKET BERTUAH </h1>
-        
+
         <div class="text-center mb-4 mt-4">
             <button class="btn" id="drawButton"><i class="fas fa-random"></i> Draw</button>
             <button class="btn" id="removeDrawnButton" style="display: none;"><i class="fas fa-trash-alt"></i> Clear Drawn</button>
         </div>
 
         <div id="result" style="display:none;"></div>
-        
+
         <button id="fullscreenButton"><i class="fas fa-expand"></i></button>
-        <video id="videoOverlay" autoplay muted>
-            <source src="countdown2.mp4" type="video/mp4">
-            Your browser does not support the video tag.
-        </video>
-    </div>
-    <div class="container" id="container2">
-        <h2 style="color: antiquewhite;">The Mechanics</h2>
-        <textarea class="form-control" id="inputNames" rows="5" placeholder="Enter names or numbers here..."></textarea>
-        <input type="number" class="form-control" id="numberOfDraws" min="1" value="1" style="margin-top: 20px;">
-        <h3 style="color: antiquewhite;">Previous Draws:</h3>
-        <ul id="previousResults" class="list-group" style="display:none"></ul>
-        <button class="btn btn-success mt-4" id="exportButton">Export Results to CSV</button>
-        <button class="btn btn-warning mt-4" id="clearHistoryButton">Clear History</button>
-        <div class="mt-4">
-            <label for="fontSizeInput" style="color: antiquewhite;">Font Size (px):</label>
-            <input type="number" class="form-control" id="fontSizeInput" min="10" value="30" style="margin-top: 10px;">
-        </div>
     </div>
 </body>
 </html>
