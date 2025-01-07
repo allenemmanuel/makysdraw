@@ -138,6 +138,32 @@
             }
         }
     </style>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const fullscreenButton = document.getElementById('fullscreenButton');
+            const container1 = document.getElementById('container1');
+
+            fullscreenButton.addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    if (container1.requestFullscreen) {
+                        container1.requestFullscreen();
+                    } else if (container1.webkitRequestFullscreen) {
+                        container1.webkitRequestFullscreen();
+                    } else if (container1.msRequestFullscreen) {
+                        container1.msRequestFullscreen();
+                    }
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    } else if (document.msExitFullscreen) {
+                        document.msExitFullscreen();
+                    }
+                }
+            });
+        });
+    </script>
 </head>
 
 <body>
