@@ -142,6 +142,11 @@
         document.addEventListener("DOMContentLoaded", () => {
             const fullscreenButton = document.getElementById('fullscreenButton');
             const container1 = document.getElementById('container1');
+            const drawButton = document.getElementById('drawButton');
+            const inputNames = document.getElementById('inputNames');
+            const resultDiv = document.getElementById('result');
+
+            let items = [];
 
             fullscreenButton.addEventListener('click', () => {
                 if (!document.fullscreenElement) {
@@ -163,6 +168,22 @@
                 }
             });
 
+            drawButton.addEventListener('click', () => {
+                const inputText = inputNames.value;
+                items = inputText.split(',').map(item => item.trim()).filter(item => item);
+
+                if (items.length === 0) {
+                    alert("Please enter names or numbers to draw.");
+                    return;
+                }
+
+                const randomIndex = Math.floor(Math.random() * items.length);
+                const winner = items[randomIndex];
+
+                resultDiv.style.display = 'block';
+                resultDiv.textContent = `🎉 Winner: ${winner} 🎉`;
+            });
+
             // Function to create sparkles with random positions
             function createSparkles() {
                 const sparklesContainer = document.getElementById('sparkles');
@@ -172,13 +193,11 @@
                     const sparkle = document.createElement('div');
                     sparkle.classList.add('sparkle');
 
-                    // Randomize position
                     const x = Math.random() * window.innerWidth;
                     const y = Math.random() * window.innerHeight;
                     sparkle.style.left = `${x}px`;
                     sparkle.style.top = `${y}px`;
 
-                    // Randomize animation delay
                     const delay = Math.random() * 2;
                     sparkle.style.animationDelay = `${delay}s`;
 
@@ -186,7 +205,6 @@
                 }
             }
 
-            // Add floating shapes dynamically
             function createFloatingShapes() {
                 const floatingShapesContainer = document.querySelector('.floating-shapes');
                 const shapes = 4;
@@ -203,7 +221,6 @@
                 }
             }
 
-            // Initialize animations
             createSparkles();
             createFloatingShapes();
         });
