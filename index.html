@@ -207,8 +207,8 @@
         /* Fullscreen button positioned at the bottom right of container1 */
         #fullscreenButton {
             position: absolute;
-            bottom: 20px; /* Adjusted to bottom right */
-            right: 20px; /* Adjusted to bottom right */
+            bottom: 20px;
+            right: 20px;
             background: none;
             border: none;
             color: #fff;
@@ -510,13 +510,7 @@
 
 <body>
     <div class="container" id="container1">
-        <!-- Comment out the video background -->
-        <!-- <video autoplay muted loop id="backgroundVideo">
-            <source src="movingnums1.mp4" type="video/mp4">
-            Your browser does not support the video tag.
-        </video> -->
-
-        <!-- Add the floating shapes and sparkles from BG4C1.html -->
+        <!-- Floating shapes and sparkles -->
         <div class="floating-shapes">
             <div></div>
             <div></div>
@@ -525,23 +519,22 @@
         </div>
         <div class="sparkles" id="sparkles"></div>
 
+        <!-- Title and other content -->
         <h1 style="text-align: center; color: antiquewhite;"> MALAM ANUGERAH </h1>
         <h1 style="text-align: center; color: antiquewhite;"> KUMPULAN YAYASAN SABAH </h1>
         <h1 style="text-align: center; color: antiquewhite;"> CABUTAN TIKET BERTUAH </h1>
-        
+
+        <!-- Buttons -->
         <div class="text-center mb-4 mt-4">
             <button class="btn" id="drawButton"><i class="fas fa-random"></i> Draw</button>
             <button class="btn" id="removeDrawnButton" style="display: none;"><i class="fas fa-trash-alt"></i> Clear Drawn</button>
         </div>
 
+        <!-- Result display -->
         <div id="result" style="display:none;"></div>
-        
-        <!-- Fullscreen button positioned at the bottom right of container1 -->
+
+        <!-- Fullscreen button -->
         <button id="fullscreenButton"><i class="fas fa-expand"></i></button>
-<!--         <video id="videoOverlay" autoplay muted>
-            <source src="countdown2.mp4" type="video/mp4">
-            Your browser does not support the video tag.
-        </video> -->
     </div>
     <div class="container" id="container2">
         <h2 style="color: antiquewhite;">The Mechanics</h2>
