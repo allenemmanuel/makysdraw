@@ -162,6 +162,50 @@
                     }
                 }
             });
+
+            // Function to create sparkles with random positions
+            function createSparkles() {
+                const sparklesContainer = document.getElementById('sparkles');
+                const numSparkles = 20;
+
+                for (let i = 0; i < numSparkles; i++) {
+                    const sparkle = document.createElement('div');
+                    sparkle.classList.add('sparkle');
+
+                    // Randomize position
+                    const x = Math.random() * window.innerWidth;
+                    const y = Math.random() * window.innerHeight;
+                    sparkle.style.left = `${x}px`;
+                    sparkle.style.top = `${y}px`;
+
+                    // Randomize animation delay
+                    const delay = Math.random() * 2;
+                    sparkle.style.animationDelay = `${delay}s`;
+
+                    sparklesContainer.appendChild(sparkle);
+                }
+            }
+
+            // Add floating shapes dynamically
+            function createFloatingShapes() {
+                const floatingShapesContainer = document.querySelector('.floating-shapes');
+                const shapes = 4;
+
+                for (let i = 0; i < shapes; i++) {
+                    const shape = document.createElement('div');
+                    shape.style.width = `${80 + Math.random() * 100}px`;
+                    shape.style.height = shape.style.width;
+                    shape.style.top = `${Math.random() * 100}%`;
+                    shape.style.left = `${Math.random() * 100}%`;
+                    shape.style.animationDuration = `${8 + Math.random() * 10}s`;
+
+                    floatingShapesContainer.appendChild(shape);
+                }
+            }
+
+            // Initialize animations
+            createSparkles();
+            createFloatingShapes();
         });
     </script>
 </head>
