@@ -45,7 +45,7 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.9);
             z-index: 1000;
-            display: flex;
+            display: none; /* Hidden by default */
             justify-content: center;
             align-items: center;
             transition: opacity 1s ease-in-out; /* Fade-out effect */
@@ -307,7 +307,7 @@
             }, delay);
         }
 
-        // Show the slot machine overlay and start the animation
+        // Function to show the slot machine overlay and start the animation
         function showSlotMachineOverlay() {
             const overlay = document.getElementById('slotMachineOverlay');
             overlay.style.display = 'flex'; // Show the overlay
@@ -337,10 +337,10 @@
             }, 7000); // 7 seconds
         }
 
-        // Call the function to show the overlay when the page loads
-        window.onload = function () {
+        // Add event listener to the "Draw" button
+        document.getElementById('drawButton').addEventListener('click', function () {
             showSlotMachineOverlay();
-        };
+        });
     </script>
 </body>
 </html>
