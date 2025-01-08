@@ -222,6 +222,7 @@
 </head>
 <body>
     <div class="container" id="container1">
+        <!-- Floating shapes and sparkles -->
         <div class="floating-shapes">
             <div></div>
             <div></div>
@@ -230,18 +231,33 @@
         </div>
         <div class="sparkles" id="sparkles"></div>
 
+        <!-- Heading -->
         <h1 style="text-align: center; color: white;"> MALAM ANUGERAH </h1>
         <h1 style="text-align: center; color: white;"> KUMPULAN YAYASAN SABAH </h1>
         <h1 style="text-align: center; color: white;"> CABUTAN TIKET BERTUAH </h1>
 
+        <!-- Buttons -->
         <div class="text-center mb-4 mt-4">
             <button class="btn" id="drawButton"><i class="fas fa-random"></i> Draw</button>
             <button class="btn" id="removeDrawnButton" style="display: none;"><i class="fas fa-trash-alt"></i> Clear Drawn</button>
         </div>
 
+        <!-- Result Display -->
         <div id="result" style="display:none;"></div>
 
+        <!-- Fullscreen Button -->
         <button id="fullscreenButton"><i class="fas fa-expand"></i></button>
+
+        <!-- Modal for Slot Machine Animation -->
+        <div class="modal fade" id="slotMachineModal" tabindex="-1" aria-labelledby="slotMachineModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <iframe src="slotmac.html" width="100%" height="500" style="border: none;"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="container" id="container2">
@@ -255,17 +271,6 @@
         <div class="mt-4">
             <label for="fontSizeInput" style="color: antiquewhite;">Font Size (px):</label>
             <input type="number" class="form-control" id="fontSizeInput" min="10" value="30" style="margin-top: 10px;">
-        </div>
-    </div>
-
-    <!-- Modal for Slot Machine Animation -->
-    <div class="modal fade" id="slotMachineModal" tabindex="-1" aria-labelledby="slotMachineModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <iframe src="slotmac.html" width="100%" height="500" style="border: none;"></iframe>
-                </div>
-            </div>
         </div>
     </div>
 
