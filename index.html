@@ -363,12 +363,6 @@
             const modal = new bootstrap.Modal(document.getElementById('slotMachineModal'));
             modal.show();
 
-            // Reset the animation in slotmac.html
-            const iframe = document.querySelector('#slotMachineModal iframe');
-            iframe.onload = function () {
-                iframe.contentWindow.resetAnimation();
-            };
-
             // Set a timeout to close the modal after 7 seconds and proceed with the draw function
             setTimeout(() => {
                 modal.hide(); // Close the modal
@@ -436,7 +430,7 @@
                 }, 300);
 
                 document.getElementById('removeDrawnButton').style.display = 'inline-block';
-            }, 7000); // 7000 milliseconds = 7 seconds
+            }, 9000); // 7000 milliseconds = 7 seconds
         });
 
         document.getElementById('removeDrawnButton').addEventListener('click', function () {
