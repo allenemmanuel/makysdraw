@@ -7,9 +7,9 @@
     <style>
         /* General Styles */
         body {
-            margin: 0; /* Remove default margin */
-            height: 100vh; /* Full viewport height */
-            overflow: hidden; /* Prevent scrollbars */
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
             background: linear-gradient(45deg, #000000, #0a0a0a, #111111, #1a1a1a, #222222);
             background-size: 400% 400%;
             animation: gradientBG 15s ease infinite;
@@ -35,7 +35,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            overflow: hidden; /* Prevent scrollbars */
+            overflow: hidden;
         }
 
         .floating-shapes div {
@@ -92,7 +92,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            overflow: hidden; /* Prevent scrollbars */
+            overflow: hidden;
         }
 
         .sparkles div {
@@ -122,7 +122,6 @@
             border: 4px solid #ffffff;
             position: relative;
             z-index: 10;
-            overflow: hidden; /* Prevent scrollbars */
         }
 
         /* Carousel Container */
@@ -184,10 +183,10 @@
         }
 
         /* Style for "Done!" text */
-/*         .done-text {
+        .done-text {
             color: #00ff00;
             text-align: center;
-        } */
+        }
     </style>
 </head>
 <body>
@@ -249,12 +248,10 @@
             // Restart the loading dots animation
             animateLoadingDots();
 
-            // Commented out the "Done!" functionality
-            /*
+            // Change to "Done!" after 7 seconds
             setTimeout(() => {
                 heading.innerHTML = "<span class='done-text'>Done!</span>";
             }, 7000); // 7000 milliseconds = 7 seconds
-            */
         }
 
         // Function to animate the loading dots
@@ -270,16 +267,42 @@
             }, 500); // Update every 500ms
         }
 
-        // Listen for messages from the parent window (index.html)
-        window.addEventListener('message', function (event) {
-            if (event.data === 'resetAnimation') {
-                resetAnimation();
-            }
-        });
+        // Function to populate and animate carousels
+        function animateCarousels() {
+            const carousels = [
+                document.getElementById('carousel1'),
+                document.getElementById('carousel2'),
+                document.getElementById('carousel3'),
+                document.getElementById('carousel4'),
+                document.getElementById('carousel5')
+            ];
 
-        // Start the loading dots animation when the page loads
+            carousels.forEach((carousel, index) => {
+                // Clear existing items
+                carousel.innerHTML = '';
+
+                // Add 10 items to the carousel
+                for (let i = 0; i < 10; i++) {
+                    const item = document.createElement('div');
+                    item.className = 'carousel-item';
+                    item.textContent = Math.floor(Math.random() * 10); // Random number between 0 and 9
+                    carousel.appendChild(item);
+                }
+
+                // Animate the carousel
+                const duration = 5000 + index * 1000; // Staggered animation duration
+                carousel.style.animation = `scroll ${duration}ms linear infinite`;
+            });
+        }
+
+        // Start the loading dots animation
         animateLoadingDots();
-        resetAnimation(); // Reset animation on first load
+
+        // Reset the animation when the page loads (for the first time)
+        resetAnimation();
+
+        // Populate and animate carousels
+        animateCarousels();
     </script>
 </body>
 </html>
