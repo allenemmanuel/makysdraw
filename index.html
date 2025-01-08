@@ -8,12 +8,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <title>Annual Grand Dinner - Name/Number Drawing Program</title>
     <style>
+
         body {
             background-color: #030637;
             font-family: 'Roboto', sans-serif;
             color: #333;
         }
-
+        
+        /* Add the gradient and floating shapes background to container1 */
         #container1 {
             position: relative;
             overflow: hidden;
@@ -29,12 +31,20 @@
             animation: gradientBG 15s ease infinite;
         }
 
+        /* Animated gradient background */
         @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
         }
 
+        /* Floating shapes (circles) */
         .floating-shapes {
             position: absolute;
             top: 0;
@@ -42,16 +52,17 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            z-index: -1;
+            z-index: -1; /* Ensure shapes are behind the content */
         }
 
         .floating-shapes div {
             position: absolute;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.1); /* Very subtle white shapes */
             border-radius: 50%;
             animation: float 10s infinite ease-in-out;
         }
 
+        /* Randomize size and position of floating shapes */
         .floating-shapes div:nth-child(1) {
             width: 120px;
             height: 120px;
@@ -84,12 +95,20 @@
             animation-duration: 15s;
         }
 
+        /* Floating animation */
         @keyframes float {
-            0% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(180deg); }
-            100% { transform: translateY(0) rotate(360deg); }
+            0% {
+                transform: translateY(0) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-20px) rotate(180deg);
+            }
+            100% {
+                transform: translateY(0) rotate(360deg);
+            }
         }
 
+        /* Sparkling effect */
         .sparkles {
             position: absolute;
             top: 0;
@@ -97,24 +116,35 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            z-index: -1;
+            z-index: -1; /* Ensure sparkles are behind the content */
         }
 
         .sparkles div {
             position: absolute;
             width: 4px;
             height: 4px;
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.8); /* Bright sparkles */
             border-radius: 50%;
             animation: sparkle 2s infinite ease-in-out;
         }
 
+        /* Sparkle animation */
         @keyframes sparkle {
-            0% { opacity: 0; transform: scale(0); }
-            50% { opacity: 1; transform: scale(1); }
-            100% { opacity: 0; transform: scale(0); }
+            0% {
+                opacity: 0;
+                transform: scale(0);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0);
+            }
         }
 
+        /* Rest of your existing styles */
         #container1 h1, #container1 h2 {
             font-family: 'Playfair Display', serif;
             font-size: 2.5rem;
@@ -214,96 +244,11 @@
                 padding: 8px 15px;
             }
         }
-
-        /* Custom CSS to make the modal cover the entire screen */
-        #slotMachineModal .modal-dialog {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            margin: 0; /* Remove default margin */
-            width: 100vw; /* Full viewport width */
-            height: 100vh; /* Full viewport height */
-            max-width: none; /* Remove max-width restriction */
-        }
-
-        #slotMachineModal .modal-content {
-            width: 100%; /* Full width */
-            height: 100%; /* Full height */
-            border-radius: 0; /* Remove rounded corners */
-        }
-
-        #slotMachineModal .modal-body {
-            padding: 0; /* Remove padding */
-        }
-
-        #slotMachineModal iframe {
-            width: 100%; /* Full width */
-            height: 100%; /* Full height */
-            border: none; /* Remove border */
-        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</head>
-<body>
-    <div class="container" id="container1">
-        <!-- Floating shapes and sparkles -->
-        <div class="floating-shapes">
-            <div></div>
-            <div></div>
-            <div></div>
-            <div></div>
-        </div>
-        <div class="sparkles" id="sparkles"></div>
-
-        <!-- Heading -->
-        <h1 style="text-align: center; color: white;"> MALAM ANUGERAH </h1>
-        <h1 style="text-align: center; color: white;"> KUMPULAN YAYASAN SABAH </h1>
-        <h1 style="text-align: center; color: white;"> CABUTAN TIKET BERTUAH </h1>
-
-        <!-- Buttons -->
-        <div class="text-center mb-4 mt-4">
-            <button class="btn" id="drawButton"><i class="fas fa-random"></i> Draw</button>
-            <button class="btn" id="removeDrawnButton" style="display: none;"><i class="fas fa-trash-alt"></i> Clear Drawn</button>
-        </div>
-
-        <!-- Result Display -->
-        <div id="result" style="display:none;"></div>
-
-        <!-- Fullscreen Button -->
-        <button id="fullscreenButton"><i class="fas fa-expand"></i></button>
-
-        <!-- Modal for Slot Machine Animation -->
-        <div class="modal fade" id="slotMachineModal" tabindex="-1" aria-labelledby="slotMachineModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-body">
-                        <iframe src="slotmac.html" width="100%" height="100%" style="border: none;"></iframe>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="container" id="container2">
-        <h2 style="color: antiquewhite;">The Mechanics</h2>
-        <textarea class="form-control" id="inputNames" rows="5" placeholder="Enter names or numbers here..."></textarea>
-        <input type="number" class="form-control" id="numberOfDraws" min="1" value="1" style="margin-top: 20px;">
-        <h3 style="color: antiquewhite;">Previous Draws:</h3>
-        <ul id="previousResults" class="list-group" style="display:none"></ul>
-        <button class="btn btn-success mt-4" id="exportButton">Export Results to CSV</button>
-        <button class="btn btn-warning mt-4" id="clearHistoryButton">Clear History</button>
-        <div class="mt-4">
-            <label for="fontSizeInput" style="color: antiquewhite;">Font Size (px):</label>
-            <input type="number" class="form-control" id="fontSizeInput" min="10" value="30" style="margin-top: 10px;">
-        </div>
-    </div>
-
-    <script>
+    <script type="module">
+        // Your existing Firebase and draw functionality code
         const firebaseConfig = {
             apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
             authDomain: "makysdraw-87237.firebaseapp.com",
@@ -320,8 +265,9 @@
         let items = [];
         let drawnItems = [];
         let allResults = [];
-        let currentFontSize = 30;
+        let currentFontSize = 30; // Default font size
 
+        // Function to play sound effects
         function playSound(soundFile) {
             const audio = new Audio(soundFile);
             audio.play();
@@ -359,86 +305,87 @@
         });
 
         document.getElementById('drawButton').addEventListener('click', function () {
-            // Show the modal with the slot machine animation
-            const modal = new bootstrap.Modal(document.getElementById('slotMachineModal'));
-            modal.show();
+            const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
+            const resultDiv = document.getElementById('result');
 
-            // Set a timeout to close the modal after 7 seconds and proceed with the draw function
-            setTimeout(() => {
-                modal.hide(); // Close the modal
+            if (numberOfDraws > items.length) {
+                alert("Number of draws cannot exceed the number of unique items.");
+                return;
+            }
 
-                // Proceed with the original draw function
-                const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
-                const resultDiv = document.getElementById('result');
+            const availableItems = items.filter(item => !drawnItems.includes(item));
+            const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
+            const selectedItems = shuffledItems.slice(0, numberOfDraws);
 
-                if (numberOfDraws > items.length) {
-                    alert("Number of draws cannot exceed the number of unique items.");
-                    return;
-                }
+            drawnItems.push(...selectedItems);
+            allResults.push(selectedItems.join(', '));
 
-                const availableItems = items.filter(item => !drawnItems.includes(item));
-                const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
-                const selectedItems = shuffledItems.slice(0, numberOfDraws);
+            writeDataToFirebase();
+            updatePreviousResults();
 
-                drawnItems.push(...selectedItems);
-                allResults.push(selectedItems.join(', '));
+            resultDiv.innerHTML = '';
+            resultDiv.style.display = 'block';
 
-                writeDataToFirebase();
-                updatePreviousResults();
+            if (numberOfDraws === 1) {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.style.fontSize = currentFontSize + 'px'; // Apply font size
+                resultDiv.appendChild(card);
 
-                resultDiv.innerHTML = '';
-                resultDiv.style.display = 'block';
+                card.style.opacity = 0;
+                requestAnimationFrame(() => {
+                    card.style.transition = 'opacity 0.5s';
+                    card.style.opacity = 1;
+                });
 
-                if (numberOfDraws === 1) {
+                fadeInCharacterByCharacter(selectedItems[0], card);
+            } else {
+                selectedItems.forEach((item, index) => {
                     const card = document.createElement('div');
                     card.className = 'card';
-                    card.style.fontSize = currentFontSize + 'px';
+                    card.style.fontSize = currentFontSize + 'px'; // Apply font size
+                    card.innerText = item;
                     resultDiv.appendChild(card);
 
-                    card.style.opacity = 0;
-                    requestAnimationFrame(() => {
-                        card.style.transition = 'opacity 0.5s';
-                        card.style.opacity = 1;
-                    });
+                    setTimeout(() => {
+                        card.style.opacity = 0;
+                        requestAnimationFrame(() => {
+                            card.style.opacity = 1;
+                            card.style.transform = 'translateY(0)';
+                        });
+                    }, index * 800);
 
-                    fadeInCharacterByCharacter(selectedItems[0], card);
-                } else {
-                    selectedItems.forEach((item, index) => {
-                        const card = document.createElement('div');
-                        card.className = 'card';
-                        card.style.fontSize = currentFontSize + 'px';
-                        card.innerText = item;
-                        resultDiv.appendChild(card);
+                    if ((index + 1) % 5 === 0) {
+                        const lineBreak = document.createElement('br');
+                        resultDiv.appendChild(lineBreak);
+                    }
+                });
+            }
 
-                        setTimeout(() => {
-                            card.style.opacity = 0;
-                            requestAnimationFrame(() => {
-                                card.style.opacity = 1;
-                                card.style.transform = 'translateY(0)';
-                            });
-                        }, index * 800);
+            setTimeout(() => {
+                playSound('result-sound.mp3');
+            }, 300);
 
-                        if ((index + 1) % 5 === 0) {
-                            const lineBreak = document.createElement('br');
-                            resultDiv.appendChild(lineBreak);
-                        }
-                    });
-                }
-
-                setTimeout(() => {
-                    playSound('result-sound.mp3');
-                }, 300);
-
-                document.getElementById('removeDrawnButton').style.display = 'inline-block';
-            }, 9000); // 7000 milliseconds = 7 seconds
+            document.getElementById('removeDrawnButton').style.display = 'inline-block';
         });
 
         document.getElementById('removeDrawnButton').addEventListener('click', function () {
+            // Remove drawn items from the main list
             items = items.filter(item => !drawnItems.includes(item));
+
+            // Clear the drawn items list
             drawnItems = [];
+
+            // Clear the drawn cards from the display area
             document.getElementById('result').innerHTML = '';
+
+            // Update Firebase with the new data
             writeDataToFirebase();
+
+            // Update the input field to reflect the remaining items
             document.getElementById('inputNames').value = items.join(', ');
+
+            // Hide the "Clear Drawn" button
             document.getElementById('removeDrawnButton').style.display = 'none';
         });
 
@@ -493,6 +440,7 @@
             document.body.removeChild(link);
         });
 
+        // Clear History Functionality
         document.getElementById('clearHistoryButton').addEventListener('click', function () {
             const confirmClear = confirm("Are you sure you want to clear the draw history? This action cannot be undone.");
             if (!confirmClear) return;
@@ -503,8 +451,9 @@
             alert("Draw history has been cleared.");
         });
 
+        // Font Size Adjustment Functionality
         document.getElementById('fontSizeInput').addEventListener('input', function () {
-            currentFontSize = parseInt(this.value, 10);
+            currentFontSize = parseInt(this.value, 10); // Update global font size
         });
 
         function fadeInCharacterByCharacter(text, container) {
@@ -529,6 +478,81 @@
                 }
             }, 2000);
         }
+    </script>
+</head>
+
+<body>
+    <div class="container" id="container1">
+        <!-- Floating shapes and sparkles for container1 -->
+        <div class="floating-shapes">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        <div class="sparkles" id="sparkles"></div>
+
+<!--         <video autoplay muted loop id="backgroundVideo">
+            <source src="movingnums1.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video> -->
+        <h1 style="text-align: center; color: white;"> MALAM ANUGERAH </h1>
+        <h1 style="text-align: center; color: white;"> KUMPULAN YAYASAN SABAH </h1>
+        <h1 style="text-align: center; color: white;"> CABUTAN TIKET BERTUAH </h1>
+        
+        <div class="text-center mb-4 mt-4">
+            <button class="btn" id="drawButton"><i class="fas fa-random"></i> Draw</button>
+            <button class="btn" id="removeDrawnButton" style="display: none;"><i class="fas fa-trash-alt"></i> Clear Drawn</button>
+        </div>
+
+        <div id="result" style="display:none;"></div>
+        
+        <button id="fullscreenButton"><i class="fas fa-expand"></i></button>
+<!--         <video id="videoOverlay" autoplay muted>
+            <source src="countdown2.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video> -->
+    </div>
+    <div class="container" id="container2">
+        <h2 style="color: antiquewhite;">The Mechanics</h2>
+        <textarea class="form-control" id="inputNames" rows="5" placeholder="Enter names or numbers here..."></textarea>
+        <input type="number" class="form-control" id="numberOfDraws" min="1" value="1" style="margin-top: 20px;">
+        <h3 style="color: antiquewhite;">Previous Draws:</h3>
+        <ul id="previousResults" class="list-group" style="display:none"></ul>
+        <button class="btn btn-success mt-4" id="exportButton">Export Results to CSV</button>
+        <button class="btn btn-warning mt-4" id="clearHistoryButton">Clear History</button>
+        <div class="mt-4">
+            <label for="fontSizeInput" style="color: antiquewhite;">Font Size (px):</label>
+            <input type="number" class="form-control" id="fontSizeInput" min="10" value="30" style="margin-top: 10px;">
+        </div>
+    </div>
+
+    <script>
+        // Function to create sparkles with random positions
+        function createSparkles() {
+            const sparklesContainer = document.getElementById('sparkles');
+            const numSparkles = 20; // Number of sparkles
+
+            for (let i = 0; i < numSparkles; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.classList.add('sparkle');
+
+                // Randomize position
+                const x = Math.random() * window.innerWidth;
+                const y = Math.random() * window.innerHeight;
+                sparkle.style.left = `${x}px`;
+                sparkle.style.top = `${y}px`;
+
+                // Randomize animation delay
+                const delay = Math.random() * 2; // 0 to 2 seconds
+                sparkle.style.animationDelay = `${delay}s`;
+
+                sparklesContainer.appendChild(sparkle);
+            }
+        }
+
+        // Initialize sparkles
+        createSparkles();
     </script>
 </body>
 </html>
