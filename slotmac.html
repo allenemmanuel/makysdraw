@@ -7,9 +7,9 @@
     <style>
         /* General Styles */
         body {
-            margin: 0;
-            height: 100vh;
-            overflow: hidden;
+            margin: 0; /* Remove default margin */
+            height: 100vh; /* Full viewport height */
+            overflow: hidden; /* Prevent scrollbars */
             background: linear-gradient(45deg, #000000, #0a0a0a, #111111, #1a1a1a, #222222);
             background-size: 400% 400%;
             animation: gradientBG 15s ease infinite;
@@ -35,12 +35,12 @@
             left: 0;
             width: 100%;
             height: 100%;
-            overflow: hidden;
+            overflow: hidden; /* Prevent scrollbars */
         }
 
         .floating-shapes div {
             position: absolute;
-            background: rgba(255, 255, 255, 0.1); /* Very subtle white shapes */
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 50%;
             animation: float 10s infinite ease-in-out;
         }
@@ -92,14 +92,14 @@
             left: 0;
             width: 100%;
             height: 100%;
-            overflow: hidden;
+            overflow: hidden; /* Prevent scrollbars */
         }
 
         .sparkles div {
             position: absolute;
             width: 4px;
             height: 4px;
-            background: rgba(255, 255, 255, 0.8); /* Bright sparkles */
+            background: rgba(255, 255, 255, 0.8);
             border-radius: 50%;
             animation: sparkle 2s infinite ease-in-out;
         }
@@ -114,20 +114,21 @@
         /* Slot Machine Container */
         .slot-machine {
             display: flex;
-            gap: 30px; /* More space between carousels */
+            gap: 30px;
             padding: 40px;
-            background: rgba(255, 255, 255, 0.3); /* Increased opacity (0.3 instead of 0.1) */
+            background: rgba(255, 255, 255, 0.3);
             border-radius: 20px;
             box-shadow: 0 0 50px rgba(255, 255, 255, 0.3);
             border: 4px solid #ffffff;
             position: relative;
-            z-index: 10; /* Ensure it's above the floating shapes and sparkles */
+            z-index: 10;
+            overflow: hidden; /* Prevent scrollbars */
         }
 
         /* Carousel Container */
         .carousel {
-            width: 150px; /* Wider for a grander look */
-            height: 250px; /* Taller for more impact */
+            width: 150px;
+            height: 250px;
             overflow: hidden;
             position: relative;
             background: #000000;
@@ -149,9 +150,9 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 4rem; /* Larger font for grandness */
+            font-size: 4rem;
             font-weight: bold;
-            color: #ffffff; /* White color for numbers */
+            color: #ffffff;
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 255, 255, 0.6);
         }
 
@@ -166,26 +167,26 @@
             margin-bottom: 40px;
             font-size: 4rem;
             font-family: 'Georgia', serif;
-            color: #ffffff; /* White color for elegance */
+            color: #ffffff;
             position: relative;
-            z-index: 10; /* Ensure it's above the floating shapes and sparkles */
+            z-index: 10;
             display: flex;
-            justify-content: center; /* Center the text horizontally */
-            align-items: center; /* Center the text vertically */
-            text-align: center; /* Ensure text alignment */
+            justify-content: center;
+            align-items: center;
+            text-align: center;
         }
 
         /* Loading dots */
         .loading-dots {
             display: inline-block;
-            width: 3ch; /* Width of 3 characters to prevent layout shift */
+            width: 3ch;
             text-align: left;
         }
 
         /* Style for "Done!" text */
         .done-text {
-            color: #00ff00; /* Green color */
-            text-align: center; /* Center the text */
+            color: #00ff00;
+            text-align: center;
         }
     </style>
 </head>
