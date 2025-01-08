@@ -216,6 +216,28 @@
             }
         }
 
+        /* Custom CSS for fullscreen modal */
+#slotMachineModal .modal-dialog {
+    margin: 0; /* Remove default margin */
+    width: 100vw; /* Full viewport width */
+    height: 100vh; /* Full viewport height */
+    max-width: none; /* Override Bootstrap's max-width */
+}
+
+#slotMachineModal .modal-content {
+    height: 100%; /* Ensure modal content fills the dialog */
+    border-radius: 0; /* Remove rounded corners for fullscreen */
+}
+
+#slotMachineModal .modal-body {
+    padding: 0; /* Remove padding to ensure full coverage */
+}
+
+#slotMachineModal iframe {
+    width: 100%; /* Ensure iframe fills the modal body */
+    height: 100%; /* Ensure iframe fills the modal body */
+}
+
         /* Custom CSS to center the modal vertically and horizontally */
         #slotMachineModal .modal-dialog {
             position: fixed;
@@ -261,16 +283,15 @@
         <button id="fullscreenButton"><i class="fas fa-expand"></i></button>
 
         <!-- Modal for Slot Machine Animation -->
-        <div class="modal fade" id="slotMachineModal" tabindex="-1" aria-labelledby="slotMachineModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-body">
-                        <iframe src="slotmac.html" width="100%" height="500" style="border: none;"></iframe>
-                    </div>
-                </div>
+<div class="modal fade" id="slotMachineModal" tabindex="-1" aria-labelledby="slotMachineModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen"> <!-- Add 'modal-fullscreen' class -->
+        <div class="modal-content">
+            <div class="modal-body p-0"> <!-- Remove padding to ensure full coverage -->
+                <iframe src="slotmac.html" width="100%" height="100%" style="border: none;"></iframe>
             </div>
         </div>
     </div>
+</div>
 
     <div class="container" id="container2">
         <h2 style="color: antiquewhite;">The Mechanics</h2>
