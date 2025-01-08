@@ -362,6 +362,12 @@
             const modal = new bootstrap.Modal(document.getElementById('slotMachineModal'));
             modal.show();
 
+            // Send a message to the iframe to reset the animation
+            const iframe = document.querySelector('#slotMachineModal iframe');
+            iframe.onload = function () {
+                iframe.contentWindow.postMessage('resetAnimation', '*');
+            };
+
             // Set a timeout to close the modal after 7 seconds and proceed with the draw function
             setTimeout(() => {
                 modal.hide(); // Close the modal
