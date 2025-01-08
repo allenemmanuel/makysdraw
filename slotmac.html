@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading Animation</title>
+    <style>
+        /* General Styles */
+        body {
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(45deg, #000000, #0a0a0a, #111111, #1a1a1a, #222222);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            font-family: 'Arial', sans-serif;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Animated gradient background */
+        @keyframes gradientBG {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* Floating shapes (circles) */
+        .floating-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .floating-shapes div {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1); /* Very subtle white shapes */
+            border-radius: 50%;
+            animation: float 10s infinite ease-in-out;
+        }
+
+        /* Randomize size and position of floating shapes */
+        .floating-shapes div:nth-child(1) {
+            width: 120px;
+            height: 120px;
+            top: 20%;
+            left: 10%;
+            animation-duration: 8s;
+        }
+
+        .floating-shapes div:nth-child(2) {
+            width: 80px;
+            height: 80px;
+            top: 50%;
+            left: 70%;
+            animation-duration: 12s;
+        }
+
+        .floating-shapes div:nth-child(3) {
+            width: 100px;
+            height: 100px;
+            top: 80%;
+            left: 30%;
+            animation-duration: 10s;
+        }
+
+        .floating-shapes div:nth-child(4) {
+            width: 150px;
+            height: 150px;
+            top: 40%;
+            left: 50%;
+            animation-duration: 15s;
+        }
+
+        /* Floating animation */
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-20px) rotate(180deg);
+            }
+            100% {
+                transform: translateY(0) rotate(360deg);
+            }
+        }
+
+        /* Sparkling effect */
+        .sparkles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .sparkles div {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.8); /* Bright sparkles */
+            border-radius: 50%;
+            animation: sparkle 2s infinite ease-in-out;
+        }
+
+        /* Sparkle animation */
+        @keyframes sparkle {
+            0% {
+                opacity: 0;
+                transform: scale(0);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0);
+            }
+        }
+
+        /* Slot Machine Container */
+        .slot-machine {
+            display: flex;
+            gap: 30px; /* More space between carousels */
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.3); /* Increased opacity (0.3 instead of 0.1) */
+            border-radius: 20px;
+            box-shadow: 0 0 50px rgba(255, 255, 255, 0.3);
+            border: 4px solid #ffffff;
+            position: relative;
+            z-index: 10; /* Ensure it's above the floating shapes and sparkles */
+        }
+
+        /* Carousel Container */
+        .carousel {
+            width: 150px; /* Wider for a grander look */
+            height: 250px; /* Taller for more impact */
+            overflow: hidden;
+            position: relative;
+            background: #000000;
+            border-radius: 15px;
+            border: 3px solid #ffffff;
+            box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.3), 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Carousel Items */
+        .carousel-items {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+        }
+
+        .carousel-item {
+            height: 250px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 4rem; /* Larger font for grandness */
+            font-weight: bold;
+            color: #ffffff; /* White color for numbers */
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 255, 255, 0.6);
+        }
+
+        /* Animation */
+        @keyframes scroll {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-100%); }
+        }
+
+        /* Heading container */
+        h1 {
+            margin-bottom: 40px;
+            font-size: 4rem;
+            font-family: 'Georgia', serif;
+            color: #ffffff; /* White color for elegance */
+            position: relative;
+            z-index: 10; /* Ensure it's above the floating shapes and sparkles */
+            display: flex;
+            justify-content: center; /* Center the text horizontally */
+            align-items: center; /* Center the text vertically */
+            text-align: center; /* Ensure text alignment */
+        }
+
+        /* Loading dots */
+        .loading-dots {
+            display: inline-block;
+            width: 3ch; /* Width of 3 characters to prevent layout shift */
+            text-align: left;
+        }
+
+        /* Style for "Done!" text */
+        .done-text {
+            color: #00ff00; /* Green color */
+            text-align: center; /* Center the text */
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated background elements -->
+    <div class="floating-shapes">
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+    </div>
+    <div class="sparkles" id="sparkles"></div>
+
+    <!-- Heading with static text and animated dots -->
+    <h1 id="heading">
+        &emsp;&emsp;Selecting Winners
+        <span class="loading-dots"></span>
+    </h1>
+
+    <!-- Slot Machine Container -->
+    <div class="slot-machine">
+        <!-- Carousel 1 -->
+        <div class="carousel">
+            <div class="carousel-items" id="carousel1"></div>
+        </div>
+
+        <!-- Carousel 2 -->
+        <div class="carousel">
+            <div class="carousel-items" id="carousel2"></div>
+        </div>
+
+        <!-- Carousel 3 -->
+        <div class="carousel">
+            <div class="carousel-items" id="carousel3"></div>
+        </div>
+
+        <!-- Carousel 4 -->
+        <div class="carousel">
+            <div class="carousel-items" id="carousel4"></div>
+        </div>
+
+        <!-- Carousel 5 -->
+        <div class="carousel">
+            <div class="carousel-items" id="carousel5"></div>
+        </div>
+    </div>
+
+    <!-- Audio for spinning sound effect -->
+    <audio id="spinningSound" loop>
+        <source src="spinning-sound.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <!-- Start Sound Button -->
+    <button id="startSoundButton" style="margin-top: 20px; padding: 10px 20px; font-size: 1rem; background: white; color: black; border: none; border-radius: 5px; cursor: pointer;">
+        Start Sound
+    </button>
+
+    <script>
+        // Function to generate a random number between min and max (inclusive)
+        function getRandomNumber(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        // Function to generate a list of unique 4-digit numbers
+        function generateNumbers(count, min, max) {
+            const numbers = new Set();
+            while (numbers.size < count) {
+                const num = getRandomNumber(min, max);
+                numbers.add(num.toString().padStart(4, '0')); // Ensure 4-digit format
+            }
+            return Array.from(numbers);
+        }
+
+        // Function to populate a carousel with numbers
+        function populateCarousel(carousel, numbers) {
+            numbers.forEach(num => {
+                const item = document.createElement('div');
+                item.className = 'carousel-item';
+                item.textContent = num;
+                carousel.appendChild(item);
+            });
+            // Duplicate items for seamless looping
+            numbers.forEach(num => {
+                const item = document.createElement('div');
+                item.className = 'carousel-item';
+                item.textContent = num;
+                carousel.appendChild(item);
+            });
+        }
+
+        // Function to start spinning a carousel with random speed and delay
+        function startCarousel(carousel, speed, delay) {
+            setTimeout(() => {
+                carousel.style.animation = `scroll ${speed}s linear infinite`;
+            }, delay);
+        }
+
+        // Get all carousels
+        const carousels = document.querySelectorAll('.carousel-items');
+
+        // Generate unique 4-digit numbers for each carousel (range: 0001 to 1500)
+        carousels.forEach((carousel, index) => {
+            const numbers = generateNumbers(10, 1, 1500); // Generate 10 unique numbers
+            populateCarousel(carousel, numbers);
+
+            // Start spinning with random speed and delay
+            const speed = Math.random() * 2 + 3; // Random speed between 3s and 5s
+            const delay = Math.random() * 2000; // Random delay up to 2s
+            startCarousel(carousel, speed, delay);
+        });
+
+        // Play spinning sound effect after user interaction
+        const spinningSound = document.getElementById('spinningSound');
+        const startSoundButton = document.getElementById('startSoundButton');
+
+        startSoundButton.addEventListener('click', () => {
+            spinningSound.play()
+                .then(() => {
+                    console.log("Sound is playing!");
+                    startSoundButton.style.display = 'none'; // Hide the button after clicking
+                })
+                .catch((error) => {
+                    console.error("Error playing sound:", error);
+                    alert("Please interact with the page to start the sound.");
+                });
+        });
+
+        // Function to animate the loading dots
+        function animateLoadingDots() {
+            const dotsElement = document.querySelector('.loading-dots');
+            let dots = '';
+            let count = 0;
+
+            setInterval(() => {
+                dots = '.'.repeat(count % 3 + 1); // Cycle through 1, 2, 3 dots
+                dotsElement.textContent = dots;
+                count++;
+            }, 500); // Update every 500ms
+        }
+
+        // Start the loading dots animation
+        animateLoadingDots();
+
+        // Change "Selecting Winners..." to "Done!" after 5 seconds
+        const heading = document.getElementById('heading');
+        setTimeout(() => {
+            heading.innerHTML = "<span class='done-text'>Done!</span>";
+        }, 5000); // 5000 milliseconds = 5 seconds
+    </script>
+</body>
+</html>
