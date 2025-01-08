@@ -8,7 +8,212 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <title>Annual Grand Dinner - Name/Number Drawing Program</title>
     <style>
-        /* Add your existing styles here */
+        body {
+            background-color: #030637;
+            font-family: 'Roboto', sans-serif;
+            color: #333;
+        }
+
+        #container1 {
+            position: relative;
+            overflow: hidden;
+            padding: 80px;
+            margin-top: 100px;
+            margin-bottom: 70px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            text-align: center;
+            color: #f5f5f5;
+            background: linear-gradient(45deg, #000000, #111111, #222222, #333333, #444444);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .floating-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .floating-shapes div {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 10s infinite ease-in-out;
+        }
+
+        .floating-shapes div:nth-child(1) {
+            width: 120px;
+            height: 120px;
+            top: 20%;
+            left: 10%;
+            animation-duration: 8s;
+        }
+
+        .floating-shapes div:nth-child(2) {
+            width: 80px;
+            height: 80px;
+            top: 50%;
+            left: 70%;
+            animation-duration: 12s;
+        }
+
+        .floating-shapes div:nth-child(3) {
+            width: 100px;
+            height: 100px;
+            top: 80%;
+            left: 30%;
+            animation-duration: 10s;
+        }
+
+        .floating-shapes div:nth-child(4) {
+            width: 150px;
+            height: 150px;
+            top: 40%;
+            left: 50%;
+            animation-duration: 15s;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+            100% { transform: translateY(0) rotate(360deg); }
+        }
+
+        .sparkles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .sparkles div {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            animation: sparkle 2s infinite ease-in-out;
+        }
+
+        @keyframes sparkle {
+            0% { opacity: 0; transform: scale(0); }
+            50% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0); }
+        }
+
+        #container1 h1, #container1 h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+
+        #container1 h2 {
+            font-size: 1.8rem;
+        }
+
+        #result .card {
+            background: #ffffff;
+            color: black;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-weight: bold;
+            padding: 10px;
+            margin: 5px;
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s, transform 0.5s;
+            text-align: center;
+        }
+
+        #container1 button {
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin: 10px;
+            padding: 12px 20px;
+            border-radius: 30px;
+            border: none;
+            color: #fff;
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+        }
+
+        #container1 button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(135deg, #2E7D32, #1B5E20);
+        }
+
+        #fullscreenButton {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.3s, color 0.3s;
+        }
+
+        #fullscreenButton:hover {
+            transform: scale(1.2);
+            color: #ffcc00;
+        }
+
+        #container2 {
+            background-color: #720455;
+            box-shadow: 0 10px 16px 0 rgba(0, 0, 0, 0.7);
+            padding: 50px;
+            margin-bottom: 50px;
+            border-radius: 10px;
+        }
+
+        #container2 h2, #container2 h3 {
+            color: #fff;
+        }
+
+        #previousResults.empty {
+            color: #aaa;
+            font-style: italic;
+        }
+
+        @media (max-width: 767px) {
+            #container1, #container2 {
+                padding: 20px;
+                margin-top: 20px;
+            }
+
+            h1, h2, h3 {
+                font-size: 1.2rem;
+            }
+
+            #inputNames {
+                font-size: 0.9rem;
+            }
+
+            .btn {
+                font-size: 0.9rem;
+                padding: 8px 15px;
+            }
+        }
 
         /* Custom CSS to make the modal cover the entire screen */
         #slotMachineModal .modal-dialog {
@@ -84,6 +289,246 @@
         </div>
     </div>
 
-    <!-- Rest of your code -->
+    <div class="container" id="container2">
+        <h2 style="color: antiquewhite;">The Mechanics</h2>
+        <textarea class="form-control" id="inputNames" rows="5" placeholder="Enter names or numbers here..."></textarea>
+        <input type="number" class="form-control" id="numberOfDraws" min="1" value="1" style="margin-top: 20px;">
+        <h3 style="color: antiquewhite;">Previous Draws:</h3>
+        <ul id="previousResults" class="list-group" style="display:none"></ul>
+        <button class="btn btn-success mt-4" id="exportButton">Export Results to CSV</button>
+        <button class="btn btn-warning mt-4" id="clearHistoryButton">Clear History</button>
+        <div class="mt-4">
+            <label for="fontSizeInput" style="color: antiquewhite;">Font Size (px):</label>
+            <input type="number" class="form-control" id="fontSizeInput" min="10" value="30" style="margin-top: 10px;">
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
+            authDomain: "makysdraw-87237.firebaseapp.com",
+            databaseURL: "https://makysdraw-87237-default-rtdb.firebaseio.com",
+            projectId: "makysdraw-87237",
+            storageBucket: "makysdraw-87237.firebasestorage.app",
+            messagingSenderId: "1044977366090",
+            appId: "1:1044977366090:web:37af3eaa9c3f5bfc7822b3"
+        };
+
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let items = [];
+        let drawnItems = [];
+        let allResults = [];
+        let currentFontSize = 30;
+
+        function playSound(soundFile) {
+            const audio = new Audio(soundFile);
+            audio.play();
+        }
+
+        window.onload = function () {
+            firebase.database().ref('drawResults').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    items = data.items || [];
+                    drawnItems = data.drawnItems || [];
+                    allResults = data.allResults || [];
+                    document.getElementById('inputNames').value = items.join(', ');
+                    updatePreviousResults();
+                }
+            });
+        };
+
+        function writeDataToFirebase() {
+            firebase.database().ref('drawResults').set({
+                items: items,
+                drawnItems: drawnItems,
+                allResults: allResults
+            });
+        }
+
+        function removeDuplicates(array) {
+            return [...new Set(array)];
+        }
+
+        document.getElementById('inputNames').addEventListener('input', function () {
+            const input = this.value;
+            items = removeDuplicates(input.split(/[,|\n]+/).map(item => item.trim()).filter(item => item));
+            writeDataToFirebase();
+        });
+
+        document.getElementById('drawButton').addEventListener('click', function () {
+            // Show the modal with the slot machine animation
+            const modal = new bootstrap.Modal(document.getElementById('slotMachineModal'));
+            modal.show();
+
+            // Set a timeout to close the modal after 7 seconds and proceed with the draw function
+            setTimeout(() => {
+                modal.hide(); // Close the modal
+
+                // Proceed with the original draw function
+                const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
+                const resultDiv = document.getElementById('result');
+
+                if (numberOfDraws > items.length) {
+                    alert("Number of draws cannot exceed the number of unique items.");
+                    return;
+                }
+
+                const availableItems = items.filter(item => !drawnItems.includes(item));
+                const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
+                const selectedItems = shuffledItems.slice(0, numberOfDraws);
+
+                drawnItems.push(...selectedItems);
+                allResults.push(selectedItems.join(', '));
+
+                writeDataToFirebase();
+                updatePreviousResults();
+
+                resultDiv.innerHTML = '';
+                resultDiv.style.display = 'block';
+
+                if (numberOfDraws === 1) {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.style.fontSize = currentFontSize + 'px';
+                    resultDiv.appendChild(card);
+
+                    card.style.opacity = 0;
+                    requestAnimationFrame(() => {
+                        card.style.transition = 'opacity 0.5s';
+                        card.style.opacity = 1;
+                    });
+
+                    fadeInCharacterByCharacter(selectedItems[0], card);
+                } else {
+                    selectedItems.forEach((item, index) => {
+                        const card = document.createElement('div');
+                        card.className = 'card';
+                        card.style.fontSize = currentFontSize + 'px';
+                        card.innerText = item;
+                        resultDiv.appendChild(card);
+
+                        setTimeout(() => {
+                            card.style.opacity = 0;
+                            requestAnimationFrame(() => {
+                                card.style.opacity = 1;
+                                card.style.transform = 'translateY(0)';
+                            });
+                        }, index * 800);
+
+                        if ((index + 1) % 5 === 0) {
+                            const lineBreak = document.createElement('br');
+                            resultDiv.appendChild(lineBreak);
+                        }
+                    });
+                }
+
+                setTimeout(() => {
+                    playSound('result-sound.mp3');
+                }, 300);
+
+                document.getElementById('removeDrawnButton').style.display = 'inline-block';
+            }, 7000); // 7000 milliseconds = 7 seconds
+        });
+
+        document.getElementById('removeDrawnButton').addEventListener('click', function () {
+            items = items.filter(item => !drawnItems.includes(item));
+            drawnItems = [];
+            document.getElementById('result').innerHTML = '';
+            writeDataToFirebase();
+            document.getElementById('inputNames').value = items.join(', ');
+            document.getElementById('removeDrawnButton').style.display = 'none';
+        });
+
+        document.getElementById('fullscreenButton').addEventListener('click', function () {
+            const container1 = document.getElementById('container1');
+            if (!document.fullscreenElement) {
+                if (container1.requestFullscreen) {
+                    container1.requestFullscreen();
+                } else if (container1.webkitRequestFullscreen) {
+                    container1.webkitRequestFullscreen();
+                } else if (container1.msRequestFullscreen) {
+                    container1.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        });
+
+        function updatePreviousResults() {
+            const previousResultsList = document.getElementById('previousResults');
+            previousResultsList.innerHTML = allResults.length === 0
+                ? `<li class='list-group-item empty'>No results yet</li>`
+                : allResults.map((result, index) => `<li class='list-group-item'>Draw ${index + 1}: ${result}</li>`).join('');
+            previousResultsList.style.display = 'block';
+        }
+
+        document.getElementById('exportButton').addEventListener('click', function () {
+            if (allResults.length === 0) {
+                alert("No results to export.");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Draw Number,Results\n";
+            allResults.forEach((result, index) => {
+                const row = `Draw ${index + 1},"${result}" \n`;
+                csvContent += row;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "draw_results.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        document.getElementById('clearHistoryButton').addEventListener('click', function () {
+            const confirmClear = confirm("Are you sure you want to clear the draw history? This action cannot be undone.");
+            if (!confirmClear) return;
+
+            allResults = [];
+            writeDataToFirebase();
+            document.getElementById('previousResults').innerHTML = `<li class='list-group-item empty'>No results yet</li>`;
+            alert("Draw history has been cleared.");
+        });
+
+        document.getElementById('fontSizeInput').addEventListener('input', function () {
+            currentFontSize = parseInt(this.value, 10);
+        });
+
+        function fadeInCharacterByCharacter(text, container) {
+            container.innerHTML = '';
+            let index = 0;
+
+            const interval = setInterval(() => {
+                if (index < text.length) {
+                    const span = document.createElement('span');
+                    span.innerText = text[index];
+                    span.style.opacity = 0;
+                    container.appendChild(span);
+
+                    setTimeout(() => {
+                        span.style.transition = 'opacity 0.5s';
+                        span.style.opacity = 1;
+                    }, 50 * index);
+
+                    index++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 2000);
+        }
+    </script>
 </body>
 </html>
