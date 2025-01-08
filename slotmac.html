@@ -279,15 +279,21 @@
                 document.getElementById('carousel5')
             ];
 
+            // Generate an array of numbers from 0001 to 1500
+            const numbers = Array.from({ length: 1500 }, (_, i) => (i + 1).toString().padStart(4, '0'));
+
             carousels.forEach((carousel, index) => {
                 // Clear existing items
                 carousel.innerHTML = '';
 
-                // Add 10 items to the carousel
+                // Shuffle the numbers array to randomize the order
+                const shuffledNumbers = numbers.sort(() => Math.random() - 0.5);
+
+                // Add 10 random 4-digit numbers to the carousel
                 for (let i = 0; i < 10; i++) {
                     const item = document.createElement('div');
                     item.className = 'carousel-item';
-                    item.textContent = Math.floor(Math.random() * 10); // Random number between 0 and 9
+                    item.textContent = shuffledNumbers[i]; // Use the shuffled numbers
                     carousel.appendChild(item);
                 }
 
