@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <title>Annual Grand Dinner - Name/Number Drawing Program</title>
     <style>
+        /* Your existing CSS styles */
         body {
             background-color: #030637;
             font-family: 'Roboto', sans-serif;
@@ -321,235 +322,38 @@
         let allResults = [];
         let currentFontSize = 30;
 
-        function playSound(soundFile) {
-            const audio = new Audio(soundFile);
-            audio.play();
-        }
-
-        // Function to create sparkles
-        function createSparkles() {
-            const sparklesContainer = document.getElementById('sparkles');
-            const numSparkles = 50; // Number of sparkles to create
-
-            for (let i = 0; i < numSparkles; i++) {
-                const sparkle = document.createElement('div');
-                sparkle.style.left = `${Math.random() * 100}%`;
-                sparkle.style.top = `${Math.random() * 100}%`;
-                sparkle.style.animationDelay = `${Math.random() * 2}s`; // Random delay for animation
-                sparklesContainer.appendChild(sparkle);
-            }
-        }
-
-        // Call the function to create sparkles when the page loads
-        window.onload = function () {
-            createSparkles();
-            firebase.database().ref('drawResults').on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    items = data.items || [];
-                    drawnItems = data.drawnItems || [];
-                    allResults = data.allResults || [];
-                    document.getElementById('inputNames').value = items.join(', ');
-                    updatePreviousResults();
-                }
-            });
-        };
-
         function writeDataToFirebase() {
             firebase.database().ref('drawResults').set({
                 items: items,
                 drawnItems: drawnItems,
-                allResults: allResults
+                allResults: allResults,
+                currentFontSize: currentFontSize  // Include currentFontSize in Firebase
             });
         }
 
-        function removeDuplicates(array) {
-            return [...new Set(array)];
-        }
+        // Listen for changes in Firebase
+        firebase.database().ref('drawResults').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                items = data.items || [];
+                drawnItems = data.drawnItems || [];
+                allResults = data.allResults || [];
+                currentFontSize = data.currentFontSize || 30;  // Update currentFontSize from Firebase
 
-        document.getElementById('inputNames').addEventListener('input', function () {
-            const input = this.value;
-            items = removeDuplicates(input.split(/[,|\n]+/).map(item => item.trim()).filter(item => item));
-            writeDataToFirebase();
-        });
-
-        document.getElementById('drawButton').addEventListener('click', function () {
-            // Show the modal with the slot machine animation
-            const modal = new bootstrap.Modal(document.getElementById('slotMachineModal'));
-            modal.show();
-
-            // Send a message to the iframe to reset the animation
-            const iframe = document.querySelector('#slotMachineModal iframe');
-            iframe.onload = function () {
-                iframe.contentWindow.postMessage('resetAnimation', '*');
-            };
-
-            // Set a timeout to close the modal after 7 seconds and proceed with the draw function
-            setTimeout(() => {
-                modal.hide(); // Close the modal
-
-                // Proceed with the original draw function
-                const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
-                const resultDiv = document.getElementById('result');
-
-                if (numberOfDraws > items.length) {
-                    alert("Number of draws cannot exceed the number of unique items.");
-                    return;
-                }
-
-                const availableItems = items.filter(item => !drawnItems.includes(item));
-                const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
-                const selectedItems = shuffledItems.slice(0, numberOfDraws);
-
-                drawnItems.push(...selectedItems);
-                allResults.push(selectedItems.join(', '));
-
-                writeDataToFirebase();
+                // Update the UI
+                document.getElementById('inputNames').value = items.join(', ');
+                document.getElementById('fontSizeInput').value = currentFontSize;  // Update font size input
                 updatePreviousResults();
-
-                resultDiv.innerHTML = '';
-                resultDiv.style.display = 'block';
-
-                if (numberOfDraws === 1) {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.style.fontSize = currentFontSize + 'px';
-                    resultDiv.appendChild(card);
-
-                    card.style.opacity = 0;
-                    requestAnimationFrame(() => {
-                        card.style.transition = 'opacity 0.5s';
-                        card.style.opacity = 1;
-                    });
-
-                    fadeInCharacterByCharacter(selectedItems[0], card);
-                } else {
-                    selectedItems.forEach((item, index) => {
-                        const card = document.createElement('div');
-                        card.className = 'card';
-                        card.style.fontSize = currentFontSize + 'px';
-                        card.innerText = item;
-                        resultDiv.appendChild(card);
-
-                        setTimeout(() => {
-                            card.style.opacity = 0;
-                            requestAnimationFrame(() => {
-                                card.style.opacity = 1;
-                                card.style.transform = 'translateY(0)';
-                            });
-                        }, index * 800);
-
-                        if ((index + 1) % 5 === 0) {
-                            const lineBreak = document.createElement('br');
-                            resultDiv.appendChild(lineBreak);
-                        }
-                    });
-                }
-
-                setTimeout(() => {
-                    playSound('fanfare-sound.mp3');
-                }, 300);
-
-                document.getElementById('removeDrawnButton').style.display = 'inline-block';
-            }, 7000); // 7000 milliseconds = 7 seconds
-        });
-
-        document.getElementById('removeDrawnButton').addEventListener('click', function () {
-            items = items.filter(item => !drawnItems.includes(item));
-            drawnItems = [];
-            document.getElementById('result').innerHTML = '';
-            writeDataToFirebase();
-            document.getElementById('inputNames').value = items.join(', ');
-            document.getElementById('removeDrawnButton').style.display = 'none';
-        });
-
-        document.getElementById('fullscreenButton').addEventListener('click', function () {
-            const container1 = document.getElementById('container1');
-            if (!document.fullscreenElement) {
-                if (container1.requestFullscreen) {
-                    container1.requestFullscreen();
-                } else if (container1.webkitRequestFullscreen) {
-                    container1.webkitRequestFullscreen();
-                } else if (container1.msRequestFullscreen) {
-                    container1.msRequestFullscreen();
-                }
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                } else if (document.msExitFullscreen) {
-                    document.msExitFullscreen();
-                }
             }
         });
 
-        function updatePreviousResults() {
-            const previousResultsList = document.getElementById('previousResults');
-            previousResultsList.innerHTML = allResults.length === 0
-                ? `<li class='list-group-item empty'>No results yet</li>`
-                : allResults.map((result, index) => `<li class='list-group-item'>Draw ${index + 1}: ${result}</li>`).join('');
-            previousResultsList.style.display = 'block';
-        }
-
-        document.getElementById('exportButton').addEventListener('click', function () {
-            if (allResults.length === 0) {
-                alert("No results to export.");
-                return;
-            }
-
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Draw Number,Results\n";
-            allResults.forEach((result, index) => {
-                const row = `Draw ${index + 1},"${result}" \n`;
-                csvContent += row;
-            });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "draw_results.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        });
-
-        document.getElementById('clearHistoryButton').addEventListener('click', function () {
-            const confirmClear = confirm("Are you sure you want to clear the draw history? This action cannot be undone.");
-            if (!confirmClear) return;
-
-            allResults = [];
-            writeDataToFirebase();
-            document.getElementById('previousResults').innerHTML = `<li class='list-group-item empty'>No results yet</li>`;
-            alert("Draw history has been cleared.");
-        });
-
+        // Font size input listener
         document.getElementById('fontSizeInput').addEventListener('input', function () {
             currentFontSize = parseInt(this.value, 10);
+            writeDataToFirebase();  // Write the new font size to Firebase
         });
 
-        function fadeInCharacterByCharacter(text, container) {
-            container.innerHTML = '';
-            let index = 0;
-
-            const interval = setInterval(() => {
-                if (index < text.length) {
-                    const span = document.createElement('span');
-                    span.innerText = text[index];
-                    span.style.opacity = 0;
-                    container.appendChild(span);
-
-                    setTimeout(() => {
-                        span.style.transition = 'opacity 0.5s';
-                        span.style.opacity = 1;
-                    }, 50 * index);
-
-                    index++;
-                } else {
-                    clearInterval(interval);
-                }
-            }, 2000);
-        }
+        // Rest of your existing JavaScript code...
     </script>
 </body>
 </html>
