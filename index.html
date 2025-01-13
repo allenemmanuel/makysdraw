@@ -301,6 +301,10 @@
             <label for="fontSizeInput" style="color: antiquewhite;">Font Size (px):</label>
             <input type="number" class="form-control" id="fontSizeInput" min="10" value="30" style="margin-top: 10px;">
         </div>
+        <div class="mt-4">
+            <label for="speedInput" style="color: antiquewhite;">Character Appearance Speed (ms):</label>
+            <input type="number" class="form-control" id="speedInput" min="50" value="200" style="margin-top: 10px;">
+        </div>
     </div>
 
     <script>
@@ -403,7 +407,9 @@
                         card.style.opacity = 1;
                     });
 
-                    fadeInCharacterByCharacter(selectedItems[0], card);
+                    // Get the speed value from the input field
+                    const speed = parseInt(document.getElementById('speedInput').value, 10);
+                    fadeInCharacterByCharacter(selectedItems[0], card, speed); // Pass the speed value
                 } else {
                     selectedItems.forEach((item, index) => {
                         const card = document.createElement('div');
@@ -418,7 +424,7 @@
                                 card.style.opacity = 1;
                                 card.style.transform = 'translateY(0)';
                             });
-                        }, index * 1000);
+                        }, index * 800);
 
                         if ((index + 1) % 5 === 0) {
                             const lineBreak = document.createElement('br');
@@ -511,7 +517,7 @@
         });
 
         // Fade in characters one by one
-        function fadeInCharacterByCharacter(text, container) {
+        function fadeInCharacterByCharacter(text, container, speed = 200) {
             container.innerHTML = '';
             let index = 0;
 
@@ -531,7 +537,7 @@
                 } else {
                     clearInterval(interval);
                 }
-            }, 200);
+            }, speed); // Use the speed parameter to control the delay between characters
         }
 
         // Play sound
