@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucky Draw with Editable Numbers</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Darker gradient background */
+        body {
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(45deg, #000000, #111111, #222222, #111111, #000000);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Floating shapes */
+        .floating-shapes {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .floating-shapes div {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 10s infinite ease-in-out;
+        }
+
+        /* Sparkles */
+        .sparkles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .sparkles div {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            animation: sparkle 2s infinite ease-in-out;
+        }
+
+        /* Container and content styles */
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 10;
+        }
+
+        .content {
+            display: none;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+        }
+
+        .content.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Table background and styling */
+        table {
+            width: 100%;
+            height: 100vh;
+            border-collapse: collapse;
+            margin: auto;
+            background-color: rgb(179, 170, 160); /* Antiquewhite background for the table */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Add a subtle shadow for better contrast */
+            border-radius: 15px;
+        }
+
+        td {
+            border: 1px solid #000000;
+            padding: 15px;
+            text-align: center;
+            font-size: 18px;
+            position: relative;
+        }
+
+        td::after {
+            content: '';
+            display: block;
+            width: 80%;
+            height: 1px;
+            background-color: rgba(0, 0, 0, 0.1);
+            margin: 5px auto;
+        }
+
+        .number-input {
+            width: 80px; /* Adjust the width of the input field */
+            padding: 5px;
+            font-size: 18px;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            position: relative; /* Enable positioning */
+            top: -20px; /* Move the input element upward */
+        }
+
+        .prize-name {
+            font-size: 16px;
+            color: #333;
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: white; /* Ensure text is visible on dark background */
+        }
+
+        /* Navigation Arrows */
+        .arrow {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 40px;
+            cursor: pointer;
+            user-select: none;
+            color: #007bff;
+            z-index: 1000;
+        }
+
+        .arrow.left { left: 20px; }
+        .arrow.right { right: 20px; }
+    </style>
+</head>
+<body>
+    <!-- Animated background elements -->
+    <div class="floating-shapes">
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+    </div>
+    <div class="sparkles" id="sparkles"></div>
+
+    <!-- Container and content -->
+    <div class="container">
+        <!-- Page 1 -->
+        <div class="content active">
+            <table>
+                <tbody>
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Elba Coffee Maker</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Guzel Study Desk 1M</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Pensonic 3.0L Slow Cooker</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name" style="position: absolute; bottom: 4px;">Gaming Combo<br>Mousepad & Headset</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Phillips 2100w Hair Dryer</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 6</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 7</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 8</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 9</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 10</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 11</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 12</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 13</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 14</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 15</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 16</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 17</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 18</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 19</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 20</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 21</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 22</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 23</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 24</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="#">
+                            <div class="prize-name">Prize 25</div>
+                        </td>
+                    </tr>
+                    <!-- More rows... -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Page 2 -->
+        <div class="content active">
+            <table>
+                <tbody>
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" placeholder="123">
+                            <div class="prize-name">Prize 1</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="456">
+                            <div class="prize-name">Prize 2</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="789">
+                            <div class="prize-name">Prize 3</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="012">
+                            <div class="prize-name">Prize 4</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="345">
+                            <div class="prize-name">Prize 5</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" placeholder="678">
+                            <div class="prize-name">Prize 6</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="901">
+                            <div class="prize-name">Prize 7</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="234">
+                            <div class="prize-name">Prize 8</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="567">
+                            <div class="prize-name">Prize 9</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="890">
+                            <div class="prize-name">Prize 10</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" placeholder="678">
+                            <div class="prize-name">Prize 6</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="901">
+                            <div class="prize-name">Prize 7</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="234">
+                            <div class="prize-name">Prize 8</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="567">
+                            <div class="prize-name">Prize 9</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="890">
+                            <div class="prize-name">Prize 10</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" placeholder="678">
+                            <div class="prize-name">Prize 6</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="901">
+                            <div class="prize-name">Prize 7</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="234">
+                            <div class="prize-name">Prize 8</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="567">
+                            <div class="prize-name">Prize 9</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="890">
+                            <div class="prize-name">Prize 10</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" placeholder="678">
+                            <div class="prize-name">Prize 6</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="901">
+                            <div class="prize-name">Prize 7</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="234">
+                            <div class="prize-name">Prize 8</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="567">
+                            <div class="prize-name">Prize 9</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" placeholder="890">
+                            <div class="prize-name">Prize 50</div>
+                        </td>
+                    </tr>
+                    <!-- More rows... -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Repeat for Pages 3 to 9 -->
+    </div>
+
+    <!-- Navigation Arrows -->
+    <div class="arrow left" onclick="prevContent()">&#10094;</div>
+    <div class="arrow right" onclick="nextContent()">&#10095;</div>
+
+    <script>
+        // Sparkles generation
+        function createSparkles() {
+            const sparklesContainer = document.getElementById('sparkles');
+            const numSparkles = 20;
+
+            for (let i = 0; i < numSparkles; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.classList.add('sparkle');
+                const x = Math.random() * window.innerWidth;
+                const y = Math.random() * window.innerHeight;
+                sparkle.style.left = `${x}px`;
+                sparkle.style.top = `${y}px`;
+                const delay = Math.random() * 2;
+                sparkle.style.animationDelay = `${delay}s`;
+                sparklesContainer.appendChild(sparkle);
+            }
+        }
+
+        createSparkles();
+
+        // Pagination logic
+        let currentIndex = 0;
+        const contents = document.querySelectorAll('.content');
+
+        function showContent(index) {
+            contents.forEach((content, i) => {
+                content.classList.toggle('active', i === index);
+            });
+        }
+
+        function nextContent() {
+            currentIndex = (currentIndex + 1) % contents.length;
+            showContent(currentIndex);
+        }
+
+        function prevContent() {
+            currentIndex = (currentIndex - 1 + contents.length) % contents.length;
+            showContent(currentIndex);
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowRight') {
+                nextContent();
+            } else if (event.key === 'ArrowLeft') {
+                prevContent();
+            }
+        });
+
+        showContent(currentIndex);
+    </script>
+</body>
+</html>
