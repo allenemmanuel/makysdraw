@@ -150,10 +150,7 @@
             <tbody>
                 <!-- Row 1 -->
                 <tr>
-                    <td>
-                        <input type="text" class="number-input" readonly>
-                        <div class="prize-name">Prize 1</div>
-                    </td>
+                    <td><input type="text" class="number-input" readonly></td>
                     <td><input type="text" class="number-input" readonly></td>
                     <td><input type="text" class="number-input" readonly></td>
                     <td><input type="text" class="number-input" readonly></td>
@@ -211,12 +208,18 @@
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // Function to populate the input fields with drawnItems
-        function populateInputFields(drawnItems) {
+        // Function to populate the input fields with allResults
+        function populateInputFields(allResults) {
             const inputFields = document.querySelectorAll('.number-input');
-            inputFields.forEach((input, index) => {
-                if (index < drawnItems.length) {
-                    input.value = drawnItems[index]; // Fill the input with the drawn item
+            let index = 0;
+
+            // Flatten the allResults array (each draw result is a string of comma-separated items)
+            const flattenedResults = allResults.flatMap(result => result.split(', '));
+
+            inputFields.forEach((input) => {
+                if (index < flattenedResults.length) {
+                    input.value = flattenedResults[index]; // Fill the input with the result item
+                    index++;
                 } else {
                     input.value = ''; // Clear the input if no more items are available
                 }
@@ -224,9 +227,9 @@
         }
 
         // Listen for changes in Firebase
-        database.ref('drawResults/drawnItems').on('value', (snapshot) => {
-            const drawnItems = snapshot.val() || []; // Get drawnItems from Firebase
-            populateInputFields(drawnItems); // Populate the input fields with the latest data
+        database.ref('drawResults/allResults').on('value', (snapshot) => {
+            const allResults = snapshot.val() || []; // Get allResults from Firebase
+            populateInputFields(allResults); // Populate the input fields with the latest data
         });
     </script>
 </body>
