@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagination with Lucky Draw Tables</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .content {
+            display: none;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+        }
+        .content.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .arrow {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 40px;
+            cursor: pointer;
+            user-select: none;
+            color: #007bff;
+            z-index: 1000;
+        }
+        .arrow.left {
+            left: 20px;
+        }
+        .arrow.right {
+            right: 20px;
+        }
+        table {
+            width: 90%;
+            height: 80vh;
+            border-collapse: collapse;
+            margin: auto;
+        }
+        td {
+            border: 1px solid #ddd;
+            padding: 15px;
+            text-align: center;
+            font-size: 18px;
+            position: relative;
+        }
+        .number-placeholder {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        .prize-name {
+            font-size: 16px;
+            color: #333;
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+        }
+        h2 {
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Page 1 -->
+        <div class="content active">
+            <h2>Page 1</h2>
+            <table>
+                <tbody>
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" placeholder="123">
+                            <div class="prize-name">Prize 1</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">456</div>
+                            <div class="prize-name">Prize 2</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">789</div>
+                            <div class="prize-name">Prize 3</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">012</div>
+                            <div class="prize-name">Prize 4</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">345</div>
+                            <div class="prize-name">Prize 5</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="number-placeholder">678</div>
+                            <div class="prize-name">Prize 6</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">901</div>
+                            <div class="prize-name">Prize 7</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">234</div>
+                            <div class="prize-name">Prize 8</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">567</div>
+                            <div class="prize-name">Prize 9</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">890</div>
+                            <div class="prize-name">Prize 10</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="number-placeholder">111</div>
+                            <div class="prize-name">Prize 11</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">222</div>
+                            <div class="prize-name">Prize 12</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">333</div>
+                            <div class="prize-name">Prize 13</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">444</div>
+                            <div class="prize-name">Prize 14</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">555</div>
+                            <div class="prize-name">Prize 15</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="number-placeholder">666</div>
+                            <div class="prize-name">Prize 16</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">777</div>
+                            <div class="prize-name">Prize 17</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">888</div>
+                            <div class="prize-name">Prize 18</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">999</div>
+                            <div class="prize-name">Prize 19</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">000</div>
+                            <div class="prize-name">Prize 20</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="number-placeholder">101</div>
+                            <div class="prize-name">Prize 21</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">202</div>
+                            <div class="prize-name">Prize 22</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">303</div>
+                            <div class="prize-name">Prize 23</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">404</div>
+                            <div class="prize-name">Prize 24</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">505</div>
+                            <div class="prize-name">Prize 25</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Page 2 -->
+        <div class="content active">
+            <h2>Page 2</h2>
+            <table>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div class="number-placeholder">123</div>
+                            <div class="prize-name">Prize 1</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">456</div>
+                            <div class="prize-name">Prize 2</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">789</div>
+                            <div class="prize-name">Prize 3</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">012</div>
+                            <div class="prize-name">Prize 4</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">345</div>
+                            <div class="prize-name">Prize 5</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="number-placeholder">678</div>
+                            <div class="prize-name">Prize 6</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">901</div>
+                            <div class="prize-name">Prize 7</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">234</div>
+                            <div class="prize-name">Prize 8</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">567</div>
+                            <div class="prize-name">Prize 9</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">890</div>
+                            <div class="prize-name">Prize 10</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="number-placeholder">111</div>
+                            <div class="prize-name">Prize 11</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">222</div>
+                            <div class="prize-name">Prize 12</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">333</div>
+                            <div class="prize-name">Prize 13</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">444</div>
+                            <div class="prize-name">Prize 14</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">555</div>
+                            <div class="prize-name">Prize 15</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="number-placeholder">666</div>
+                            <div class="prize-name">Prize 16</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">777</div>
+                            <div class="prize-name">Prize 17</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">888</div>
+                            <div class="prize-name">Prize 18</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">999</div>
+                            <div class="prize-name">Prize 19</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">000</div>
+                            <div class="prize-name">Prize 20</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="number-placeholder">101</div>
+                            <div class="prize-name">Prize 21</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">202</div>
+                            <div class="prize-name">Prize 22</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">303</div>
+                            <div class="prize-name">Prize 23</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">404</div>
+                            <div class="prize-name">Prize 24</div>
+                        </td>
+                        <td>
+                            <div class="number-placeholder">505</div>
+                            <div class="prize-name">Prize 25</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Repeat for Pages 3 to 9 -->
+    </div>
+
+    <!-- Navigation Arrows -->
+    <div class="arrow left" onclick="prevContent()">&#10094;</div>
+    <div class="arrow right" onclick="nextContent()">&#10095;</div>
+
+    <script>
+        let currentIndex = 0;
+        const contents = document.querySelectorAll('.content');
+
+        function showContent(index) {
+            contents.forEach((content, i) => {
+                content.classList.toggle('active', i === index);
+            });
+        }
+
+        function nextContent() {
+            currentIndex = (currentIndex + 1) % contents.length;
+            showContent(currentIndex);
+        }
+
+        function prevContent() {
+            currentIndex = (currentIndex - 1 + contents.length) % contents.length;
+            showContent(currentIndex);
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowRight') {
+                nextContent();
+            } else if (event.key === 'ArrowLeft') {
+                prevContent();
+            }
+        });
+
+        showContent(currentIndex);
+    </script>
+</body>
+</html>
