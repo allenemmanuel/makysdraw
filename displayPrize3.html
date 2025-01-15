@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Display Prizes</title>
+    <title>Display Prizes with Pagination</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        /* Darker gradient background */
+        /* Existing styles (unchanged) */
         body {
             margin: 0;
             height: 100vh;
@@ -22,7 +22,6 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* Floating shapes */
         .floating-shapes {
             position: absolute;
             top: 0;
@@ -45,7 +44,6 @@
             100% { transform: translateY(0) rotate(360deg); }
         }
 
-        /* Sparkles */
         .sparkles {
             position: absolute;
             top: 0;
@@ -70,7 +68,6 @@
             100% { opacity: 0; transform: scale(0); }
         }
 
-        /* Container and content styles */
         .container {
             display: flex;
             justify-content: center;
@@ -82,14 +79,13 @@
             z-index: 10;
         }
 
-        /* Table background and styling */
         table {
             width: 100%;
             height: 95vh;
             border-collapse: collapse;
             margin: auto;
-            background-color: rgb(179, 170, 160); /* Antiquewhite background for the table */
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Add a subtle shadow for better contrast */
+            background-color: rgb(179, 170, 160);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
             border-radius: 15px;
         }
 
@@ -111,14 +107,14 @@
         }
 
         .number-input {
-            width: 80px; /* Adjust the width of the input field */
+            width: 80px;
             padding: 5px;
             font-size: 18px;
             text-align: center;
             border: 1px solid #ccc;
             border-radius: 4px;
-            position: relative; /* Enable positioning */
-            top: -20px; /* Move the input element upward */
+            position: relative;
+            top: -20px;
         }
 
         .prize-name {
@@ -129,6 +125,36 @@
             left: 50%;
             transform: translateX(-50%);
             width: 100%;
+        }
+
+        /* Pagination styles */
+        .content {
+            display: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        .content.active {
+            display: block;
+        }
+
+        .arrow {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 40px;
+            cursor: pointer;
+            user-select: none;
+            color: #007bff;
+            z-index: 1000;
+        }
+
+        .arrow.left {
+            left: 20px;
+        }
+
+        .arrow.right {
+            right: 20px;
         }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
@@ -146,60 +172,121 @@
 
     <!-- Container and content -->
     <div class="container">
-        <table>
-            <tbody>
-                <!-- Row 1 -->
-                <tr>
-                    <td>
-                        <input type="text" class="number-input" readonly>
-                        <div class="prize-name" style="position: absolute; bottom: 4px;">Gaming Combo<br>Mousepad & Headset</div>
-                    </td>
-                    <td>
-                        <input type="text" class="number-input" readonly>
-                        <div class="prize-name">Elba Coffee Maker</div>
-                    </td>
-                    <td><input type="text" class="number-input" readonly></td>
-                    <td><input type="text" class="number-input" readonly></td>
-                    <td><input type="text" class="number-input" readonly></td>
-                </tr>
-                <!-- Row 2 -->
-                <tr>
-                    <td><input type="text" class="number-input" readonly></td>
-                    <td><input type="text" class="number-input" readonly></td>
-                    <td><input type="text" class="number-input" readonly></td>
-                    <td><input type="text" class="number-input" readonly></td>
-                    <td><input type="text" class="number-input" readonly></td>
-                </tr>
-                <!-- Row 3 -->
-                <tr>
-                    <td><input type="text" class="number-input" readonly></td>
-                    <td><input type="text" class="number-input" readonly></td>
-                    <td><input type="text" class="number-input" readonly></td>
-                    <td><input type="text" class="number-input" readonly></td>
-                    <td><input type="text" class="number-input" readonly></td>
-                </tr>
-                <!-- Row 4 -->
-                <tr>
-                    <td><input type="text" class="number-input" readonly></td>
-                    <td><input type="text" class="number-input" readonly></td>
-                    <td><input type="text" class="number-input" readonly></td>
-                    <td><input type="text" class="number-input" readonly></td>
-                    <td><input type="text" class="number-input" readonly></td>
-                </tr>
-                <!-- Row 5 -->
-                <tr>
-                    <td><input type="text" class="number-input" readonly></td>
-                    <td><input type="text" class="number-input" readonly></td>
-                    <td><input type="text" class="number-input" readonly></td>
-                    <td><input type="text" class="number-input" readonly></td>
-                    <td><input type="text" class="number-input" readonly></td>
-                </tr>
-            </tbody>
-        </table>
+        <!-- Page 1 -->
+        <div class="content active">
+            <table>
+                <tbody>
+                    <!-- Row 1 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 4px;">Gaming Combo<br>Mousepad & Headset</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">Elba Coffee Maker</div>
+                        </td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                    </tr>
+                    <!-- Row 2 -->
+                    <tr>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                    </tr>
+                    <!-- Row 3 -->
+                    <tr>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                    </tr>
+                    <!-- Row 4 -->
+                    <tr>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                    </tr>
+                    <!-- Row 5 -->
+                    <tr>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Page 2 -->
+        <div class="content">
+            <table>
+                <tbody>
+                    <!-- Row 1 -->
+                    <tr>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name" style="position: absolute; bottom: 4px;">Prize 26</div>
+                        </td>
+                        <td>
+                            <input type="text" class="number-input" readonly>
+                            <div class="prize-name">Prize 27</div>
+                        </td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                    </tr>
+                    <!-- Row 2 -->
+                    <tr>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                    </tr>
+                    <!-- Row 3 -->
+                    <tr>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                    </tr>
+                    <!-- Row 4 -->
+                    <tr>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                    </tr>
+                    <!-- Row 5 -->
+                    <tr>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                        <td><input type="text" class="number-input" readonly></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
+    <!-- Navigation Arrows -->
+    <div class="arrow left" onclick="prevContent()">&#10094;</div>
+    <div class="arrow right" onclick="nextContent()">&#10095;</div>
+
     <script>
-        // Firebase configuration (use the same as in index.html)
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
             authDomain: "makysdraw-87237.firebaseapp.com",
@@ -213,6 +300,36 @@
         // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+
+        // Pagination functionality
+        let currentIndex = 0;
+        const contents = document.querySelectorAll('.content');
+
+        function showContent(index) {
+            contents.forEach((content, i) => {
+                content.classList.toggle('active', i === index);
+            });
+        }
+
+        function nextContent() {
+            currentIndex = (currentIndex + 1) % contents.length;
+            showContent(currentIndex);
+        }
+
+        function prevContent() {
+            currentIndex = (currentIndex - 1 + contents.length) % contents.length;
+            showContent(currentIndex);
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowRight') {
+                nextContent();
+            } else if (event.key === 'ArrowLeft') {
+                prevContent();
+            }
+        });
+
+        showContent(currentIndex);
 
         // Function to populate the input fields with allResults
         function populateInputFields(allResults) {
