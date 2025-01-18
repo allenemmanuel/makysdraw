@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <title>Annual Grand Dinner - Name/Number Drawing Program</title>
     <style>
-        /* Your existing CSS styles */
         body {
             background-color: #030637;
             font-family: 'Roboto', sans-serif;
@@ -301,10 +300,6 @@
             <label for="fontSizeInput" style="color: antiquewhite;">Font Size (px):</label>
             <input type="number" class="form-control" id="fontSizeInput" min="10" value="30" style="margin-top: 10px;">
         </div>
-        <div class="mt-4">
-            <label for="speedInput" style="color: antiquewhite;">Character Appearance Speed (ms):</label>
-            <input type="number" class="form-control" id="speedInput" min="50" value="200" style="margin-top: 10px;">
-        </div>
     </div>
 
     <script>
@@ -326,48 +321,58 @@
         let allResults = [];
         let currentFontSize = 30;
 
+        function playSound(soundFile) {
+            const audio = new Audio(soundFile);
+            audio.play();
+        }
+
+        // Function to create sparkles
+        function createSparkles() {
+            const sparklesContainer = document.getElementById('sparkles');
+            const numSparkles = 50; // Number of sparkles to create
+
+            for (let i = 0; i < numSparkles; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.style.left = `${Math.random() * 100}%`;
+                sparkle.style.top = `${Math.random() * 100}%`;
+                sparkle.style.animationDelay = `${Math.random() * 2}s`; // Random delay for animation
+                sparklesContainer.appendChild(sparkle);
+            }
+        }
+
+        // Call the function to create sparkles when the page loads
+        window.onload = function () {
+            createSparkles();
+            firebase.database().ref('drawResults').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    items = data.items || [];
+                    drawnItems = data.drawnItems || [];
+                    allResults = data.allResults || [];
+                    document.getElementById('inputNames').value = items.join(', ');
+                    updatePreviousResults();
+                }
+            });
+        };
+
         function writeDataToFirebase() {
             firebase.database().ref('drawResults').set({
                 items: items,
                 drawnItems: drawnItems,
-                allResults: allResults,
-                currentFontSize: currentFontSize  // Include currentFontSize in Firebase
+                allResults: allResults
             });
         }
 
-        // Listen for changes in Firebase
-        firebase.database().ref('drawResults').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                items = data.items || [];
-                drawnItems = data.drawnItems || [];
-                allResults = data.allResults || [];
-                currentFontSize = data.currentFontSize || 30;  // Update currentFontSize from Firebase
+        function removeDuplicates(array) {
+            return [...new Set(array)];
+        }
 
-                // Update the UI
-                document.getElementById('inputNames').value = items.join(', ');
-                document.getElementById('fontSizeInput').value = currentFontSize;  // Update font size input
-                updatePreviousResults();
-            }
-        });
-
-        
-        // Add an event listener for the textarea input
         document.getElementById('inputNames').addEventListener('input', function () {
-            const inputText = this.value;
-            // Parse the input into an array of items
-            items = inputText.split(',').map(item => item.trim()).filter(item => item.length > 0);
-            // Save the updated items array to Firebase
+            const input = this.value;
+            items = removeDuplicates(input.split(/[,|\n]+/).map(item => item.trim()).filter(item => item));
             writeDataToFirebase();
         });
 
-        // Font size input listener
-        document.getElementById('fontSizeInput').addEventListener('input', function () {
-            currentFontSize = parseInt(this.value, 10);
-            writeDataToFirebase();  // Write the new font size to Firebase
-        });
-
-        // Draw button event listener
         document.getElementById('drawButton').addEventListener('click', function () {
             // Show the modal with the slot machine animation
             const modal = new bootstrap.Modal(document.getElementById('slotMachineModal'));
@@ -417,9 +422,7 @@
                         card.style.opacity = 1;
                     });
 
-                    // Get the speed value from the input field
-                    const speed = parseInt(document.getElementById('speedInput').value, 10);
-                    fadeInCharacterByCharacter(selectedItems[0], card, speed); // Pass the speed value
+                    fadeInCharacterByCharacter(selectedItems[0], card);
                 } else {
                     selectedItems.forEach((item, index) => {
                         const card = document.createElement('div');
@@ -451,7 +454,15 @@
             }, 7000); // 7000 milliseconds = 7 seconds
         });
 
-        // Fullscreen button event listener
+        document.getElementById('removeDrawnButton').addEventListener('click', function () {
+            items = items.filter(item => !drawnItems.includes(item));
+            drawnItems = [];
+            document.getElementById('result').innerHTML = '';
+            writeDataToFirebase();
+            document.getElementById('inputNames').value = items.join(', ');
+            document.getElementById('removeDrawnButton').style.display = 'none';
+        });
+
         document.getElementById('fullscreenButton').addEventListener('click', function () {
             const container1 = document.getElementById('container1');
             if (!document.fullscreenElement) {
@@ -473,17 +484,6 @@
             }
         });
 
-        // Remove drawn items button event listener
-        document.getElementById('removeDrawnButton').addEventListener('click', function () {
-            items = items.filter(item => !drawnItems.includes(item));
-            drawnItems = [];
-            document.getElementById('result').innerHTML = '';
-            writeDataToFirebase();
-            document.getElementById('inputNames').value = items.join(', ');
-            document.getElementById('removeDrawnButton').style.display = 'none';
-        });
-
-        // Update previous results
         function updatePreviousResults() {
             const previousResultsList = document.getElementById('previousResults');
             previousResultsList.innerHTML = allResults.length === 0
@@ -492,7 +492,6 @@
             previousResultsList.style.display = 'block';
         }
 
-        // Export results to CSV
         document.getElementById('exportButton').addEventListener('click', function () {
             if (allResults.length === 0) {
                 alert("No results to export.");
@@ -515,7 +514,6 @@
             document.body.removeChild(link);
         });
 
-        // Clear history button event listener
         document.getElementById('clearHistoryButton').addEventListener('click', function () {
             const confirmClear = confirm("Are you sure you want to clear the draw history? This action cannot be undone.");
             if (!confirmClear) return;
@@ -526,8 +524,11 @@
             alert("Draw history has been cleared.");
         });
 
-        // Fade in characters one by one
-        function fadeInCharacterByCharacter(text, container, speed = 200) {
+        document.getElementById('fontSizeInput').addEventListener('input', function () {
+            currentFontSize = parseInt(this.value, 10);
+        });
+
+        function fadeInCharacterByCharacter(text, container) {
             container.innerHTML = '';
             let index = 0;
 
@@ -547,33 +548,8 @@
                 } else {
                     clearInterval(interval);
                 }
-            }, speed); // Use the speed parameter to control the delay between characters
+            }, 2000);
         }
-
-        // Play sound
-        function playSound(soundFile) {
-            const audio = new Audio(soundFile);
-            audio.play();
-        }
-
-        // Create sparkles
-        function createSparkles() {
-            const sparklesContainer = document.getElementById('sparkles');
-            const numSparkles = 50; // Number of sparkles to create
-
-            for (let i = 0; i < numSparkles; i++) {
-                const sparkle = document.createElement('div');
-                sparkle.style.left = `${Math.random() * 100}%`;
-                sparkle.style.top = `${Math.random() * 100}%`;
-                sparkle.style.animationDelay = `${Math.random() * 2}s`; // Random delay for animation
-                sparklesContainer.appendChild(sparkle);
-            }
-        }
-
-        // Call the function to create sparkles when the page loads
-        window.onload = function () {
-            createSparkles();
-        };
     </script>
 </body>
 </html>
