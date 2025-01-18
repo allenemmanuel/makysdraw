@@ -352,10 +352,13 @@
         });
 
         
+        // Add an event listener for the textarea input
         document.getElementById('inputNames').addEventListener('input', function () {
-            // Split the input by commas and trim any extra spaces
-            items = this.value.split(',').map(item => item.trim());
-            writeDataToFirebase(); // Update Firebase with the new items
+            const inputText = this.value;
+            // Parse the input into an array of items
+            items = inputText.split(',').map(item => item.trim()).filter(item => item.length > 0);
+            // Save the updated items array to Firebase
+            writeDataToFirebase();
         });
 
         // Font size input listener
