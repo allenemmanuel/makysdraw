@@ -351,6 +351,13 @@
             }
         });
 
+        
+        document.getElementById('inputNames').addEventListener('input', function () {
+            // Split the input by commas and trim any extra spaces
+            items = this.value.split(',').map(item => item.trim());
+            writeDataToFirebase(); // Update Firebase with the new items
+        });
+
         // Font size input listener
         document.getElementById('fontSizeInput').addEventListener('input', function () {
             currentFontSize = parseInt(this.value, 10);
