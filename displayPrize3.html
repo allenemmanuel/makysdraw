@@ -80,14 +80,19 @@
         }
 
         table {
-            width: 110%;
-            height: 95vh;
+            width: 115%;
+            height: 100vh;
             border-collapse: collapse;
             margin: auto;
             background-color: rgb(0, 0, 0);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            border-radius: 25px;
+            
+            /* margin-left: -10%; */
+            transform: translateX(-50%);
+            position: relative;
+            left: 50%;
         }
+        
 
         td {
             border: 1px solid #ffffff;
@@ -97,6 +102,43 @@
             font-size: 18px;
             position: relative;
         }
+
+        /* Black Theme: Black background, white text, white borders */
+        .black-theme {
+            background-color: black;
+            color: white;
+        }
+
+        .black-theme td {
+            border: 2px solid white;
+        }
+
+        /* White Theme: White background, black text, black borders */
+        .white-theme {
+            background-color: white;
+            color: black;
+        }
+
+        .white-theme td {
+            border: 2px solid black;
+        }
+
+
+        /* Black Theme: Black background, white text */
+        .black-theme .number-input {
+            background-color: black;
+            color: white;
+            border: 1px solid rgb(0, 0, 0);
+        }
+
+        /* White Theme: White background, black text */
+        .white-theme .number-input {
+            background-color: white;
+            color: black;
+            border: 1px solid rgb(255, 255, 255);
+        }
+
+
 
         /*for the lines in between the number and prize name */
         /* td::after {
@@ -149,15 +191,32 @@
             width: 100%;
         }
 
+        /* Black Theme: White prize name */
+        .black-theme .prize-name {
+            color: white;
+        }
+
+        /* White Theme: Black prize name */
+        .white-theme .prize-name {
+            color: black;
+        }
+
+
         /* Pagination styles */
         .content {
             display: none;
             width: 100%;
             height: 100%;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            position: absolute;
+            
         }
 
         .content.active {
-            display: block;
+            /* display: block; */
+            opacity: 1;
+            z-index: 10; /* Ensures the active page stays on top */
         }
 
         .arrow {
@@ -167,7 +226,7 @@
             font-size: 40px;
             cursor: pointer;
             user-select: none;
-            color: #007bff;
+            color: rgba(0, 0, 0, 0);
             z-index: 1000;
         }
 
@@ -181,8 +240,8 @@
 
         .page-number {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            bottom: 5px;
+            right: 10px;
             font-size: 16px;
             color: rgba(255, 255, 255, 0.7); /* Subtle white with transparency */
             z-index: 1000; /* Ensure it's above other elements */
@@ -450,7 +509,7 @@
                     </tr>
                 </tbody>
             </table>
-            <div id="page-number" class="page-number">(2/8)</div>
+            <div id="page-number" class="page-number" style="color: #7e7e7e;">(2/8)</div>
         </div>
 
         <!-- Page 3 -->
@@ -698,7 +757,7 @@
                     </tr>
                 </tbody>
             </table>
-            <div id="page-number" class="page-number">(4/8)</div>
+            <div id="page-number" class="page-number" style="color: #7e7e7e;">(4/8)</div>
         </div>
 
         <!-- Page 5 -->
@@ -946,7 +1005,7 @@
                     </tr>
                 </tbody>
             </table>
-            <div id="page-number" class="page-number">(6/8)</div>
+            <div id="page-number" class="page-number" style="color: #7e7e7e;">(6/8)</div>
         </div>
 
         <!-- Page 7 -->
@@ -1194,7 +1253,7 @@
                     </tr>
                 </tbody>
             </table>
-            <div id="page-number" class="page-number">(8/8)</div>
+            <div id="page-number" class="page-number" style="color: #7e7e7e;">(8/8)</div>
         </div>
 
         <!-- Page 9 -->
@@ -1279,10 +1338,35 @@
         const contents = document.querySelectorAll('.content');
 
         function showContent(index) {
-            contents.forEach((content, i) => {
-                content.classList.toggle('active', i === index);
-            });
+    contents.forEach((content, i) => {
+        const table = content.querySelector("table");
+
+        if (i === index) {
+            // Show new content smoothly
+            content.style.display = "block"; // Ensure it's visible for fade-in
+            setTimeout(() => content.classList.add("active"), 50); // Slight delay for smoothness
+        } else {
+            // Fade out old content smoothly
+            content.classList.remove("active");
+            setTimeout(() => {
+                content.style.display = "none";
+            }, 500); // Wait for fade-out before hiding
         }
+
+        // Apply alternating themes
+        if (table) {
+            if (i % 2 === 0) { // Odd pages: Black theme
+                table.classList.add("black-theme");
+                table.classList.remove("white-theme");
+            } else { // Even pages: White theme
+                table.classList.add("white-theme");
+                table.classList.remove("black-theme");
+            }
+        }
+    });
+}
+
+
 
         function nextContent() {
             currentIndex = (currentIndex + 1) % contents.length;
