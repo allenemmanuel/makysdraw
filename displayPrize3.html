@@ -8,14 +8,22 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         /* Existing styles (unchanged) */
-        body {
+        /* body {
             margin: 0;
             height: 100vh;
             overflow: hidden;
             background: linear-gradient(45deg, #000000, #111111, #222222, #111111, #000000);
             background-size: 400% 400%;
             animation: gradientBG 15s ease infinite;
-        }
+        } */
+
+        body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden; /* Prevent scrolling */
+}
 
         @keyframes gradientBG {
             0% { background-position: 0% 50%; }
@@ -69,7 +77,7 @@
             100% { opacity: 0; transform: scale(0); }
         }
 
-        .container {
+        /* .container {
             display: flex;
             justify-content: center;
             align-items: center;
@@ -78,9 +86,20 @@
             box-sizing: border-box;
             position: relative;
             z-index: 10;
-        }
+        } */
 
-        table {
+        .container {
+    width: 100vw;
+    height: 100vh;
+    padding: 10px;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+        /* table {
             width: 100%;
             height: 95vh;
             border-collapse: collapse;
@@ -88,7 +107,51 @@
             background-color: rgb(0, 0, 0);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
             border-radius: 25px;
-        }
+        } */
+
+        @media (max-width: 768px) {
+    table {
+        width: 100%;
+        height: auto;
+        overflow-x: auto;
+    }
+    
+    td {
+        font-size: 14px; /* Adjust text size for readability */
+        padding: 8px;
+    }
+
+    .number-input {
+        font-size: 20px; /* Smaller font size for mobile */
+        width: 80px;
+    }
+
+    .number-input.top3 {
+        width: 250px;
+        height: 225px;
+        font-size: 60px;
+    }
+
+    .prize-name {
+        font-size: 14px;
+    }
+
+    .arrow {
+        font-size: 30px;
+    }
+}
+
+
+        table {
+    width: 100vw; /* Full viewport width */
+    height: 100vh; /* Full viewport height */
+    border-collapse: collapse;
+    margin: 0;
+    background-color: rgb(0, 0, 0);
+    box-shadow: none; /* Remove shadow if not needed */
+    border-radius: 0; /* Remove border-radius for full coverage */
+}
+
 
         td {
             border: 1px solid #ffffff;
@@ -109,9 +172,12 @@
         } */
 
         .number-input {
-            width: 100px;
+            width: 10vw; /* Adjust width based on screen size */
+            max-width: 100px;
+            min-width: 50px;
+    font-size: 3vw;
             padding:-5px;
-            font-size: 40px;
+            /* font-size: 40px; */
             font-weight: bold;
             text-align: center;
             border: 1px solid #000000;
@@ -160,6 +226,15 @@
             display: block;
         }
 
+        @media (max-width: 768px) {
+    .arrow {
+        font-size: 30px;
+        left: 10px;
+        right: 10px;
+    }
+}
+
+
         .arrow {
             position: fixed;
             top: 50%;
@@ -188,6 +263,23 @@
             z-index: 1000; /* Ensure it's above other elements */
             user-select: none; /* Prevent text selection */
         }
+
+        .sparkle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            animation: sparkle 2s infinite ease-in-out;
+            pointer-events: none; /* Prevent interaction */
+        }
+
+        /* Sparkles inside table cells */
+        td {
+            position: relative; /* Ensure sparkles are positioned inside */
+            overflow: hidden; /* Prevent overflow */
+        }
+
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
@@ -330,7 +422,7 @@
         </div>
 
         <!-- Page 2 -->
-        <div class="content active">
+        <div class="content">
             <table>
                 <tbody>
                     <!-- Row 1 -->
@@ -454,7 +546,7 @@
         </div>
 
         <!-- Page 3 -->
-        <div class="content active">
+        <div class="content">
             <table>
                 <tbody>
                     <!-- Row 1 -->
@@ -578,7 +670,7 @@
         </div>
 
         <!-- Page 4 -->
-        <div class="content active">
+        <div class="content">
             <table>
                 <tbody>
                     <!-- Row 1 -->
@@ -702,7 +794,7 @@
         </div>
 
         <!-- Page 5 -->
-        <div class="content active">
+        <div class="content">
             <table>
                 <tbody>
                     <!-- Row 1 -->
@@ -826,7 +918,7 @@
         </div>
 
         <!-- Page 6 -->
-        <div class="content active">
+        <div class="content">
             <table>
                 <tbody>
                     <!-- Row 1 -->
@@ -950,7 +1042,7 @@
         </div>
 
         <!-- Page 7 -->
-        <div class="content active">
+        <div class="content">
             <table>
                 <tbody>
                     <!-- Row 1 -->
@@ -1074,7 +1166,7 @@
         </div>
 
         <!-- Page 8 -->
-        <div class="content active">
+        <div class="content">
             <table>
                 <tbody>
                     <!-- Row 1 -->
@@ -1278,22 +1370,31 @@
         let currentIndex = 0;
         const contents = document.querySelectorAll('.content');
 
+        // Ensure only the first page is shown initially
+        contents.forEach((content, i) => {
+            content.style.display = i === 0 ? "block" : "none";
+        });
+
         function showContent(index) {
             contents.forEach((content, i) => {
-                content.classList.toggle('active', i === index);
+                content.style.display = i === index ? "block" : "none";
             });
+
+            // Update page number display
+            document.getElementById("page-number").textContent = `(${index + 1}/${contents.length})`;
         }
 
         function nextContent() {
-            currentIndex = (currentIndex + 1) % contents.length;
+            currentIndex = (currentIndex + 1) % contents.length; // Loop to first page after last
             showContent(currentIndex);
         }
 
         function prevContent() {
-            currentIndex = (currentIndex - 1 + contents.length) % contents.length;
+            currentIndex = (currentIndex - 1 + contents.length) % contents.length; // Loop to last page from first
             showContent(currentIndex);
         }
 
+        // Keyboard navigation
         document.addEventListener('keydown', (event) => {
             if (event.key === 'ArrowRight') {
                 nextContent();
@@ -1302,7 +1403,10 @@
             }
         });
 
+        // Show initial page
         showContent(currentIndex);
+
+
 
         // Function to populate the input fields with allResults
         function populateInputFields(allResults) {
@@ -1331,28 +1435,43 @@
         // Function to create sparkles with random positions
         function createSparkles() {
             const sparklesContainer = document.getElementById('sparkles');
-            const numSparkles = 50; // Number of sparkles
+            const tableCells = document.querySelectorAll('td'); // Select all table cells
 
-            for (let i = 0; i < numSparkles; i++) {
+            const backgroundSparkles = 50; // Reduce background sparkles (was 50)
+            const cellSparkles = 2; // Reduce sparkles inside each table cell (was 10)
+
+            // Sparkles in background
+            for (let i = 0; i < backgroundSparkles; i++) {
                 const sparkle = document.createElement('div');
                 sparkle.classList.add('sparkle');
 
-                // Randomize position
-                const x = Math.random() * window.innerWidth;
-                const y = Math.random() * window.innerHeight;
-                sparkle.style.left = `${x}px`;
-                sparkle.style.top = `${y}px`;
+                sparkle.style.left = `${Math.random() * window.innerWidth}px`;
+                sparkle.style.top = `${Math.random() * window.innerHeight}px`;
 
-                // Randomize animation delay
-                const delay = Math.random() * 2; // 0 to 2 seconds
-                sparkle.style.animationDelay = `${delay}s`;
+                sparkle.style.animationDelay = `${Math.random() * 2}s`;
 
                 sparklesContainer.appendChild(sparkle);
             }
+
+            // Sparkles inside each table cell
+            tableCells.forEach((cell) => {
+                for (let i = 0; i < cellSparkles; i++) {
+                    const sparkle = document.createElement('div');
+                    sparkle.classList.add('sparkle');
+
+                    sparkle.style.left = `${Math.random() * 100}%`;
+                    sparkle.style.top = `${Math.random() * 100}%`;
+
+                    sparkle.style.animationDelay = `${Math.random() * 2}s`;
+
+                    cell.appendChild(sparkle);
+                }
+            });
         }
 
-        // Initialize sparkles
+        // Run function to generate sparkles
         createSparkles();
+
     </script>
 
     
