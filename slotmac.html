@@ -122,6 +122,7 @@
             border: 4px solid #ffffff;
             position: relative;
             z-index: 10;
+            transform: translateY(-20px); /* Moves the slot machine higher */
         }
 
         /* Carousel Container */
@@ -173,6 +174,7 @@
             justify-content: center;
             align-items: center;
             text-align: center;
+            margin-top: -55px; /* Moves the text higher */
         }
 
         /* Loading dots */
@@ -269,39 +271,55 @@
             }, 500); // Update every 500ms
         }
 
-        // Function to populate and animate carousels
-        function animateCarousels() {
-            const carousels = [
-                document.getElementById('carousel1'),
-                document.getElementById('carousel2'),
-                document.getElementById('carousel3'),
-                document.getElementById('carousel4'),
-                document.getElementById('carousel5')
-            ];
+        // Get the audio element
+const spinningSound = document.getElementById("spinningSound");
 
-            // Generate an array of numbers from 0001 to 1500
-            const numbers = Array.from({ length: 1500 }, (_, i) => (i + 1).toString().padStart(4, '0'));
+function animateCarousels() {
+    const carousels = [
+        document.getElementById('carousel1'),
+        document.getElementById('carousel2'),
+        document.getElementById('carousel3'),
+        document.getElementById('carousel4'),
+        document.getElementById('carousel5')
+    ];
 
-            carousels.forEach((carousel, index) => {
-                // Clear existing items
-                carousel.innerHTML = '';
+    // Generate an array of numbers from 0001 to 1500
+    const numbers = Array.from({ length: 1500 }, (_, i) => (i + 1).toString().padStart(4, '0'));
 
-                // Shuffle the numbers array to randomize the order
-                const shuffledNumbers = numbers.sort(() => Math.random() - 0.5);
+    carousels.forEach((carousel, index) => {
+        // Clear existing items
+        carousel.innerHTML = '';
 
-                // Add 10 random 4-digit numbers to the carousel
-                for (let i = 0; i < 10; i++) {
-                    const item = document.createElement('div');
-                    item.className = 'carousel-item';
-                    item.textContent = shuffledNumbers[i]; // Use the shuffled numbers
-                    carousel.appendChild(item);
-                }
+        // Shuffle the numbers array to randomize the order
+        const shuffledNumbers = numbers.sort(() => Math.random() - 0.5);
 
-                // Animate the carousel
-                const duration = 3000 + index * 500; // Staggered animation duration
-                carousel.style.animation = `scroll ${duration}ms linear infinite`;
-            });
+        // Add 10 random 4-digit numbers to the carousel
+        for (let i = 0; i < 10; i++) {
+            const item = document.createElement('div');
+            item.className = 'carousel-item';
+            item.textContent = shuffledNumbers[i];
+            carousel.appendChild(item);
         }
+
+        // Animate the carousel
+        const duration = 3000 + index * 500; // Staggered animation duration
+        carousel.style.animation = `scroll ${duration}ms linear infinite`;
+
+        // Play the sound when the animation starts
+        if (index === 0) {
+            spinningSound.currentTime = 0; // Restart the sound
+            spinningSound.play();
+        }
+
+        // Stop the sound when the last animation completes
+        setTimeout(() => {
+            if (index === carousels.length - 1) {
+                spinningSound.pause();
+            }
+        }, duration);
+    });
+}
+
 
         // Start the loading dots animation
         animateLoadingDots();
