@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prize Grid</title>
+    <title>Display Prizes with Pagination and Sparkles</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         /* Existing styles (unchanged) */
@@ -247,6 +247,16 @@
             z-index: 1000; /* Ensure it's above other elements */
             user-select: none; /* Prevent text selection */
         }
+
+        .cell-number {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white; /* Adjust color as needed */
+            z-index: 1; /* Ensure it's above other content */
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
@@ -271,6 +281,7 @@
                     <!-- Row 1 -->
                     <tr>
                         <td>
+                            <!-- <span class="cell-number">1</span> -->
                             <input type="text" class="number-input" readonly>
                             <div class="prize-name">FC Abdominal Wheel Roller</div>
                         </td>
@@ -303,11 +314,11 @@
                         </td>
                         <td>
                             <input type="text" class="number-input" readonly>
-                            <div class="prize-name">RUSSEL TAYLOR 1.7L Kettle - Blue</div>
+                            <div class="prize-name">RUSSEL TAYLOR 1.7L Kettle</div>
                         </td>
                         <td>
                             <input type="text" class="number-input" readonly>
-                            <div class="prize-name">LA GOURMET Healthy Electric Oven - Mint Green</div>
+                            <div class="prize-name">LA GOURMET Electric Oven</div>
                         </td>
                         <td>
                             <input type="text" class="number-input" readonly>
@@ -345,7 +356,7 @@
                         </td>
                         <td>
                             <input type="text" class="number-input" readonly>
-                            <div class="prize-name">LA GOURMET Healthy Glass Chopper - Red</div>
+                            <div class="prize-name">LA GOURMET Glass Chopper</div>
                         </td>
                         <td>
                             <input type="text" class="number-input" readonly>
@@ -492,7 +503,7 @@
                         </td>
                         <td>
                             <input type="text" class="number-input" readonly>
-                            <div class="prize-name">LA GOURMET Healthy Electric Oven - Flamingo</div>
+                            <div class="prize-name">LA GOURMET Electric Oven</div>
                         </td>
                         <td>
                             <input type="text" class="number-input" readonly>
@@ -524,11 +535,11 @@
                         </td>
                         <td>
                             <input type="text" class="number-input" readonly>
-                            <div class="prize-name">LA GOURMET Healthy Electric Oven - Red</div>
+                            <div class="prize-name">LA GOURMET Electric Oven</div>
                         </td>
                         <td>
                             <input type="text" class="number-input" readonly>
-                            <div class="prize-name">LA GOURMET Healthy Electric Oven - Matt Black</div>
+                            <div class="prize-name">LA GOURMET Electric Oven</div>
                         </td>
                         <td>
                             <input type="text" class="number-input" readonly>
@@ -659,7 +670,7 @@
                         </td>
                         <td>
                             <input type="text" class="number-input" readonly>
-                            <div class="prize-name">20L Dry Bag - Yellow/Grey
+                            <div class="prize-name">20L Dry Bag
 </div>
                         </td>
                         <td>
@@ -672,7 +683,7 @@
                     <tr>
                         <td>
                             <input type="text" class="number-input" readonly>
-                            <div class="prize-name">RUSSEL TAYLOR 1.7L Kettle - Blue
+                            <div class="prize-name">RUSSEL TAYLOR 1.7L Kettle
 </div>
                         </td>
                         <td>
@@ -808,7 +819,7 @@
                         </td>
                         <td>
                             <input type="text" class="number-input" readonly>
-                            <div class="prize-name">DELIGHTO Marble Wokpan 28cm
+                            <div class="prize-name">DELIGHTO Wokpan 28cm
 </div>
                         </td>
                         <td>
@@ -841,7 +852,7 @@
                         </td>
                         <td>
                             <input type="text" class="number-input" readonly>
-                            <div class="prize-name">LA GOURMET Healthy Glass Chopper - Black
+                            <div class="prize-name">LA GOURMET Glass Chopper
 </div>
                         </td>
                     </tr>
@@ -1069,7 +1080,7 @@
                         </td>
                         <td>
                             <input type="text" class="number-input" readonly>
-                            <div class="prize-name">20L Dry Bag - Yellow/Grey
+                            <div class="prize-name">20L Dry Bag
 </div>
                         </td>
                         <td>
@@ -1167,7 +1178,7 @@
                         </td>
                         <td>
                             <input type="text" class="number-input" readonly>
-                            <div class="prize-name">DELIGHTO Marble Wokpan 28cm
+                            <div class="prize-name">DELIGHTO Wokpan 28cm
 </div>
                         </td>
                     </tr>
@@ -1180,7 +1191,7 @@
                         </td>
                         <td>
                             <input type="text" class="number-input" readonly>
-                            <div class="prize-name">RUSSEL TAYLOR 1.7L Kettle - Cream
+                            <div class="prize-name">RUSSEL TAYLOR 1.7L Kettle
 
 </div>
                         </td>
@@ -1297,7 +1308,7 @@
                     <tr>
                         <td>
                             <input type="text" class="number-input" readonly>
-                            <div class="prize-name">RUSSEL TAYLOR 1.7L Kettle - Cream
+                            <div class="prize-name">RUSSEL TAYLOR 1.7L Kettle
 </div>
                         </td>
                         <td>
@@ -1556,8 +1567,31 @@
             }
         }
 
+        document.addEventListener('DOMContentLoaded', () => {
+    const prizeNames = document.querySelectorAll('.prize-name');
+    let counter = 1;
+
+    prizeNames.forEach(prizeName => {
+        prizeName.textContent = `${counter}. ${prizeName.textContent}`;
+        counter++;
+    });
+});
+
         // Initialize sparkles
         createSparkles();
+
+        // document.addEventListener('DOMContentLoaded', () => {
+        //     const cells = document.querySelectorAll('td');
+        //     let counter = 1;
+
+        //     cells.forEach(cell => {
+        //         const span = document.createElement('span');
+        //         span.classList.add('cell-number');
+        //         span.textContent = counter++;
+        //         cell.prepend(span); // Add the numbering to the top left corner
+        //     });
+        // });
+
     </script>
 
     
