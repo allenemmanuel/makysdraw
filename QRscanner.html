@@ -35,11 +35,6 @@
             color: #2c3e50;
         }
         
-        .header p {
-            color: #7f8c8d;
-            font-size: 1.1rem;
-        }
-        
         #reader {
             width: 100%;
             max-width: 500px;
@@ -47,6 +42,17 @@
             border: 3px solid #3498db;
             border-radius: 10px;
             overflow: hidden;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+        }
+        
+        .scanner-placeholder {
+            text-align: center;
+            color: #6c757d;
+            padding: 20px;
         }
         
         .status-card {
@@ -73,11 +79,6 @@
             justify-content: space-between;
             align-items: center;
             transition: all 0.3s ease;
-        }
-        
-        .scanned-item:hover {
-            background: #d1ecf1;
-            transform: translateX(5px);
         }
         
         .scanned-item.duplicate {
@@ -119,17 +120,17 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
         
-        .alert-custom {
-            border-radius: 10px;
-            border: none;
-            font-weight: 500;
-        }
-        
         #scannerStatus {
             font-weight: bold;
             padding: 10px;
             border-radius: 5px;
             text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .status-ready {
+            background: #fff3cd;
+            color: #856404;
         }
         
         .status-active {
@@ -137,14 +138,19 @@
             color: #155724;
         }
         
-        .status-inactive {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
         .status-error {
             background: #f8d7da;
             color: #721c24;
+        }
+
+        .debug-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #6c757d;
         }
     </style>
 </head>
@@ -158,10 +164,20 @@
             </div>
 
             <!-- Scanner Status -->
-            <div id="scannerStatus" class="status-inactive">Scanner ready - click start to begin</div>
+            <div id="scannerStatus" class="status-ready">Scanner ready - click start to begin</div>
 
             <!-- QR Scanner -->
-            <div id="reader" class="mb-4"></div>
+            <div id="reader">
+                <div class="scanner-placeholder">
+                    <i class="fas fa-camera" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                    <p>Scanner will appear here after clicking "Start Scanner"</p>
+                </div>
+            </div>
+
+            <!-- Debug Info -->
+            <div id="debugInfo" class="debug-info" style="display: none;">
+                Debug information will appear here
+            </div>
 
             <!-- Controls -->
             <div class="text-center mb-4">
@@ -175,10 +191,11 @@
 
             <!-- Manual Input -->
             <div class="manual-input mb-4">
+                <label for="manualInput" class="form-label">Or enter ticket number manually:</label>
                 <div class="input-group">
-                    <input type="text" id="manualInput" class="form-control" placeholder="Enter ticket number manually...">
+                    <input type="text" id="manualInput" class="form-control" placeholder="Enter ticket number...">
                     <div class="input-group-append">
-                        <button id="addManual" class="btn btn-success">Add</button>
+                        <button id="addManual" class="btn btn-success">Add Ticket</button>
                     </div>
                 </div>
             </div>
@@ -222,13 +239,13 @@
     </div>
 
     <!-- Success Modal -->
-    <div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal fade" id="resultModal" tabindex="-1">
         <div class="modal-dialog modal-sm">
             <div class="modal-content">
                 <div class="modal-body text-center">
-                    <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
-                    <h4 class="mt-3">Success!</h4>
-                    <p id="successMessage">Ticket registered successfully</p>
+                    <i id="resultIcon" class="fas fa-check-circle" style="font-size: 3rem;"></i>
+                    <h4 id="resultTitle" class="mt-3">Success!</h4>
+                    <p id="resultMessage">Ticket registered successfully</p>
                 </div>
             </div>
         </div>
@@ -259,18 +276,111 @@
         let html5QrcodeScanner;
         let scannedTickets = new Set();
         let scanLogs = [];
+        let isScannerActive = false;
+
+        // Debug logging
+        function debugLog(message) {
+            console.log(`[Scanner Debug]: ${message}`);
+            const debugInfo = document.getElementById('debugInfo');
+            debugInfo.style.display = 'block';
+            debugInfo.innerHTML = `<strong>Last Action:</strong> ${message} | <strong>Time:</strong> ${new Date().toLocaleTimeString()}`;
+        }
+
+        // Update scanner status
+        function updateScannerStatus(message, type = 'ready') {
+            const statusElement = document.getElementById('scannerStatus');
+            statusElement.textContent = message;
+            statusElement.className = `status-${type}`;
+            debugLog(message);
+        }
 
         // Initialize scanner
         function initializeScanner() {
-            html5QrcodeScanner = new Html5QrcodeScanner(
-                "reader", 
-                { 
-                    fps: 10, 
-                    qrbox: { width: 250, height: 250 },
-                    supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_QR_CODE]
-                }, 
-                false
-            );
+            try {
+                debugLog('Initializing QR scanner...');
+                html5QrcodeScanner = new Html5QrcodeScanner(
+                    "reader", 
+                    { 
+                        fps: 10, 
+                        qrbox: { width: 250, height: 250 },
+                        aspectRatio: 1.0,
+                        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_QR_CODE]
+                    }, 
+                    false
+                );
+                debugLog('QR scanner initialized successfully');
+                updateScannerStatus('Scanner initialized - ready to start', 'ready');
+            } catch (error) {
+                console.error('Scanner initialization error:', error);
+                updateScannerStatus(`Scanner error: ${error.message}`, 'error');
+            }
+        }
+
+        // Start scanner
+        async function startScanner() {
+            if (isScannerActive) {
+                debugLog('Scanner is already active');
+                return;
+            }
+
+            try {
+                debugLog('Starting scanner...');
+                updateScannerStatus('Starting camera...', 'ready');
+
+                // Clear previous scanner if exists
+                if (html5QrcodeScanner) {
+                    await html5QrcodeScanner.clear();
+                }
+
+                // Re-initialize scanner
+                initializeScanner();
+
+                // Start scanning
+                html5QrcodeScanner.render(
+                    (decodedText) => {
+                        // Success callback
+                        debugLog(`QR Code detected: ${decodedText}`);
+                        processScannedCode(decodedText);
+                    },
+                    (errorMessage) => {
+                        // Error callback - this is normal for no QR code detected
+                        if (!errorMessage.includes('No QR code found')) {
+                            debugLog(`Scan error: ${errorMessage}`);
+                        }
+                    }
+                );
+
+                isScannerActive = true;
+                document.getElementById('startScanner').disabled = true;
+                document.getElementById('stopScanner').disabled = false;
+                updateScannerStatus('Scanner active - point camera at QR code', 'active');
+                debugLog('Scanner started successfully');
+
+            } catch (error) {
+                console.error('Error starting scanner:', error);
+                updateScannerStatus(`Failed to start: ${error.message}`, 'error');
+                isScannerActive = false;
+                document.getElementById('startScanner').disabled = false;
+                document.getElementById('stopScanner').disabled = true;
+            }
+        }
+
+        // Stop scanner
+        async function stopScanner() {
+            if (!isScannerActive) return;
+
+            try {
+                debugLog('Stopping scanner...');
+                await html5QrcodeScanner.clear();
+                isScannerActive = false;
+                document.getElementById('startScanner').disabled = false;
+                document.getElementById('stopScanner').disabled = true;
+                updateScannerStatus('Scanner stopped', 'ready');
+                debugLog('Scanner stopped successfully');
+            } catch (error) {
+                console.error('Error stopping scanner:', error);
+                updateScannerStatus(`Error stopping: ${error.message}`, 'error');
+            }
         }
 
         // Update statistics
@@ -312,11 +422,17 @@
             
             let status = 'success';
             let message = `Ticket ${ticketNumber} registered successfully!`;
+            let icon = 'fa-check-circle';
+            let title = 'Success!';
+            let iconColor = 'text-success';
 
             // Check for duplicates
             if (scannedTickets.has(ticketNumber)) {
                 status = 'duplicate';
                 message = `Ticket ${ticketNumber} is already registered!`;
+                icon = 'fa-exclamation-circle';
+                title = 'Duplicate!';
+                iconColor = 'text-warning';
             } else {
                 scannedTickets.add(ticketNumber);
                 // Add to Firebase database
@@ -334,16 +450,17 @@
             updateScannedList();
             updateStatistics();
 
-            // Show success/error message
-            showScanResult(message, status);
+            // Show result modal
+            showResultModal(message, icon, title, iconColor);
 
-            // Play sound
+            // Play sound (optional)
             playScanSound(status);
+
+            debugLog(`Processed ticket: ${ticketNumber} (${status})`);
         }
 
         // Add ticket to Firebase database
         function addTicketToDatabase(ticketNumber) {
-            // Get current items from database
             database.ref('drawResults').once('value').then((snapshot) => {
                 const data = snapshot.val();
                 let items = data?.items || [];
@@ -356,31 +473,39 @@
                     database.ref('drawResults').update({
                         items: items
                     });
+                    debugLog(`Added ticket ${ticketNumber} to database`);
                 }
+            }).catch(error => {
+                console.error('Database error:', error);
+                debugLog(`Database error: ${error.message}`);
             });
         }
 
-        // Show scan result
-        function showScanResult(message, status) {
-            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-            const successMessage = document.getElementById('successMessage');
+        // Show result modal
+        function showResultModal(message, icon, title, iconColor) {
+            const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+            const resultIcon = document.getElementById('resultIcon');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultMessage = document.getElementById('resultMessage');
             
-            successMessage.textContent = message;
-            successMessage.className = status === 'success' ? 'text-success' : 'text-danger';
+            resultIcon.className = `fas ${icon} ${iconColor}`;
+            resultTitle.textContent = title;
+            resultTitle.className = `mt-3 ${iconColor}`;
+            resultMessage.textContent = message;
             
-            successModal.show();
+            resultModal.show();
             
             // Auto-hide after 2 seconds
             setTimeout(() => {
-                successModal.hide();
+                resultModal.hide();
             }, 2000);
         }
 
-        // Play scan sound
+        // Play scan sound (placeholder - add your own sound files)
         function playScanSound(status) {
-            const audio = new Audio();
-            audio.src = status === 'success' ? 'success-sound.mp3' : 'error-sound.mp3';
-            audio.play().catch(e => console.log('Audio play failed:', e));
+            // You can add sound files later
+            // const audio = new Audio(status === 'success' ? 'success.mp3' : 'error.mp3');
+            // audio.play().catch(e => console.log('Audio play failed:', e));
         }
 
         // Load existing data from Firebase
@@ -388,47 +513,22 @@
             database.ref('drawResults').on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data && data.items) {
-                    // Update local sets with existing data
                     scannedTickets = new Set(data.items);
-                    // Recreate scan logs (for display purposes)
                     scanLogs = data.items.map(item => ({
                         ticketNumber: item,
-                        timestamp: Date.now(), // Approximate timestamp
+                        timestamp: Date.now(),
                         status: 'success'
                     }));
                     updateScannedList();
                     updateStatistics();
+                    debugLog(`Loaded ${data.items.length} existing tickets from database`);
                 }
             });
         }
 
         // Event Listeners
-        document.getElementById('startScanner').addEventListener('click', function() {
-            html5QrcodeScanner.render(
-                (decodedText) => {
-                    processScannedCode(decodedText);
-                },
-                (errorMessage) => {
-                    // Optional: Handle scan errors
-                }
-            );
-            
-            this.disabled = true;
-            document.getElementById('stopScanner').disabled = false;
-            document.getElementById('scannerStatus').textContent = 'Scanner active - point camera at QR code';
-            document.getElementById('scannerStatus').className = 'status-active';
-        });
-
-        document.getElementById('stopScanner').addEventListener('click', function() {
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.clear();
-            }
-            
-            this.disabled = true;
-            document.getElementById('startScanner').disabled = false;
-            document.getElementById('scannerStatus').textContent = 'Scanner stopped';
-            document.getElementById('scannerStatus').className = 'status-inactive';
-        });
+        document.getElementById('startScanner').addEventListener('click', startScanner);
+        document.getElementById('stopScanner').addEventListener('click', stopScanner);
 
         document.getElementById('addManual').addEventListener('click', function() {
             const manualInput = document.getElementById('manualInput');
@@ -437,6 +537,9 @@
             if (ticketNumber) {
                 processScannedCode(ticketNumber);
                 manualInput.value = '';
+                manualInput.focus();
+            } else {
+                alert('Please enter a ticket number');
             }
         });
 
@@ -454,19 +557,34 @@
             if (confirm('Are you sure you want to clear all scanned data? This cannot be undone.')) {
                 scannedTickets.clear();
                 scanLogs = [];
-                // Clear from Firebase
                 database.ref('drawResults').update({
                     items: []
                 });
                 updateScannedList();
                 updateStatistics();
+                debugLog('All data cleared');
             }
         });
 
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
+            debugLog('Page loaded, initializing...');
             initializeScanner();
             loadExistingData();
+            
+            // Request camera permission on page load
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function(stream) {
+                        debugLog('Camera access granted');
+                        // Immediately stop the stream since we just wanted permission
+                        stream.getTracks().forEach(track => track.stop());
+                    })
+                    .catch(function(error) {
+                        debugLog(`Camera access denied: ${error.message}`);
+                        updateScannerStatus('Camera access required - please allow camera permissions', 'error');
+                    });
+            }
         });
     </script>
 </body>
