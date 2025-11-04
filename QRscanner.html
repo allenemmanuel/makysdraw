@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barcode/QR Code Scanner with QuaggaJS</title>
+    <title>Barcode & QR Code Scanner</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <style>
         body {
             background-color: #f8f9fa;
-            padding-top: 20px;
-            padding-bottom: 40px;
+            padding: 20px;
         }
         .scanner-container {
             max-width: 800px;
             margin: 0 auto;
-            background-color: white;
+            background: white;
             border-radius: 10px;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
             padding: 20px;
@@ -23,16 +23,19 @@
         .scanner-preview {
             width: 100%;
             height: 400px;
-            background-color: #000;
+            background: #000;
             border-radius: 8px;
             overflow: hidden;
             position: relative;
             margin-bottom: 20px;
         }
-        #interactive {
+        #video {
             width: 100%;
             height: 100%;
             object-fit: cover;
+        }
+        #canvas {
+            display: none;
         }
         .scanner-overlay {
             position: absolute;
@@ -55,7 +58,7 @@
         .scanner-laser {
             width: 100%;
             height: 2px;
-            background-color: #ff3b30;
+            background: #ff3b30;
             position: absolute;
             top: 50%;
             box-shadow: 0 0 8px red;
@@ -70,7 +73,7 @@
             margin-top: 20px;
             padding: 15px;
             border-radius: 8px;
-            background-color: #f8f9fa;
+            background: #f8f9fa;
         }
         .result-text {
             font-family: monospace;
@@ -79,7 +82,7 @@
         .history-item {
             padding: 8px 12px;
             margin-bottom: 8px;
-            background-color: #e9ecef;
+            background: #e9ecef;
             border-radius: 4px;
             border-left: 4px solid #007bff;
         }
@@ -91,20 +94,23 @@
             font-size: 0.9rem;
             color: #6c757d;
         }
-        .barcode-type {
+        .code-type {
             display: inline-block;
             padding: 2px 8px;
-            background-color: #6c757d;
+            background: #6c757d;
             color: white;
             border-radius: 4px;
             font-size: 0.8rem;
             margin-left: 8px;
         }
-        .detected-barcode {
+        .detected-box {
             position: absolute;
             border: 2px solid #28a745;
-            background-color: rgba(40, 167, 69, 0.2);
+            background: rgba(40, 167, 69, 0.2);
             pointer-events: none;
+        }
+        .tab-content {
+            min-height: 60px;
         }
     </style>
 </head>
@@ -114,42 +120,70 @@
             <div class="col-md-10">
                 <div class="scanner-container">
                     <h1 class="text-center mb-4">Barcode & QR Code Scanner</h1>
-                    <p class="text-center text-muted mb-4">Powered by QuaggaJS - Supports EAN, UPC, Code 128, and more</p>
                     
-                    <div class="scanner-preview">
-                        <div id="interactive" class="viewport"></div>
-                        <div class="scanner-overlay">
-                            <div class="scanner-frame"></div>
-                            <div class="scanner-laser"></div>
+                    <!-- Scanner Type Tabs -->
+                    <ul class="nav nav-tabs mb-4" id="scannerTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="barcode-tab" data-bs-toggle="tab" data-bs-target="#barcode" type="button" role="tab">Barcode Scanner</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="qrcode-tab" data-bs-toggle="tab" data-bs-target="#qrcode" type="button" role="tab">QR Code Scanner</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="scannerTabsContent">
+                        <!-- Barcode Scanner Tab -->
+                        <div class="tab-pane fade show active" id="barcode" role="tabpanel">
+                            <div class="scanner-preview">
+                                <div id="interactive" class="viewport"></div>
+                                <div class="scanner-overlay">
+                                    <div class="scanner-frame"></div>
+                                    <div class="scanner-laser"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="scanner-status" id="barcode-status">Barcode scanner ready</div>
+                                <select id="barcode-type" class="form-select form-select-sm" style="width: auto;">
+                                    <option value="code_128">Code 128</option>
+                                    <option value="ean" selected>EAN</option>
+                                    <option value="ean_8">EAN-8</option>
+                                    <option value="upc">UPC</option>
+                                    <option value="upc_e">UPC-E</option>
+                                    <option value="code_39">Code 39</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- QR Code Scanner Tab -->
+                        <div class="tab-pane fade" id="qrcode" role="tabpanel">
+                            <div class="scanner-preview">
+                                <video id="video" autoplay playsinline></video>
+                                <canvas id="canvas"></canvas>
+                                <div class="scanner-overlay">
+                                    <div class="scanner-frame"></div>
+                                    <div class="scanner-laser"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="scanner-status mb-3" id="qrcode-status">QR Code scanner ready</div>
                         </div>
                     </div>
-                    
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="scanner-status" id="scanner-status">Scanner ready - click Start Scanner</div>
-                        <div>
-                            <select id="barcode-type" class="form-select form-select-sm">
-                                <option value="code_128">Code 128</option>
-                                <option value="ean">EAN</option>
-                                <option value="ean_8">EAN-8</option>
-                                <option value="upc">UPC</option>
-                                <option value="upc_e">UPC-E</option>
-                                <option value="code_39">Code 39</option>
-                            </select>
-                        </div>
-                    </div>
-                    
+
+                    <!-- Controls -->
                     <div class="d-grid gap-2 d-md-flex justify-content-md-center mb-4">
                         <button id="start-scan" class="btn btn-primary btn-custom">Start Scanner</button>
                         <button id="stop-scan" class="btn btn-secondary btn-custom" disabled>Stop Scanner</button>
                         <button id="reset-scan" class="btn btn-warning btn-custom">Reset</button>
                     </div>
-                    
+
+                    <!-- Results -->
                     <div class="result-container">
                         <h5>Scan Result:</h5>
                         <div id="scan-result" class="result-text">No code scanned yet</div>
-                        <div id="barcode-info" class="mt-2"></div>
+                        <div id="code-info" class="mt-2"></div>
                     </div>
-                    
+
                     <div class="mt-4">
                         <h5>Scan History:</h5>
                         <div id="scan-history" class="mt-2">
@@ -157,20 +191,11 @@
                         </div>
                     </div>
                 </div>
-                
-                <div class="mt-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">About QuaggaJS</h5>
-                            <p class="card-text">QuaggaJS is a barcode scanner entirely written in JavaScript supporting real-time localization and decoding of various barcode types.</p>
-                            <p class="card-text"><small class="text-muted">This scanner currently supports: EAN, UPC, Code 128, Code 39, and more.</small></p>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // DOM elements
@@ -179,23 +204,34 @@
             const resetButton = document.getElementById('reset-scan');
             const barcodeTypeSelect = document.getElementById('barcode-type');
             const scanResult = document.getElementById('scan-result');
-            const barcodeInfo = document.getElementById('barcode-info');
+            const codeInfo = document.getElementById('code-info');
             const scanHistory = document.getElementById('scan-history');
-            const scannerStatus = document.getElementById('scanner-status');
-            
+            const barcodeStatus = document.getElementById('barcode-status');
+            const qrcodeStatus = document.getElementById('qrcode-status');
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
             // Variables
             let isScanning = false;
             let scanHistoryData = [];
-            
-            // Initialize QuaggaJS
-            function initScanner() {
-                // Clear any previous instances
-                if (Quagga.initialized) {
-                    Quagga.stop();
+            let currentScanner = 'barcode'; // 'barcode' or 'qrcode'
+            let stream = null;
+
+            // Initialize based on active tab
+            function updateCurrentScanner() {
+                const activeTab = document.querySelector('#scannerTabs .nav-link.active');
+                currentScanner = activeTab.id === 'barcode-tab' ? 'barcode' : 'qrcode';
+                console.log(`Switched to ${currentScanner} scanner`);
+            }
+
+            // Initialize scanners
+            function initBarcodeScanner() {
+                if (typeof Quagga === 'undefined') {
+                    barcodeStatus.textContent = "Error: QuaggaJS not loaded";
+                    return;
                 }
-                
-                const selectedBarcodeType = barcodeTypeSelect.value;
-                
+
                 Quagga.init({
                     inputStream: {
                         name: "Live",
@@ -204,140 +240,172 @@
                         constraints: {
                             width: 640,
                             height: 480,
-                            facingMode: "environment" // Use the rear camera
+                            facingMode: "environment"
                         },
                     },
                     decoder: {
-                        readers: [selectedBarcodeType],
+                        readers: [barcodeTypeSelect.value],
                         multiple: false
                     },
                     locator: {
                         patchSize: "medium",
                         halfSample: true
                     },
-                    locate: true,
-                    frequency: 10
+                    locate: true
                 }, function(err) {
                     if (err) {
-                        console.error(err);
-                        scannerStatus.textContent = "Error initializing scanner: " + err.message;
+                        barcodeStatus.textContent = "Error: " + err.message;
                         return;
                     }
-                    
-                    console.log("QuaggaJS initialized successfully");
-                    scannerStatus.textContent = "Scanner initialized - ready to scan";
                     Quagga.start();
+                    barcodeStatus.textContent = "Barcode scanner active - point at barcode";
                     
-                    // Add frame processing for visualization
-                    Quagga.onProcessed(function(result) {
-                        drawBoundingBox(result);
-                    });
-                    
-                    // Add detection handler
                     Quagga.onDetected(function(result) {
-                        handleScanResult(result);
+                        handleScanResult(result.codeResult.code, 'barcode', result.codeResult.format);
                     });
                 });
-                
+            }
+
+            function initQRCodeScanner() {
+                if (typeof jsQR === 'undefined') {
+                    qrcodeStatus.textContent = "Error: jsQR not loaded";
+                    return;
+                }
+
+                // Get camera stream
+                navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: "environment",
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    } 
+                }).then(function(mediaStream) {
+                    stream = mediaStream;
+                    video.srcObject = stream;
+                    video.play();
+                    
+                    requestAnimationFrame(tick);
+                    qrcodeStatus.textContent = "QR Code scanner active - point at QR code";
+                }).catch(function(err) {
+                    qrcodeStatus.textContent = "Error accessing camera: " + err.message;
+                });
+            }
+
+            // QR Code scanning loop
+            function tick() {
+                if (!isScanning || currentScanner !== 'qrcode') return;
+
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert",
+                    });
+
+                    if (code) {
+                        handleScanResult(code.data, 'qr_code', 'QR Code');
+                        
+                        // Draw bounding box
+                        drawQRCodeBox(code);
+                    }
+                }
+
+                if (isScanning && currentScanner === 'qrcode') {
+                    requestAnimationFrame(tick);
+                }
+            }
+
+            function drawQRCodeBox(code) {
+                ctx.strokeStyle = "#28a745";
+                ctx.lineWidth = 2;
+                ctx.strokeRect(code.location.topLeftCorner.x, code.location.topLeftCorner.y, 
+                              code.location.bottomRightCorner.x - code.location.topLeftCorner.x,
+                              code.location.bottomRightCorner.y - code.location.topLeftCorner.y);
+            }
+
+            // Start scanning
+            function startScanner() {
                 isScanning = true;
                 startButton.disabled = true;
                 stopButton.disabled = false;
-                scannerStatus.textContent = "Scanning... Point camera at barcode";
-            }
-            
-            // Draw bounding boxes around detected barcodes
-            function drawBoundingBox(result) {
-                const drawingCanvas = Quagga.canvas.dom.overlay;
-                const drawingCtx = drawingCanvas.getContext('2d');
-                
-                // Clear previous drawings
-                drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
-                
-                if (result) {
-                    if (result.boxes) {
-                        drawingCtx.lineWidth = 2;
-                        drawingCtx.strokeStyle = '#28a745';
-                        
-                        result.boxes.filter(function(box) {
-                            return box !== result.box;
-                        }).forEach(function(box) {
-                            Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {color: "green", lineWidth: 2});
-                        });
-                    }
-                    
-                    if (result.box) {
-                        Quagga.ImageDebug.drawPath(result.box, {x: 0, y: 1}, drawingCtx, {color: '#00F', lineWidth: 2});
-                    }
-                    
-                    if (result.codeResult && result.codeResult.code) {
-                        drawingCtx.font = "16px Arial";
-                        drawingCtx.fillStyle = '#28a745';
-                        drawingCtx.fillText(result.codeResult.code, 10, 20);
-                    }
+
+                if (currentScanner === 'barcode') {
+                    initBarcodeScanner();
+                } else {
+                    initQRCodeScanner();
                 }
             }
-            
-            // Handle scan result
-            function handleScanResult(result) {
-                const code = result.codeResult.code;
-                const format = result.codeResult.format || 'unknown';
-                
-                // Update result display
-                scanResult.textContent = code;
-                scanResult.className = "result-text text-success";
-                
-                // Update barcode info
-                barcodeInfo.innerHTML = `
-                    <div class="d-flex align-items-center">
-                        <span>Format: </span>
-                        <span class="barcode-type">${format.toUpperCase()}</span>
-                    </div>
-                    <div class="mt-1">Confidence: ${(result.codeResult.decodedCodes[0].confidence * 100).toFixed(2)}%</div>
-                `;
-                
-                // Add to history
-                addToHistory(code, format);
-                
-                // Optional: Stop scanning after successful detection
-                // stopScanner();
-            }
-            
-            // Stop scanner
+
+            // Stop scanning
             function stopScanner() {
-                if (isScanning) {
-                    Quagga.stop();
-                    isScanning = false;
-                    startButton.disabled = false;
-                    stopButton.disabled = true;
-                    scannerStatus.textContent = "Scanner stopped";
+                isScanning = false;
+                startButton.disabled = false;
+                stopButton.disabled = true;
+
+                if (currentScanner === 'barcode') {
+                    if (Quagga.initialized) {
+                        Quagga.stop();
+                    }
+                    barcodeStatus.textContent = "Barcode scanner stopped";
+                } else {
+                    if (stream) {
+                        stream.getTracks().forEach(track => track.stop());
+                    }
+                    qrcodeStatus.textContent = "QR Code scanner stopped";
                 }
             }
-            
+
             // Reset scanner
             function resetScanner() {
                 stopScanner();
                 scanResult.textContent = "No code scanned yet";
-                scanResult.className = "result-text";
-                barcodeInfo.innerHTML = "";
-                scannerStatus.textContent = "Scanner ready - click Start Scanner";
-            }
-            
-            // Add scan result to history
-            function addToHistory(code, format) {
-                const timestamp = new Date().toLocaleTimeString();
-                scanHistoryData.unshift({ code, format, timestamp });
+                codeInfo.innerHTML = "";
+                scanHistoryData = [];
+                updateHistoryDisplay();
                 
-                // Update history display
+                if (currentScanner === 'barcode') {
+                    barcodeStatus.textContent = "Barcode scanner ready";
+                } else {
+                    qrcodeStatus.textContent = "QR Code scanner ready";
+                }
+            }
+
+            // Handle scan results
+            function handleScanResult(code, type, format) {
+                scanResult.textContent = code;
+                scanResult.className = "result-text text-success";
+                
+                codeInfo.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <span>Type: </span>
+                        <span class="code-type">${format || type.toUpperCase()}</span>
+                    </div>
+                `;
+
+                addToHistory(code, type, format);
+            }
+
+            // Add to history
+            function addToHistory(code, type, format) {
+                const timestamp = new Date().toLocaleTimeString();
+                scanHistoryData.unshift({ 
+                    code, 
+                    type: format || type, 
+                    timestamp 
+                });
                 updateHistoryDisplay();
             }
-            
+
             // Update history display
             function updateHistoryDisplay() {
                 if (scanHistoryData.length === 0) {
                     scanHistory.innerHTML = '<div class="text-muted">No scan history yet</div>';
                     return;
                 }
-                
+
                 scanHistory.innerHTML = '';
                 scanHistoryData.forEach(item => {
                     const historyItem = document.createElement('div');
@@ -345,26 +413,40 @@
                     historyItem.innerHTML = `
                         <div class="d-flex justify-content-between">
                             <div class="fw-bold">${item.code}</div>
-                            <span class="barcode-type">${item.format.toUpperCase()}</span>
+                            <span class="code-type">${item.type}</span>
                         </div>
                         <small class="text-muted">${item.timestamp}</small>
                     `;
                     scanHistory.appendChild(historyItem);
                 });
             }
-            
+
             // Event listeners
-            startButton.addEventListener('click', initScanner);
+            startButton.addEventListener('click', startScanner);
             stopButton.addEventListener('click', stopScanner);
             resetButton.addEventListener('click', resetScanner);
-            
-            // Change barcode type
+
+            // Tab change handler
+            document.querySelectorAll('#scannerTabs .nav-link').forEach(tab => {
+                tab.addEventListener('shown.bs.tab', function() {
+                    updateCurrentScanner();
+                    if (isScanning) {
+                        stopScanner();
+                        setTimeout(startScanner, 500);
+                    }
+                });
+            });
+
+            // Barcode type change
             barcodeTypeSelect.addEventListener('change', function() {
-                if (isScanning) {
+                if (isScanning && currentScanner === 'barcode') {
                     stopScanner();
-                    setTimeout(initScanner, 500);
+                    setTimeout(startScanner, 500);
                 }
             });
+
+            // Initialize
+            updateCurrentScanner();
         });
     </script>
 </body>
