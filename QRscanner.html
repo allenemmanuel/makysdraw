@@ -3,450 +3,470 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barcode & QR Code Scanner</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <title>QR Code Scanner - Lucky Draw Registration</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <style>
         body {
-            background-color: #f8f9fa;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             padding: 20px;
         }
+        
         .scanner-container {
-            max-width: 800px;
-            margin: 0 auto;
             background: white;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            padding: 20px;
-        }
-        .scanner-preview {
-            width: 100%;
-            height: 400px;
-            background: #000;
-            border-radius: 8px;
-            overflow: hidden;
-            position: relative;
-            margin-bottom: 20px;
-        }
-        #video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        #canvas {
-            display: none;
-        }
-        .scanner-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            pointer-events: none;
-        }
-        .scanner-frame {
-            width: 70%;
-            height: 200px;
-            border: 2px solid #fff;
-            border-radius: 8px;
-            box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.3);
-        }
-        .scanner-laser {
-            width: 100%;
-            height: 2px;
-            background: #ff3b30;
-            position: absolute;
-            top: 50%;
-            box-shadow: 0 0 8px red;
-            animation: scanning 2s infinite;
-        }
-        @keyframes scanning {
-            0% { top: 20%; }
-            50% { top: 80%; }
-            100% { top: 20%; }
-        }
-        .result-container {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            padding: 30px;
             margin-top: 20px;
-            padding: 15px;
-            border-radius: 8px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        
+        .header h1 {
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+        
+        #reader {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            border: 3px solid #3498db;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .status-card {
             background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid #3498db;
         }
-        .result-text {
-            font-family: monospace;
-            word-break: break-all;
+        
+        .scanned-list {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
         }
-        .history-item {
-            padding: 8px 12px;
+        
+        .scanned-item {
+            background: #e8f4fc;
+            border: 1px solid #b3e0ff;
+            border-radius: 8px;
+            padding: 12px 15px;
             margin-bottom: 8px;
-            background: #e9ecef;
-            border-radius: 4px;
-            border-left: 4px solid #007bff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
         }
-        .btn-custom {
-            padding: 10px 20px;
-            font-weight: 600;
+        
+        .scanned-item:hover {
+            background: #d1ecf1;
+            transform: translateX(5px);
         }
-        .scanner-status {
-            font-size: 0.9rem;
-            color: #6c757d;
+        
+        .scanned-item.duplicate {
+            background: #f8d7da;
+            border-color: #f5c6cb;
         }
-        .code-type {
-            display: inline-block;
-            padding: 2px 8px;
-            background: #6c757d;
+        
+        .scanned-item.success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+        }
+        
+        .stats {
+            background: #2c3e50;
             color: white;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            margin-left: 8px;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
         }
-        .detected-box {
-            position: absolute;
-            border: 2px solid #28a745;
-            background: rgba(40, 167, 69, 0.2);
-            pointer-events: none;
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #3498db;
         }
-        .tab-content {
-            min-height: 60px;
+        
+        .btn-custom {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .alert-custom {
+            border-radius: 10px;
+            border: none;
+            font-weight: 500;
+        }
+        
+        #scannerStatus {
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inactive {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-10">
-                <div class="scanner-container">
-                    <h1 class="text-center mb-4">Barcode & QR Code Scanner</h1>
-                    
-                    <!-- Scanner Type Tabs -->
-                    <ul class="nav nav-tabs mb-4" id="scannerTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="barcode-tab" data-bs-toggle="tab" data-bs-target="#barcode" type="button" role="tab">Barcode Scanner</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="qrcode-tab" data-bs-toggle="tab" data-bs-target="#qrcode" type="button" role="tab">QR Code Scanner</button>
-                        </li>
-                    </ul>
+        <div class="scanner-container">
+            <!-- Header -->
+            <div class="header">
+                <h1>📱 QR Code Scanner</h1>
+                <p>Scan lucky draw tickets to register participants</p>
+            </div>
 
-                    <div class="tab-content" id="scannerTabsContent">
-                        <!-- Barcode Scanner Tab -->
-                        <div class="tab-pane fade show active" id="barcode" role="tabpanel">
-                            <div class="scanner-preview">
-                                <div id="interactive" class="viewport"></div>
-                                <div class="scanner-overlay">
-                                    <div class="scanner-frame"></div>
-                                    <div class="scanner-laser"></div>
-                                </div>
-                            </div>
-                            
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <div class="scanner-status" id="barcode-status">Barcode scanner ready</div>
-                                <select id="barcode-type" class="form-select form-select-sm" style="width: auto;">
-                                    <option value="code_128">Code 128</option>
-                                    <option value="ean" selected>EAN</option>
-                                    <option value="ean_8">EAN-8</option>
-                                    <option value="upc">UPC</option>
-                                    <option value="upc_e">UPC-E</option>
-                                    <option value="code_39">Code 39</option>
-                                </select>
-                            </div>
-                        </div>
+            <!-- Scanner Status -->
+            <div id="scannerStatus" class="status-inactive">Scanner ready - click start to begin</div>
 
-                        <!-- QR Code Scanner Tab -->
-                        <div class="tab-pane fade" id="qrcode" role="tabpanel">
-                            <div class="scanner-preview">
-                                <video id="video" autoplay playsinline></video>
-                                <canvas id="canvas"></canvas>
-                                <div class="scanner-overlay">
-                                    <div class="scanner-frame"></div>
-                                    <div class="scanner-laser"></div>
-                                </div>
-                            </div>
-                            
-                            <div class="scanner-status mb-3" id="qrcode-status">QR Code scanner ready</div>
-                        </div>
+            <!-- QR Scanner -->
+            <div id="reader" class="mb-4"></div>
+
+            <!-- Controls -->
+            <div class="text-center mb-4">
+                <button id="startScanner" class="btn btn-custom btn-lg mr-3">
+                    <i class="fas fa-play"></i> Start Scanner
+                </button>
+                <button id="stopScanner" class="btn btn-danger btn-lg" disabled>
+                    <i class="fas fa-stop"></i> Stop Scanner
+                </button>
+            </div>
+
+            <!-- Manual Input -->
+            <div class="manual-input mb-4">
+                <div class="input-group">
+                    <input type="text" id="manualInput" class="form-control" placeholder="Enter ticket number manually...">
+                    <div class="input-group-append">
+                        <button id="addManual" class="btn btn-success">Add</button>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Controls -->
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-center mb-4">
-                        <button id="start-scan" class="btn btn-primary btn-custom">Start Scanner</button>
-                        <button id="stop-scan" class="btn btn-secondary btn-custom" disabled>Stop Scanner</button>
-                        <button id="reset-scan" class="btn btn-warning btn-custom">Reset</button>
-                    </div>
+            <!-- Results Display -->
+            <div class="status-card">
+                <h4><i class="fas fa-list"></i> Scan Results</h4>
+                <div class="scanned-list" id="scannedList">
+                    <div class="text-muted text-center">No scans yet</div>
+                </div>
+            </div>
 
-                    <!-- Results -->
-                    <div class="result-container">
-                        <h5>Scan Result:</h5>
-                        <div id="scan-result" class="result-text">No code scanned yet</div>
-                        <div id="code-info" class="mt-2"></div>
+            <!-- Statistics -->
+            <div class="stats">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="stat-number" id="totalScans">0</div>
+                        <div>Total Scans</div>
                     </div>
+                    <div class="col-md-4">
+                        <div class="stat-number" id="uniqueScans">0</div>
+                        <div>Unique Tickets</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-number" id="duplicateScans">0</div>
+                        <div>Duplicates</div>
+                    </div>
+                </div>
+            </div>
 
-                    <div class="mt-4">
-                        <h5>Scan History:</h5>
-                        <div id="scan-history" class="mt-2">
-                            <div class="text-muted">No scan history yet</div>
-                        </div>
-                    </div>
+            <!-- Actions -->
+            <div class="text-center mt-4">
+                <button id="viewDraw" class="btn btn-warning mr-2">
+                    <i class="fas fa-ticket-alt"></i> Go to Draw Page
+                </button>
+                <button id="clearAll" class="btn btn-outline-danger">
+                    <i class="fas fa-trash"></i> Clear All Data
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                    <h4 class="mt-3">Success!</h4>
+                    <p id="successMessage">Ticket registered successfully</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // DOM elements
-            const startButton = document.getElementById('start-scan');
-            const stopButton = document.getElementById('stop-scan');
-            const resetButton = document.getElementById('reset-scan');
-            const barcodeTypeSelect = document.getElementById('barcode-type');
-            const scanResult = document.getElementById('scan-result');
-            const codeInfo = document.getElementById('code-info');
-            const scanHistory = document.getElementById('scan-history');
-            const barcodeStatus = document.getElementById('barcode-status');
-            const qrcodeStatus = document.getElementById('qrcode-status');
-            const video = document.getElementById('video');
-            const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d');
+        // Firebase configuration (same as your main page)
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
+            authDomain: "makysdraw-87237.firebaseapp.com",
+            databaseURL: "https://makysdraw-87237-default-rtdb.firebaseio.com",
+            projectId: "makysdraw-87237",
+            storageBucket: "makysdraw-87237.firebasestorage.app",
+            messagingSenderId: "1044977366090",
+            appId: "1:1044977366090:web:37af3eaa9c3f5bfc7822b3"
+        };
 
-            // Variables
-            let isScanning = false;
-            let scanHistoryData = [];
-            let currentScanner = 'barcode'; // 'barcode' or 'qrcode'
-            let stream = null;
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
 
-            // Initialize based on active tab
-            function updateCurrentScanner() {
-                const activeTab = document.querySelector('#scannerTabs .nav-link.active');
-                currentScanner = activeTab.id === 'barcode-tab' ? 'barcode' : 'qrcode';
-                console.log(`Switched to ${currentScanner} scanner`);
+        let html5QrcodeScanner;
+        let scannedTickets = new Set();
+        let scanLogs = [];
+
+        // Initialize scanner
+        function initializeScanner() {
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader", 
+                { 
+                    fps: 10, 
+                    qrbox: { width: 250, height: 250 },
+                    supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_QR_CODE]
+                }, 
+                false
+            );
+        }
+
+        // Update statistics
+        function updateStatistics() {
+            document.getElementById('totalScans').textContent = scanLogs.length;
+            document.getElementById('uniqueScans').textContent = scannedTickets.size;
+            document.getElementById('duplicateScans').textContent = scanLogs.length - scannedTickets.size;
+        }
+
+        // Update scanned list display
+        function updateScannedList() {
+            const scannedList = document.getElementById('scannedList');
+            
+            if (scanLogs.length === 0) {
+                scannedList.innerHTML = '<div class="text-muted text-center">No scans yet</div>';
+                return;
             }
 
-            // Initialize scanners
-            function initBarcodeScanner() {
-                if (typeof Quagga === 'undefined') {
-                    barcodeStatus.textContent = "Error: QuaggaJS not loaded";
-                    return;
-                }
-
-                Quagga.init({
-                    inputStream: {
-                        name: "Live",
-                        type: "LiveStream",
-                        target: document.querySelector('#interactive'),
-                        constraints: {
-                            width: 640,
-                            height: 480,
-                            facingMode: "environment"
-                        },
-                    },
-                    decoder: {
-                        readers: [barcodeTypeSelect.value],
-                        multiple: false
-                    },
-                    locator: {
-                        patchSize: "medium",
-                        halfSample: true
-                    },
-                    locate: true
-                }, function(err) {
-                    if (err) {
-                        barcodeStatus.textContent = "Error: " + err.message;
-                        return;
-                    }
-                    Quagga.start();
-                    barcodeStatus.textContent = "Barcode scanner active - point at barcode";
-                    
-                    Quagga.onDetected(function(result) {
-                        handleScanResult(result.codeResult.code, 'barcode', result.codeResult.format);
-                    });
-                });
-            }
-
-            function initQRCodeScanner() {
-                if (typeof jsQR === 'undefined') {
-                    qrcodeStatus.textContent = "Error: jsQR not loaded";
-                    return;
-                }
-
-                // Get camera stream
-                navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: "environment",
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    } 
-                }).then(function(mediaStream) {
-                    stream = mediaStream;
-                    video.srcObject = stream;
-                    video.play();
-                    
-                    requestAnimationFrame(tick);
-                    qrcodeStatus.textContent = "QR Code scanner active - point at QR code";
-                }).catch(function(err) {
-                    qrcodeStatus.textContent = "Error accessing camera: " + err.message;
-                });
-            }
-
-            // QR Code scanning loop
-            function tick() {
-                if (!isScanning || currentScanner !== 'qrcode') return;
-
-                if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                        inversionAttempts: "dontInvert",
-                    });
-
-                    if (code) {
-                        handleScanResult(code.data, 'qr_code', 'QR Code');
-                        
-                        // Draw bounding box
-                        drawQRCodeBox(code);
-                    }
-                }
-
-                if (isScanning && currentScanner === 'qrcode') {
-                    requestAnimationFrame(tick);
-                }
-            }
-
-            function drawQRCodeBox(code) {
-                ctx.strokeStyle = "#28a745";
-                ctx.lineWidth = 2;
-                ctx.strokeRect(code.location.topLeftCorner.x, code.location.topLeftCorner.y, 
-                              code.location.bottomRightCorner.x - code.location.topLeftCorner.x,
-                              code.location.bottomRightCorner.y - code.location.topLeftCorner.y);
-            }
-
-            // Start scanning
-            function startScanner() {
-                isScanning = true;
-                startButton.disabled = true;
-                stopButton.disabled = false;
-
-                if (currentScanner === 'barcode') {
-                    initBarcodeScanner();
-                } else {
-                    initQRCodeScanner();
-                }
-            }
-
-            // Stop scanning
-            function stopScanner() {
-                isScanning = false;
-                startButton.disabled = false;
-                stopButton.disabled = true;
-
-                if (currentScanner === 'barcode') {
-                    if (Quagga.initialized) {
-                        Quagga.stop();
-                    }
-                    barcodeStatus.textContent = "Barcode scanner stopped";
-                } else {
-                    if (stream) {
-                        stream.getTracks().forEach(track => track.stop());
-                    }
-                    qrcodeStatus.textContent = "QR Code scanner stopped";
-                }
-            }
-
-            // Reset scanner
-            function resetScanner() {
-                stopScanner();
-                scanResult.textContent = "No code scanned yet";
-                codeInfo.innerHTML = "";
-                scanHistoryData = [];
-                updateHistoryDisplay();
-                
-                if (currentScanner === 'barcode') {
-                    barcodeStatus.textContent = "Barcode scanner ready";
-                } else {
-                    qrcodeStatus.textContent = "QR Code scanner ready";
-                }
-            }
-
-            // Handle scan results
-            function handleScanResult(code, type, format) {
-                scanResult.textContent = code;
-                scanResult.className = "result-text text-success";
-                
-                codeInfo.innerHTML = `
-                    <div class="d-flex align-items-center">
-                        <span>Type: </span>
-                        <span class="code-type">${format || type.toUpperCase()}</span>
+            scannedList.innerHTML = scanLogs.slice().reverse().map(log => `
+                <div class="scanned-item ${log.status}">
+                    <div>
+                        <strong>${log.ticketNumber}</strong>
+                        <br>
+                        <small class="text-muted">${new Date(log.timestamp).toLocaleTimeString()}</small>
                     </div>
-                `;
+                    <div>
+                        ${log.status === 'success' ? 
+                          '<i class="fas fa-check text-success"></i>' : 
+                          '<i class="fas fa-times text-danger"></i>'}
+                    </div>
+                </div>
+            `).join('');
+        }
 
-                addToHistory(code, type, format);
+        // Process scanned QR code
+        function processScannedCode(decodedText) {
+            const ticketNumber = decodedText.trim();
+            const timestamp = Date.now();
+            
+            let status = 'success';
+            let message = `Ticket ${ticketNumber} registered successfully!`;
+
+            // Check for duplicates
+            if (scannedTickets.has(ticketNumber)) {
+                status = 'duplicate';
+                message = `Ticket ${ticketNumber} is already registered!`;
+            } else {
+                scannedTickets.add(ticketNumber);
+                // Add to Firebase database
+                addTicketToDatabase(ticketNumber);
             }
 
-            // Add to history
-            function addToHistory(code, type, format) {
-                const timestamp = new Date().toLocaleTimeString();
-                scanHistoryData.unshift({ 
-                    code, 
-                    type: format || type, 
-                    timestamp 
-                });
-                updateHistoryDisplay();
-            }
-
-            // Update history display
-            function updateHistoryDisplay() {
-                if (scanHistoryData.length === 0) {
-                    scanHistory.innerHTML = '<div class="text-muted">No scan history yet</div>';
-                    return;
-                }
-
-                scanHistory.innerHTML = '';
-                scanHistoryData.forEach(item => {
-                    const historyItem = document.createElement('div');
-                    historyItem.className = 'history-item';
-                    historyItem.innerHTML = `
-                        <div class="d-flex justify-content-between">
-                            <div class="fw-bold">${item.code}</div>
-                            <span class="code-type">${item.type}</span>
-                        </div>
-                        <small class="text-muted">${item.timestamp}</small>
-                    `;
-                    scanHistory.appendChild(historyItem);
-                });
-            }
-
-            // Event listeners
-            startButton.addEventListener('click', startScanner);
-            stopButton.addEventListener('click', stopScanner);
-            resetButton.addEventListener('click', resetScanner);
-
-            // Tab change handler
-            document.querySelectorAll('#scannerTabs .nav-link').forEach(tab => {
-                tab.addEventListener('shown.bs.tab', function() {
-                    updateCurrentScanner();
-                    if (isScanning) {
-                        stopScanner();
-                        setTimeout(startScanner, 500);
-                    }
-                });
+            // Add to scan logs
+            scanLogs.push({
+                ticketNumber: ticketNumber,
+                timestamp: timestamp,
+                status: status
             });
 
-            // Barcode type change
-            barcodeTypeSelect.addEventListener('change', function() {
-                if (isScanning && currentScanner === 'barcode') {
-                    stopScanner();
-                    setTimeout(startScanner, 500);
+            // Update UI
+            updateScannedList();
+            updateStatistics();
+
+            // Show success/error message
+            showScanResult(message, status);
+
+            // Play sound
+            playScanSound(status);
+        }
+
+        // Add ticket to Firebase database
+        function addTicketToDatabase(ticketNumber) {
+            // Get current items from database
+            database.ref('drawResults').once('value').then((snapshot) => {
+                const data = snapshot.val();
+                let items = data?.items || [];
+                
+                // Add new ticket if not already present
+                if (!items.includes(ticketNumber)) {
+                    items.push(ticketNumber);
+                    
+                    // Update database
+                    database.ref('drawResults').update({
+                        items: items
+                    });
                 }
             });
+        }
 
-            // Initialize
-            updateCurrentScanner();
+        // Show scan result
+        function showScanResult(message, status) {
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            const successMessage = document.getElementById('successMessage');
+            
+            successMessage.textContent = message;
+            successMessage.className = status === 'success' ? 'text-success' : 'text-danger';
+            
+            successModal.show();
+            
+            // Auto-hide after 2 seconds
+            setTimeout(() => {
+                successModal.hide();
+            }, 2000);
+        }
+
+        // Play scan sound
+        function playScanSound(status) {
+            const audio = new Audio();
+            audio.src = status === 'success' ? 'success-sound.mp3' : 'error-sound.mp3';
+            audio.play().catch(e => console.log('Audio play failed:', e));
+        }
+
+        // Load existing data from Firebase
+        function loadExistingData() {
+            database.ref('drawResults').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.items) {
+                    // Update local sets with existing data
+                    scannedTickets = new Set(data.items);
+                    // Recreate scan logs (for display purposes)
+                    scanLogs = data.items.map(item => ({
+                        ticketNumber: item,
+                        timestamp: Date.now(), // Approximate timestamp
+                        status: 'success'
+                    }));
+                    updateScannedList();
+                    updateStatistics();
+                }
+            });
+        }
+
+        // Event Listeners
+        document.getElementById('startScanner').addEventListener('click', function() {
+            html5QrcodeScanner.render(
+                (decodedText) => {
+                    processScannedCode(decodedText);
+                },
+                (errorMessage) => {
+                    // Optional: Handle scan errors
+                }
+            );
+            
+            this.disabled = true;
+            document.getElementById('stopScanner').disabled = false;
+            document.getElementById('scannerStatus').textContent = 'Scanner active - point camera at QR code';
+            document.getElementById('scannerStatus').className = 'status-active';
+        });
+
+        document.getElementById('stopScanner').addEventListener('click', function() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear();
+            }
+            
+            this.disabled = true;
+            document.getElementById('startScanner').disabled = false;
+            document.getElementById('scannerStatus').textContent = 'Scanner stopped';
+            document.getElementById('scannerStatus').className = 'status-inactive';
+        });
+
+        document.getElementById('addManual').addEventListener('click', function() {
+            const manualInput = document.getElementById('manualInput');
+            const ticketNumber = manualInput.value.trim();
+            
+            if (ticketNumber) {
+                processScannedCode(ticketNumber);
+                manualInput.value = '';
+            }
+        });
+
+        document.getElementById('manualInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('addManual').click();
+            }
+        });
+
+        document.getElementById('viewDraw').addEventListener('click', function() {
+            window.location.href = 'index.html';
+        });
+
+        document.getElementById('clearAll').addEventListener('click', function() {
+            if (confirm('Are you sure you want to clear all scanned data? This cannot be undone.')) {
+                scannedTickets.clear();
+                scanLogs = [];
+                // Clear from Firebase
+                database.ref('drawResults').update({
+                    items: []
+                });
+                updateScannedList();
+                updateStatistics();
+            }
+        });
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeScanner();
+            loadExistingData();
         });
     </script>
 </body>
