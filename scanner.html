@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Code Scanner</title>
+    <title>QR Code Scanner - No Repeat Scanning</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -144,6 +144,19 @@
             margin-bottom: 15px;
             color: #4a00e0;
         }
+        
+        .duplicate-alert {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .duplicate-alert.show {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -201,12 +214,19 @@
                     <div class="alert alert-success" role="alert" id="resultText">
                         No QR code detected yet.
                     </div>
+                    <div class="duplicate-alert" id="duplicateAlert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        This QR code has already been scanned.
+                    </div>
                     <div class="mt-3">
                         <button id="copyButton" class="btn btn-outline-primary me-2">
                             <i class="fas fa-copy me-2"></i> Copy to Clipboard
                         </button>
                         <button id="openButton" class="btn btn-outline-success">
                             <i class="fas fa-external-link-alt me-2"></i> Open URL
+                        </button>
+                        <button id="resumeButton" class="btn btn-outline-info">
+                            <i class="fas fa-redo me-2"></i> Resume Scanning
                         </button>
                     </div>
                 </div>
@@ -241,9 +261,11 @@
             const resultText = document.getElementById('resultText');
             const copyButton = document.getElementById('copyButton');
             const openButton = document.getElementById('openButton');
+            const resumeButton = document.getElementById('resumeButton');
             const statusIndicator = document.getElementById('statusIndicator');
             const statusText = document.getElementById('statusText');
             const historyList = document.getElementById('historyList');
+            const duplicateAlert = document.getElementById('duplicateAlert');
             
             // Variables
             let stream = null;
@@ -252,6 +274,9 @@
             let scanInterval = null;
             let flashOn = false;
             let scanHistory = [];
+            let lastScannedCode = null;
+            let scanCooldown = false;
+            let scanPaused = false;
             
             // Initialize event listeners
             startButton.addEventListener('click', startScanner);
@@ -260,6 +285,7 @@
             toggleFlashButton.addEventListener('click', toggleFlash);
             copyButton.addEventListener('click', copyResult);
             openButton.addEventListener('click', openResult);
+            resumeButton.addEventListener('click', resumeScanning);
             
             // Start scanner function
             async function startScanner() {
@@ -279,6 +305,7 @@
                     
                     // Update UI
                     isScanning = true;
+                    scanPaused = false;
                     startButton.disabled = true;
                     stopButton.disabled = false;
                     statusIndicator.className = 'status-indicator status-active';
@@ -296,6 +323,7 @@
             // Stop scanner function
             function stopScanner() {
                 isScanning = false;
+                scanPaused = false;
                 
                 // Clear scanning interval
                 if (scanInterval) {
@@ -315,6 +343,7 @@
                 stopButton.disabled = true;
                 statusIndicator.className = 'status-indicator status-inactive';
                 statusText.textContent = 'Scanner is inactive';
+                resultContainer.classList.remove('show');
                 
                 // Turn off flash if on
                 if (flashOn) {
@@ -355,7 +384,7 @@
                 const ctx = canvas.getContext('2d');
                 
                 scanInterval = setInterval(() => {
-                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    if (video.readyState === video.HAVE_ENOUGH_DATA && !scanPaused) {
                         canvas.width = video.videoWidth;
                         canvas.height = video.videoHeight;
                         
@@ -368,7 +397,7 @@
                         // Scan for QR code
                         const code = jsQR(imageData.data, imageData.width, imageData.height);
                         
-                        if (code) {
+                        if (code && !scanCooldown) {
                             handleQRCodeDetected(code.data);
                         }
                     }
@@ -377,9 +406,29 @@
             
             // Handle detected QR code
             function handleQRCodeDetected(data) {
+                // Check if this is the same code as the last one
+                if (data === lastScannedCode) {
+                    showDuplicateAlert();
+                    return;
+                }
+                
+                // Set cooldown to prevent rapid scanning
+                scanCooldown = true;
+                setTimeout(() => {
+                    scanCooldown = false;
+                }, 2000); // 2 second cooldown
+                
+                // Update last scanned code
+                lastScannedCode = data;
+                
+                // Pause scanning to prevent repeated scans
+                scanPaused = true;
+                statusText.textContent = 'Scanner paused - code detected';
+                
                 // Update result display
                 resultText.textContent = data;
                 resultContainer.classList.add('show');
+                duplicateAlert.classList.remove('show');
                 
                 // Add to history
                 addToHistory(data);
@@ -390,9 +439,24 @@
                 } else {
                     openButton.style.display = 'none';
                 }
+            }
+            
+            // Show duplicate alert
+            function showDuplicateAlert() {
+                duplicateAlert.classList.add('show');
                 
-                // Optional: Stop scanning after successful detection
-                // stopScanner();
+                // Hide the alert after 3 seconds
+                setTimeout(() => {
+                    duplicateAlert.classList.remove('show');
+                }, 3000);
+            }
+            
+            // Resume scanning after a code has been detected
+            function resumeScanning() {
+                scanPaused = false;
+                statusText.textContent = 'Scanner is active';
+                resultContainer.classList.remove('show');
+                duplicateAlert.classList.remove('show');
             }
             
             // Copy result to clipboard
