@@ -1,802 +1,170 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barcode Scanner - Lucky Draw Registration</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
-    <style>
-        body {
-            font-family: 'Roboto', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .scanner-container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            padding: 30px;
-            margin-top: 20px;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            color: #333;
-        }
-        
-        .header h1 {
-            font-weight: 700;
-            margin-bottom: 10px;
-            color: #2c3e50;
-        }
-        
-        #scanner-container {
-            width: 100%;
-            max-width: 640px;
-            margin: 0 auto;
-            position: relative;
-            border: 3px solid #3498db;
-            border-radius: 10px;
-            overflow: hidden;
-            background: #000;
-        }
-        
-        #interactive {
-            width: 100%;
-            height: 400px;
-        }
-        
-        .scanner-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 10;
-        }
-        
-        .scan-line {
-            position: absolute;
-            width: 100%;
-            height: 3px;
-            background: #00ff00;
-            top: 50%;
-            animation: scan 2s linear infinite;
-            box-shadow: 0 0 10px #00ff00;
-        }
-        
-        @keyframes scan {
-            0% { top: 20%; }
-            50% { top: 80%; }
-            100% { top: 20%; }
-        }
-        
-        .corner {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            border-color: #00ff00;
-            border-style: solid;
-        }
-        
-        .corner-tl {
-            top: 20%;
-            left: 20%;
-            border-width: 3px 0 0 3px;
-        }
-        
-        .corner-tr {
-            top: 20%;
-            right: 20%;
-            border-width: 3px 3px 0 0;
-        }
-        
-        .corner-bl {
-            bottom: 20%;
-            left: 20%;
-            border-width: 0 0 3px 3px;
-        }
-        
-        .corner-br {
-            bottom: 20%;
-            right: 20%;
-            border-width: 0 3px 3px 0;
-        }
-        
-        .status-card {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 20px;
-            border-left: 4px solid #3498db;
-        }
-        
-        .scanned-list {
-            max-height: 400px;
-            overflow-y: auto;
-            margin-top: 20px;
-        }
-        
-        .scanned-item {
-            background: #e8f4fc;
-            border: 1px solid #b3e0ff;
-            border-radius: 8px;
-            padding: 12px 15px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.3s ease;
-        }
-        
-        .scanned-item.duplicate {
-            background: #f8d7da;
-            border-color: #f5c6cb;
-        }
-        
-        .scanned-item.success {
-            background: #d4edda;
-            border-color: #c3e6cb;
-        }
-        
-        .confidence-bar {
-            height: 5px;
-            background: #e9ecef;
-            border-radius: 3px;
-            margin-top: 5px;
-            overflow: hidden;
-        }
-        
-        .confidence-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #ff6b6b, #feca57, #48c78e);
-            transition: width 0.3s ease;
-        }
-        
-        .stats {
-            background: #2c3e50;
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 20px;
-        }
-        
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #3498db;
-        }
-        
-        .btn-custom {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 25px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-        
-        #scannerStatus {
-            font-weight: bold;
-            padding: 10px;
-            border-radius: 5px;
-            text-align: center;
-            margin-bottom: 15px;
-        }
-        
-        .status-ready {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
-        .status-active {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .status-error {
-            background: #f8d7da;
-            color: #721c24;
-        }
+// Install required dependencies:
+// npm install react-native-camera react-native-qrcode-scanner
+// react-native link react-native-camera
 
-        .barcode-info {
-            background: #e9ecef;
-            border-radius: 5px;
-            padding: 10px;
-            margin-top: 10px;
-            font-size: 12px;
-        }
+import React, { useState, useRef } from 'react';
+import {
+    View,
+    Text,
+    StyleSheet,
+    Alert,
+    Linking,
+    TouchableOpacity,
+    Dimensions
+} from 'react-native';
+import QRCodeScanner from 'react-native-qrcode-scanner';
+import { RNCamera } from 'react-native-camera';
 
-        .canvas-container {
-            position: relative;
-            margin: 0 auto;
-        }
+const QRScannerApp = () => {
+    const scannerRef = useRef(null);
+    const [scannedData, setScannedData] = useState('');
+    const [isScanning, setIsScanning] = useState(true);
+    const [flashMode, setFlashMode] = useState(RNCamera.Constants.FlashMode.off);
 
-        #scanner-canvas {
-            display: none;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="scanner-container">
-            <!-- Header -->
-            <div class="header">
-                <h1>📷 Barcode Scanner</h1>
-                <p>Scan lucky draw tickets to register participants</p>
-            </div>
-
-            <!-- Scanner Status -->
-            <div id="scannerStatus" class="status-ready">Scanner ready - click start to begin</div>
-
-            <!-- Scanner Controls -->
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <label for="barcodeType" class="form-label">Barcode Type:</label>
-                    <select id="barcodeType" class="form-control">
-                        <option value="code_128">Code 128</option>
-                        <option value="ean">EAN</option>
-                        <option value="ean_8">EAN-8</option>
-                        <option value="upc">UPC</option>
-                        <option value="upc_e">UPC-E</option>
-                        <option value="code_39">Code 39</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label for="cameraSelector" class="form-label">Camera:</label>
-                    <select id="cameraSelector" class="form-control">
-                        <option value="">Auto-detect (prefers rear camera)</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- QR Scanner -->
-            <div id="scanner-container">
-                <div class="scanner-overlay">
-                    <div class="scan-line"></div>
-                    <div class="corner corner-tl"></div>
-                    <div class="corner corner-tr"></div>
-                    <div class="corner corner-bl"></div>
-                    <div class="corner corner-br"></div>
-                </div>
-                <div id="interactive" class="viewport canvas-container">
-                    <canvas id="scanner-canvas"></canvas>
-                </div>
-            </div>
-
-            <!-- Controls -->
-            <div class="text-center mb-4 mt-4">
-                <button id="startScanner" class="btn btn-custom btn-lg mr-3">
-                    <i class="fas fa-play"></i> Start Scanner
-                </button>
-                <button id="stopScanner" class="btn btn-danger btn-lg" disabled>
-                    <i class="fas fa-stop"></i> Stop Scanner
-                </button>
-                <button id="resetScanner" class="btn btn-warning btn-lg">
-                    <i class="fas fa-redo"></i> Reset
-                </button>
-            </div>
-
-            <!-- Scan Results -->
-            <div class="barcode-info" id="barcodeInfo" style="display: none;">
-                <strong>Last Scan:</strong> 
-                <span id="lastBarcodeType"></span> | 
-                <span id="lastBarcodeValue"></span> | 
-                Confidence: <span id="lastConfidence"></span>%
-            </div>
-
-            <!-- Manual Input -->
-            <div class="manual-input mb-4">
-                <label for="manualInput" class="form-label">Or enter ticket number manually:</label>
-                <div class="input-group">
-                    <input type="text" id="manualInput" class="form-control" placeholder="Enter ticket number...">
-                    <div class="input-group-append">
-                        <button id="addManual" class="btn btn-success">Add Ticket</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Results Display -->
-            <div class="status-card">
-                <h4><i class="fas fa-list"></i> Scan Results</h4>
-                <div class="scanned-list" id="scannedList">
-                    <div class="text-muted text-center">No scans yet</div>
-                </div>
-            </div>
-
-            <!-- Statistics -->
-            <div class="stats">
-                <div class="row text-center">
-                    <div class="col-md-3">
-                        <div class="stat-number" id="totalScans">0</div>
-                        <div>Total Scans</div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-number" id="uniqueScans">0</div>
-                        <div>Unique Tickets</div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-number" id="duplicateScans">0</div>
-                        <div>Duplicates</div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-number" id="successRate">100%</div>
-                        <div>Success Rate</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Actions -->
-            <div class="text-center mt-4">
-                <button id="viewDraw" class="btn btn-warning mr-2">
-                    <i class="fas fa-ticket-alt"></i> Go to Draw Page
-                </button>
-                <button id="clearAll" class="btn btn-outline-danger">
-                    <i class="fas fa-trash"></i> Clear All Data
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Result Modal -->
-    <div class="modal fade" id="resultModal" tabindex="-1">
-        <div class="modal-dialog modal-sm">
-            <div class="modal-content">
-                <div class="modal-body text-center">
-                    <i id="resultIcon" class="fas fa-check-circle" style="font-size: 3rem;"></i>
-                    <h4 id="resultTitle" class="mt-3">Success!</h4>
-                    <p id="resultMessage">Ticket registered successfully</p>
-                    <div class="confidence-bar mt-2">
-                        <div id="modalConfidence" class="confidence-fill" style="width: 100%"></div>
-                    </div>
-                    <small>Confidence: <span id="modalConfidenceText">100%</span></small>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
-
-    <script>
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
-            authDomain: "makysdraw-87237.firebaseapp.com",
-            databaseURL: "https://makysdraw-87237-default-rtdb.firebaseio.com",
-            projectId: "makysdraw-87237",
-            storageBucket: "makysdraw-87237.firebasestorage.app",
-            messagingSenderId: "1044977366090",
-            appId: "1:1044977366090:web:37af3eaa9c3f5bfc7822b3"
-        };
-
-        // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-
-        let scannedTickets = new Set();
-        let scanLogs = [];
-        let isScannerActive = false;
-        let currentStream = null;
-        let lastScanTime = 0;
-        const SCAN_COOLDOWN = 1000; // 1 second cooldown between scans
-
-        // Update scanner status
-        function updateScannerStatus(message, type = 'ready') {
-            const statusElement = document.getElementById('scannerStatus');
-            statusElement.textContent = message;
-            statusElement.className = `status-${type}`;
-            console.log(`Scanner Status: ${message}`);
-        }
-
-        // Get available cameras
-        async function getCameras() {
-            try {
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const videoDevices = devices.filter(device => device.kind === 'videoinput');
-                const cameraSelector = document.getElementById('cameraSelector');
-                
-                cameraSelector.innerHTML = '<option value="">Auto-detect (prefers rear camera)</option>';
-                
-                videoDevices.forEach(device => {
-                    const option = document.createElement('option');
-                    option.value = device.deviceId;
-                    option.textContent = device.label || `Camera ${cameraSelector.length}`;
-                    cameraSelector.appendChild(option);
-                });
-                
-                return videoDevices;
-            } catch (error) {
-                console.error('Error getting cameras:', error);
-                return [];
-            }
-        }
-
-        // Initialize Quagga scanner
-        function initScanner() {
-            const barcodeType = document.getElementById('barcodeType').value;
-            const cameraId = document.getElementById('cameraSelector').value;
-
-            const config = {
-                inputStream: {
-                    name: "Live",
-                    type: "LiveStream",
-                    target: document.querySelector('#interactive'),
-                    constraints: {
-                        width: 640,
-                        height: 480,
-                        facingMode: "environment", // Prefer rear camera
-                        deviceId: cameraId || undefined
+    const onSuccess = (e) => {
+        setScannedData(e.data);
+        setIsScanning(false);
+        
+        Alert.alert(
+            'QR Code Detected!',
+            e.data,
+            [
+                {
+                    text: 'Copy to Clipboard',
+                    onPress: () => {
+                        // Copy to clipboard logic here
+                        Alert.alert('Copied to clipboard!');
                     }
                 },
-                locator: {
-                    patchSize: "medium",
-                    halfSample: true
-                },
-                numOfWorkers: 2,
-                decoder: {
-                    readers: [barcodeType]
-                },
-                locate: true
-            };
-
-            Quagga.init(config, function(err) {
-                if (err) {
-                    console.error('Quagga initialization error:', err);
-                    updateScannerStatus(`Scanner error: ${err.message}`, 'error');
-                    return;
-                }
-
-                Quagga.start();
-                updateScannerStatus('Scanner active - point camera at barcode', 'active');
-                
-                // Add bounding box drawing
-                Quagga.onProcessed(function(result) {
-                    const drawingCtx = Quagga.canvas.ctx.overlay;
-                    const drawingCanvas = Quagga.canvas.dom.overlay;
-
-                    if (result) {
-                        drawingCtx.clearRect(0, 0, parseInt(drawingCanvas.getAttribute("width")), parseInt(drawingCanvas.getAttribute("height")));
-                        
-                        if (result.boxes) {
-                            drawingCtx.strokeStyle = "#00ff00";
-                            result.boxes.filter(function(box) {
-                                return box !== result.box;
-                            }).forEach(function(box) {
-                                Quagga.ImageDebug.drawPath(box, {x: 0, y: 1}, drawingCtx, {color: "green", lineWidth: 2});
-                            });
-                        }
-
-                        if (result.box) {
-                            Quagga.ImageDebug.drawPath(result.box, {x: 0, y: 1}, drawingCtx, {color: "#00F", lineWidth: 2});
-                        }
-
-                        if (result.codeResult && result.codeResult.code) {
-                            Quagga.ImageDebug.drawPath(result.line, {x: 'x', y: 'y'}, drawingCtx, {color: 'red', lineWidth: 3});
+                {
+                    text: 'Open URL',
+                    onPress: () => {
+                        if (isValidUrl(e.data)) {
+                            Linking.openURL(e.data).catch(err =>
+                                Alert.alert('Error', 'Could not open URL')
+                            );
                         }
                     }
-                });
-
-                // Handle detected barcodes
-                Quagga.onDetected(function(result) {
-                    const now = Date.now();
-                    if (now - lastScanTime < SCAN_COOLDOWN) {
-                        return; // Skip if still in cooldown period
+                },
+                {
+                    text: 'Scan Again',
+                    onPress: () => {
+                        setScannedData('');
+                        setIsScanning(true);
+                        scannerRef.current?.reactivate();
                     }
-                    lastScanTime = now;
-
-                    const code = result.codeResult.code;
-                    const format = result.codeResult.format;
-                    const confidence = Math.round(result.codeResult.decodedCodes[0].confidence * 100);
-
-                    console.log(`Barcode detected: ${code} (${format}) - Confidence: ${confidence}%`);
-                    processScannedCode(code, format, confidence);
-                });
-            });
-        }
-
-        // Process scanned barcode
-        function processScannedCode(code, format, confidence) {
-            const ticketNumber = code.trim();
-            const timestamp = Date.now();
-            
-            let status = 'success';
-            let message = `Ticket ${ticketNumber} registered successfully!`;
-            let icon = 'fa-check-circle';
-            let title = 'Success!';
-            let iconColor = 'text-success';
-
-            // Check for duplicates
-            if (scannedTickets.has(ticketNumber)) {
-                status = 'duplicate';
-                message = `Ticket ${ticketNumber} is already registered!`;
-                icon = 'fa-exclamation-circle';
-                title = 'Duplicate!';
-                iconColor = 'text-warning';
-            } else {
-                scannedTickets.add(ticketNumber);
-                // Add to Firebase database
-                addTicketToDatabase(ticketNumber);
-            }
-
-            // Add to scan logs
-            scanLogs.push({
-                ticketNumber: ticketNumber,
-                format: format,
-                confidence: confidence,
-                timestamp: timestamp,
-                status: status
-            });
-
-            // Update UI
-            updateScannedList();
-            updateStatistics();
-            updateBarcodeInfo(ticketNumber, format, confidence);
-
-            // Show result modal
-            showResultModal(message, icon, title, iconColor, confidence);
-
-            // Visual feedback
-            flashScanArea(status);
-        }
-
-        // Update barcode info display
-        function updateBarcodeInfo(code, format, confidence) {
-            const barcodeInfo = document.getElementById('barcodeInfo');
-            document.getElementById('lastBarcodeType').textContent = format;
-            document.getElementById('lastBarcodeValue').textContent = code;
-            document.getElementById('lastConfidence').textContent = confidence;
-            barcodeInfo.style.display = 'block';
-        }
-
-        // Flash scan area for visual feedback
-        function flashScanArea(status) {
-            const scannerContainer = document.getElementById('scanner-container');
-            const originalBorder = scannerContainer.style.borderColor;
-            const flashColor = status === 'success' ? '#00ff00' : '#ff0000';
-            
-            scannerContainer.style.borderColor = flashColor;
-            scannerContainer.style.boxShadow = `0 0 20px ${flashColor}`;
-            
-            setTimeout(() => {
-                scannerContainer.style.borderColor = originalBorder;
-                scannerContainer.style.boxShadow = 'none';
-            }, 500);
-        }
-
-        // Add ticket to Firebase database
-        function addTicketToDatabase(ticketNumber) {
-            database.ref('drawResults').once('value').then((snapshot) => {
-                const data = snapshot.val();
-                let items = data?.items || [];
-                
-                // Add new ticket if not already present
-                if (!items.includes(ticketNumber)) {
-                    items.push(ticketNumber);
-                    
-                    // Update database
-                    database.ref('drawResults').update({
-                        items: items
-                    });
-                    console.log(`Added ticket ${ticketNumber} to database`);
                 }
-            }).catch(error => {
-                console.error('Database error:', error);
-            });
+            ]
+        );
+    };
+
+    const toggleFlash = () => {
+        setFlashMode(
+            flashMode === RNCamera.Constants.FlashMode.off
+                ? RNCamera.Constants.FlashMode.torch
+                : RNCamera.Constants.FlashMode.off
+        );
+    };
+
+    const isValidUrl = (string) => {
+        try {
+            new URL(string);
+            return true;
+        } catch (_) {
+            return false;
         }
+    };
 
-        // Show result modal
-        function showResultModal(message, icon, title, iconColor, confidence) {
-            const resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
-            const resultIcon = document.getElementById('resultIcon');
-            const resultTitle = document.getElementById('resultTitle');
-            const resultMessage = document.getElementById('resultMessage');
-            const modalConfidence = document.getElementById('modalConfidence');
-            const modalConfidenceText = document.getElementById('modalConfidenceText');
-            
-            resultIcon.className = `fas ${icon} ${iconColor}`;
-            resultTitle.textContent = title;
-            resultTitle.className = `mt-3 ${iconColor}`;
-            resultMessage.textContent = message;
-            modalConfidence.style.width = `${confidence}%`;
-            modalConfidenceText.textContent = `${confidence}%`;
-            
-            resultModal.show();
-            
-            // Auto-hide after 2 seconds
-            setTimeout(() => {
-                resultModal.hide();
-            }, 2000);
-        }
+    return (
+        <View style={styles.container}>
+            {isScanning ? (
+                <QRCodeScanner
+                    ref={scannerRef}
+                    onRead={onSuccess}
+                    flashMode={flashMode}
+                    topContent={
+                        <Text style={styles.centerText}>
+                            Point your camera at a QR code
+                        </Text>
+                    }
+                    bottomContent={
+                        <View style={styles.buttonContainer}>
+                            <TouchableOpacity
+                                style={styles.button}
+                                onPress={toggleFlash}
+                            >
+                                <Text style={styles.buttonText}>
+                                    {flashMode === RNCamera.Constants.FlashMode.off
+                                        ? 'Flash On'
+                                        : 'Flash Off'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    }
+                    cameraStyle={styles.camera}
+                />
+            ) : (
+                <View style={styles.resultContainer}>
+                    <Text style={styles.resultText}>
+                        Last scanned: {scannedData}
+                    </Text>
+                    <TouchableOpacity
+                        style={styles.button}
+                        onPress={() => {
+                            setScannedData('');
+                            setIsScanning(true);
+                        }}
+                    >
+                        <Text style={styles.buttonText}>Scan Again</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+        </View>
+    );
+};
 
-        // Update statistics
-        function updateStatistics() {
-            const totalScans = scanLogs.length;
-            const uniqueScans = scannedTickets.size;
-            const duplicateScans = totalScans - uniqueScans;
-            const successRate = totalScans > 0 ? Math.round((uniqueScans / totalScans) * 100) : 100;
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#000',
+    },
+    centerText: {
+        fontSize: 18,
+        color: 'white',
+        textAlign: 'center',
+        margin: 20,
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginTop: 20,
+    },
+    button: {
+        backgroundColor: '#007AFF',
+        padding: 15,
+        borderRadius: 10,
+        marginHorizontal: 10,
+    },
+    buttonText: {
+        color: 'white',
+        fontSize: 16,
+        textAlign: 'center',
+    },
+    camera: {
+        height: Dimensions.get('window').height,
+    },
+    resultContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    resultText: {
+        fontSize: 16,
+        textAlign: 'center',
+        marginBottom: 20,
+        color: 'white',
+    },
+});
 
-            document.getElementById('totalScans').textContent = totalScans;
-            document.getElementById('uniqueScans').textContent = uniqueScans;
-            document.getElementById('duplicateScans').textContent = duplicateScans;
-            document.getElementById('successRate').textContent = `${successRate}%`;
-        }
-
-        // Update scanned list display
-        function updateScannedList() {
-            const scannedList = document.getElementById('scannedList');
-            
-            if (scanLogs.length === 0) {
-                scannedList.innerHTML = '<div class="text-muted text-center">No scans yet</div>';
-                return;
-            }
-
-            scannedList.innerHTML = scanLogs.slice().reverse().map(log => `
-                <div class="scanned-item ${log.status}">
-                    <div style="flex-grow: 1;">
-                        <strong>${log.ticketNumber}</strong>
-                        <br>
-                        <small class="text-muted">
-                            ${log.format} | ${new Date(log.timestamp).toLocaleTimeString()} | 
-                            Confidence: ${log.confidence}%
-                        </small>
-                        <div class="confidence-bar">
-                            <div class="confidence-fill" style="width: ${log.confidence}%"></div>
-                        </div>
-                    </div>
-                    <div>
-                        ${log.status === 'success' ? 
-                          '<i class="fas fa-check text-success"></i>' : 
-                          '<i class="fas fa-times text-danger"></i>'}
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Start scanner
-        async function startScanner() {
-            if (isScannerActive) return;
-
-            try {
-                updateScannerStatus('Initializing camera...', 'ready');
-                await getCameras();
-                initScanner();
-                isScannerActive = true;
-                document.getElementById('startScanner').disabled = true;
-                document.getElementById('stopScanner').disabled = false;
-            } catch (error) {
-                console.error('Error starting scanner:', error);
-                updateScannerStatus(`Failed to start: ${error.message}`, 'error');
-            }
-        }
-
-        // Stop scanner
-        function stopScanner() {
-            if (!isScannerActive) return;
-
-            Quagga.stop();
-            isScannerActive = false;
-            document.getElementById('startScanner').disabled = false;
-            document.getElementById('stopScanner').disabled = true;
-            updateScannerStatus('Scanner stopped', 'ready');
-        }
-
-        // Reset scanner
-        function resetScanner() {
-            stopScanner();
-            setTimeout(() => {
-                startScanner();
-            }, 500);
-        }
-
-        // Load existing data from Firebase
-        function loadExistingData() {
-            database.ref('drawResults').on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data && data.items) {
-                    scannedTickets = new Set(data.items);
-                    scanLogs = data.items.map(item => ({
-                        ticketNumber: item,
-                        format: 'manual',
-                        confidence: 100,
-                        timestamp: Date.now(),
-                        status: 'success'
-                    }));
-                    updateScannedList();
-                    updateStatistics();
-                    console.log(`Loaded ${data.items.length} existing tickets from database`);
-                }
-            });
-        }
-
-        // Event Listeners
-        document.getElementById('startScanner').addEventListener('click', startScanner);
-        document.getElementById('stopScanner').addEventListener('click', stopScanner);
-        document.getElementById('resetScanner').addEventListener('click', resetScanner);
-
-        document.getElementById('barcodeType').addEventListener('change', function() {
-            if (isScannerActive) {
-                resetScanner();
-            }
-        });
-
-        document.getElementById('cameraSelector').addEventListener('change', function() {
-            if (isScannerActive) {
-                resetScanner();
-            }
-        });
-
-        document.getElementById('addManual').addEventListener('click', function() {
-            const manualInput = document.getElementById('manualInput');
-            const ticketNumber = manualInput.value.trim();
-            
-            if (ticketNumber) {
-                processScannedCode(ticketNumber, 'manual', 100);
-                manualInput.value = '';
-                manualInput.focus();
-            } else {
-                alert('Please enter a ticket number');
-            }
-        });
-
-        document.getElementById('manualInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                document.getElementById('addManual').click();
-            }
-        });
-
-        document.getElementById('viewDraw').addEventListener('click', function() {
-            window.location.href = 'index.html';
-        });
-
-        document.getElementById('clearAll').addEventListener('click', function() {
-            if (confirm('Are you sure you want to clear all scanned data? This cannot be undone.')) {
-                scannedTickets.clear();
-                scanLogs = [];
-                database.ref('drawResults').update({
-                    items: []
-                });
-                updateScannedList();
-                updateStatistics();
-                document.getElementById('barcodeInfo').style.display = 'none';
-                console.log('All data cleared');
-            }
-        });
-
-        // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Barcode Scanner initialized');
-            loadExistingData();
-            
-            // Request camera permission on page load
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ video: true })
-                    .then(function(stream) {
-                        console.log('Camera access granted');
-                        // Immediately stop the stream since we just wanted permission
-                        stream.getTracks().forEach(track => track.stop());
-                    })
-                    .catch(function(error) {
-                        console.log('Camera access denied:', error);
-                        updateScannerStatus('Camera access required - please allow camera permissions', 'error');
-                    });
-            }
-        });
-    </script>
-</body>
-</html>
+export default QRScannerApp;
