@@ -1,170 +1,497 @@
-// Install required dependencies:
-// npm install react-native-camera react-native-qrcode-scanner
-// react-native link react-native-camera
-
-import React, { useState, useRef } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    Alert,
-    Linking,
-    TouchableOpacity,
-    Dimensions
-} from 'react-native';
-import QRCodeScanner from 'react-native-qrcode-scanner';
-import { RNCamera } from 'react-native-camera';
-
-const QRScannerApp = () => {
-    const scannerRef = useRef(null);
-    const [scannedData, setScannedData] = useState('');
-    const [isScanning, setIsScanning] = useState(true);
-    const [flashMode, setFlashMode] = useState(RNCamera.Constants.FlashMode.off);
-
-    const onSuccess = (e) => {
-        setScannedData(e.data);
-        setIsScanning(false);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Scanner</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
         
-        Alert.alert(
-            'QR Code Detected!',
-            e.data,
-            [
-                {
-                    text: 'Copy to Clipboard',
-                    onPress: () => {
-                        // Copy to clipboard logic here
-                        Alert.alert('Copied to clipboard!');
-                    }
-                },
-                {
-                    text: 'Open URL',
-                    onPress: () => {
-                        if (isValidUrl(e.data)) {
-                            Linking.openURL(e.data).catch(err =>
-                                Alert.alert('Error', 'Could not open URL')
-                            );
+        .scanner-container {
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .scanner-header {
+            background: linear-gradient(to right, #4a00e0, #8e2de2);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-top: 75%; /* 4:3 Aspect Ratio */
+            background-color: #000;
+        }
+        
+        #video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .scan-area {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70%;
+            height: 70%;
+            border: 2px solid #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+        
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: #4a00e0;
+            animation: scan 2s linear infinite;
+            z-index: 11;
+        }
+        
+        @keyframes scan {
+            0% { top: 0; }
+            50% { top: calc(100% - 3px); }
+            100% { top: 0; }
+        }
+        
+        .controls {
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        
+        .result-container {
+            padding: 20px;
+            background-color: #f1f3f5;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .result-container.show {
+            display: block;
+        }
+        
+        .btn-custom {
+            background: linear-gradient(to right, #4a00e0, #8e2de2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .history-item {
+            background-color: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+        }
+        
+        .history-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-active {
+            background-color: #28a745;
+        }
+        
+        .status-inactive {
+            background-color: #dc3545;
+        }
+        
+        .scanner-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #4a00e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="scanner-container">
+            <div class="scanner-header">
+                <h1><i class="fas fa-qrcode scanner-icon"></i></h1>
+                <h2>QR Code Scanner</h2>
+                <p class="mb-0">Point your camera at a QR code to scan it</p>
+            </div>
+            
+            <div class="p-4">
+                <div class="video-container">
+                    <video id="video" autoplay playsinline></video>
+                    <div class="scan-area">
+                        <div class="scan-line"></div>
+                    </div>
+                </div>
+                
+                <div class="controls mt-4">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <button id="startButton" class="btn btn-custom w-100">
+                                <i class="fas fa-play me-2"></i> Start Scanner
+                            </button>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <button id="stopButton" class="btn btn-secondary w-100" disabled>
+                                <i class="fas fa-stop me-2"></i> Stop Scanner
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <button id="switchCamera" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-camera-rotate me-2"></i> Switch Camera
+                            </button>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <button id="toggleFlash" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-lightbulb me-2"></i> Toggle Flash
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="status-indicator status-inactive" id="statusIndicator"></span>
+                        <span id="statusText" class="fw-bold">Scanner is inactive</span>
+                    </div>
+                </div>
+                
+                <div class="result-container" id="resultContainer">
+                    <h4>Scan Result</h4>
+                    <div class="alert alert-success" role="alert" id="resultText">
+                        No QR code detected yet.
+                    </div>
+                    <div class="mt-3">
+                        <button id="copyButton" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-copy me-2"></i> Copy to Clipboard
+                        </button>
+                        <button id="openButton" class="btn btn-outline-success">
+                            <i class="fas fa-external-link-alt me-2"></i> Open URL
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h4>Scan History</h4>
+                    <div id="historyList" class="mt-3">
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-history fa-2x mb-2"></i>
+                            <p>No scan history yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- QR Code Scanner Library -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elements
+            const video = document.getElementById('video');
+            const startButton = document.getElementById('startButton');
+            const stopButton = document.getElementById('stopButton');
+            const switchCameraButton = document.getElementById('switchCamera');
+            const toggleFlashButton = document.getElementById('toggleFlash');
+            const resultContainer = document.getElementById('resultContainer');
+            const resultText = document.getElementById('resultText');
+            const copyButton = document.getElementById('copyButton');
+            const openButton = document.getElementById('openButton');
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            const historyList = document.getElementById('historyList');
+            
+            // Variables
+            let stream = null;
+            let isScanning = false;
+            let currentFacingMode = 'environment'; // 'user' for front camera, 'environment' for back
+            let scanInterval = null;
+            let flashOn = false;
+            let scanHistory = [];
+            
+            // Initialize event listeners
+            startButton.addEventListener('click', startScanner);
+            stopButton.addEventListener('click', stopScanner);
+            switchCameraButton.addEventListener('click', switchCamera);
+            toggleFlashButton.addEventListener('click', toggleFlash);
+            copyButton.addEventListener('click', copyResult);
+            openButton.addEventListener('click', openResult);
+            
+            // Start scanner function
+            async function startScanner() {
+                try {
+                    // Request camera access
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: currentFacingMode,
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
                         }
-                    }
-                },
-                {
-                    text: 'Scan Again',
-                    onPress: () => {
-                        setScannedData('');
-                        setIsScanning(true);
-                        scannerRef.current?.reactivate();
+                    });
+                    
+                    // Set video source
+                    video.srcObject = stream;
+                    await video.play();
+                    
+                    // Update UI
+                    isScanning = true;
+                    startButton.disabled = true;
+                    stopButton.disabled = false;
+                    statusIndicator.className = 'status-indicator status-active';
+                    statusText.textContent = 'Scanner is active';
+                    
+                    // Start scanning for QR codes
+                    startScanning();
+                    
+                } catch (error) {
+                    console.error('Error accessing camera:', error);
+                    alert('Error accessing camera: ' + error.message);
+                }
+            }
+            
+            // Stop scanner function
+            function stopScanner() {
+                isScanning = false;
+                
+                // Clear scanning interval
+                if (scanInterval) {
+                    clearInterval(scanInterval);
+                    scanInterval = null;
+                }
+                
+                // Stop all video tracks
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    stream = null;
+                }
+                
+                // Update UI
+                video.srcObject = null;
+                startButton.disabled = false;
+                stopButton.disabled = true;
+                statusIndicator.className = 'status-indicator status-inactive';
+                statusText.textContent = 'Scanner is inactive';
+                
+                // Turn off flash if on
+                if (flashOn) {
+                    toggleFlash();
+                }
+            }
+            
+            // Switch camera function
+            async function switchCamera() {
+                if (isScanning) {
+                    currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+                    stopScanner();
+                    await startScanner();
+                }
+            }
+            
+            // Toggle flash function
+            function toggleFlash() {
+                if (stream) {
+                    const videoTrack = stream.getVideoTracks()[0];
+                    if (videoTrack && 'torch' in videoTrack.getCapabilities()) {
+                        flashOn = !flashOn;
+                        videoTrack.applyConstraints({
+                            advanced: [{ torch: flashOn }]
+                        });
+                        toggleFlashButton.innerHTML = flashOn ? 
+                            '<i class="fas fa-lightbulb me-2"></i> Flash On' : 
+                            '<i class="far fa-lightbulb me-2"></i> Flash Off';
+                    } else {
+                        alert('Flash is not supported on this device or camera');
                     }
                 }
-            ]
-        );
-    };
-
-    const toggleFlash = () => {
-        setFlashMode(
-            flashMode === RNCamera.Constants.FlashMode.off
-                ? RNCamera.Constants.FlashMode.torch
-                : RNCamera.Constants.FlashMode.off
-        );
-    };
-
-    const isValidUrl = (string) => {
-        try {
-            new URL(string);
-            return true;
-        } catch (_) {
-            return false;
-        }
-    };
-
-    return (
-        <View style={styles.container}>
-            {isScanning ? (
-                <QRCodeScanner
-                    ref={scannerRef}
-                    onRead={onSuccess}
-                    flashMode={flashMode}
-                    topContent={
-                        <Text style={styles.centerText}>
-                            Point your camera at a QR code
-                        </Text>
+            }
+            
+            // Start scanning for QR codes
+            function startScanning() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                scanInterval = setInterval(() => {
+                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        
+                        // Draw video frame to canvas
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        
+                        // Get image data from canvas
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        
+                        // Scan for QR code
+                        const code = jsQR(imageData.data, imageData.width, imageData.height);
+                        
+                        if (code) {
+                            handleQRCodeDetected(code.data);
+                        }
                     }
-                    bottomContent={
-                        <View style={styles.buttonContainer}>
-                            <TouchableOpacity
-                                style={styles.button}
-                                onPress={toggleFlash}
-                            >
-                                <Text style={styles.buttonText}>
-                                    {flashMode === RNCamera.Constants.FlashMode.off
-                                        ? 'Flash On'
-                                        : 'Flash Off'}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    }
-                    cameraStyle={styles.camera}
-                />
-            ) : (
-                <View style={styles.resultContainer}>
-                    <Text style={styles.resultText}>
-                        Last scanned: {scannedData}
-                    </Text>
-                    <TouchableOpacity
-                        style={styles.button}
-                        onPress={() => {
-                            setScannedData('');
-                            setIsScanning(true);
-                        }}
-                    >
-                        <Text style={styles.buttonText}>Scan Again</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
-        </View>
-    );
-};
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#000',
-    },
-    centerText: {
-        fontSize: 18,
-        color: 'white',
-        textAlign: 'center',
-        margin: 20,
-    },
-    buttonContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginTop: 20,
-    },
-    button: {
-        backgroundColor: '#007AFF',
-        padding: 15,
-        borderRadius: 10,
-        marginHorizontal: 10,
-    },
-    buttonText: {
-        color: 'white',
-        fontSize: 16,
-        textAlign: 'center',
-    },
-    camera: {
-        height: Dimensions.get('window').height,
-    },
-    resultContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
-    },
-    resultText: {
-        fontSize: 16,
-        textAlign: 'center',
-        marginBottom: 20,
-        color: 'white',
-    },
-});
-
-export default QRScannerApp;
+                }, 200); // Scan every 200ms
+            }
+            
+            // Handle detected QR code
+            function handleQRCodeDetected(data) {
+                // Update result display
+                resultText.textContent = data;
+                resultContainer.classList.add('show');
+                
+                // Add to history
+                addToHistory(data);
+                
+                // Check if it's a URL
+                if (isValidUrl(data)) {
+                    openButton.style.display = 'inline-block';
+                } else {
+                    openButton.style.display = 'none';
+                }
+                
+                // Optional: Stop scanning after successful detection
+                // stopScanner();
+            }
+            
+            // Copy result to clipboard
+            function copyResult() {
+                const text = resultText.textContent;
+                navigator.clipboard.writeText(text).then(() => {
+                    // Show temporary feedback
+                    const originalText = copyButton.innerHTML;
+                    copyButton.innerHTML = '<i class="fas fa-check me-2"></i> Copied!';
+                    setTimeout(() => {
+                        copyButton.innerHTML = originalText;
+                    }, 2000);
+                });
+            }
+            
+            // Open result if it's a URL
+            function openResult() {
+                const url = resultText.textContent;
+                if (isValidUrl(url)) {
+                    window.open(url, '_blank');
+                }
+            }
+            
+            // Add scan to history
+            function addToHistory(data) {
+                const timestamp = new Date().toLocaleString();
+                scanHistory.unshift({ data, timestamp });
+                
+                // Update history display
+                updateHistoryDisplay();
+                
+                // Limit history to 10 items
+                if (scanHistory.length > 10) {
+                    scanHistory.pop();
+                }
+            }
+            
+            // Update history display
+            function updateHistoryDisplay() {
+                if (scanHistory.length === 0) {
+                    historyList.innerHTML = `
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-history fa-2x mb-2"></i>
+                            <p>No scan history yet</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                historyList.innerHTML = scanHistory.map(item => `
+                    <div class="history-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <p class="mb-1 fw-bold">${item.data}</p>
+                                <small class="text-muted">${item.timestamp}</small>
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary copy-history" data-text="${item.data}">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Add event listeners to history copy buttons
+                document.querySelectorAll('.copy-history').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const text = this.getAttribute('data-text');
+                        navigator.clipboard.writeText(text);
+                        
+                        // Show temporary feedback
+                        const originalHTML = this.innerHTML;
+                        this.innerHTML = '<i class="fas fa-check"></i>';
+                        this.classList.remove('btn-outline-primary');
+                        this.classList.add('btn-success');
+                        
+                        setTimeout(() => {
+                            this.innerHTML = originalHTML;
+                            this.classList.remove('btn-success');
+                            this.classList.add('btn-outline-primary');
+                        }, 1500);
+                    });
+                });
+            }
+            
+            // Check if string is a valid URL
+            function isValidUrl(string) {
+                try {
+                    new URL(string);
+                    return true;
+                } catch (_) {
+                    return false;
+                }
+            }
+            
+            // Initialize history display
+            updateHistoryDisplay();
+        });
+    </script>
+</body>
+</html>
