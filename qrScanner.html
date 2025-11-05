@@ -3,97 +3,451 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <title>QR Code Scanner - Lucky Draw Program</title>
+    <title>Barcode & QR Code Scanner</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <style>
         body {
             background-color: #f8f9fa;
-            font-family: 'Roboto', sans-serif;
-            color: #333;
+            padding: 20px;
         }
-        #container {
-            padding: 40px;
-            margin: 50px auto;
-            background-color: #ffffff;
+        .scanner-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
             border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            padding: 20px;
         }
-        h2 {
-            color: #6A0572;
+        .scanner-preview {
+            width: 100%;
+            height: 400px;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 20px;
         }
-        #scanner {
-            display: none; /* Hidden by default */
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #canvas {
+            display: none;
+        }
+        .scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+        }
+        .scanner-frame {
+            width: 70%;
+            height: 200px;
+            border: 2px solid #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.3);
+        }
+        .scanner-laser {
+            width: 100%;
+            height: 2px;
+            background: #ff3b30;
+            position: absolute;
+            top: 50%;
+            box-shadow: 0 0 8px red;
+            animation: scanning 2s infinite;
+        }
+        @keyframes scanning {
+            0% { top: 20%; }
+            50% { top: 80%; }
+            100% { top: 20%; }
+        }
+        .result-container {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        .result-text {
+            font-family: monospace;
+            word-break: break-all;
+        }
+        .history-item {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        .btn-custom {
+            padding: 10px 20px;
+            font-weight: 600;
+        }
+        .scanner-status {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .code-type {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #6c757d;
+            color: white;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-left: 8px;
+        }
+        .detected-box {
+            position: absolute;
+            border: 2px solid #28a745;
+            background: rgba(40, 167, 69, 0.2);
+            pointer-events: none;
+        }
+        .tab-content {
+            min-height: 60px;
         }
     </style>
-    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
-    <script src="https://unpkg.com/@zxing/library@latest"></script>
-    <script type="module">
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
-            authDomain: "makysdraw-87237.firebaseapp.com",
-            databaseURL: "https://makysdraw-87237-default-rtdb.firebaseio.com",
-            projectId: "makysdraw-87237",
-            storageBucket: "makysdraw-87237.firebasestorage.app",
-            messagingSenderId: "1044977366090",
-            appId: "1:1044977366090:web:37af3eaa9c3f5bfc7822b3"
-        };
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="scanner-container">
+                    <h1 class="text-center mb-4">Barcode & QR Code Scanner</h1>
+                    
+                    <!-- Scanner Type Tabs -->
+                    <ul class="nav nav-tabs mb-4" id="scannerTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="barcode-tab" data-bs-toggle="tab" data-bs-target="#barcode" type="button" role="tab">Barcode Scanner</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="qrcode-tab" data-bs-toggle="tab" data-bs-target="#qrcode" type="button" role="tab">QR Code Scanner</button>
+                        </li>
+                    </ul>
 
-        // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+                    <div class="tab-content" id="scannerTabsContent">
+                        <!-- Barcode Scanner Tab -->
+                        <div class="tab-pane fade show active" id="barcode" role="tabpanel">
+                            <div class="scanner-preview">
+                                <div id="interactive" class="viewport"></div>
+                                <div class="scanner-overlay">
+                                    <div class="scanner-frame"></div>
+                                    <div class="scanner-laser"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="scanner-status" id="barcode-status">Barcode scanner ready</div>
+                                <select id="barcode-type" class="form-select form-select-sm" style="width: auto;">
+                                    <option value="code_128">Code 128</option>
+                                    <option value="ean" selected>EAN</option>
+                                    <option value="ean_8">EAN-8</option>
+                                    <option value="upc">UPC</option>
+                                    <option value="upc_e">UPC-E</option>
+                                    <option value="code_39">Code 39</option>
+                                </select>
+                            </div>
+                        </div>
 
-        let items = [];
+                        <!-- QR Code Scanner Tab -->
+                        <div class="tab-pane fade" id="qrcode" role="tabpanel">
+                            <div class="scanner-preview">
+                                <video id="video" autoplay playsinline></video>
+                                <canvas id="canvas"></canvas>
+                                <div class="scanner-overlay">
+                                    <div class="scanner-frame"></div>
+                                    <div class="scanner-laser"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="scanner-status mb-3" id="qrcode-status">QR Code scanner ready</div>
+                        </div>
+                    </div>
 
-        // Load items from Firebase on page load
-        window.onload = function () {
-            firebase.database().ref('items').on('value', (snapshot) => {
-                const data = snapshot.val();
-                items = data ? data : [];
-                updateItemList();
-            });
-        };
+                    <!-- Controls -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center mb-4">
+                        <button id="start-scan" class="btn btn-primary btn-custom">Start Scanner</button>
+                        <button id="stop-scan" class="btn btn-secondary btn-custom" disabled>Stop Scanner</button>
+                        <button id="reset-scan" class="btn btn-warning btn-custom">Reset</button>
+                    </div>
 
-        function writeDataToFirebase() {
-            firebase.database().ref('items').set(items);
-        }
+                    <!-- Results -->
+                    <div class="result-container">
+                        <h5>Scan Result:</h5>
+                        <div id="scan-result" class="result-text">No code scanned yet</div>
+                        <div id="code-info" class="mt-2"></div>
+                    </div>
 
-        function updateItemList() {
-            const itemList = document.getElementById('itemList');
-            itemList.innerHTML = items.map(item => `<li class="list-group-item">${item}</li>`).join('');
-        }
+                    <div class="mt-4">
+                        <h5>Scan History:</h5>
+                        <div id="scan-history" class="mt-2">
+                            <div class="text-muted">No scan history yet</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        function startScanner() {
-            const codeReader = new ZXing.BrowserQRCodeReader();
-            codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
-                if (result) {
-                    const scannedValue = result.text;
-                    if (!items.includes(scannedValue)) {
-                        items.push(scannedValue);
-                        writeDataToFirebase();
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM elements
+            const startButton = document.getElementById('start-scan');
+            const stopButton = document.getElementById('stop-scan');
+            const resetButton = document.getElementById('reset-scan');
+            const barcodeTypeSelect = document.getElementById('barcode-type');
+            const scanResult = document.getElementById('scan-result');
+            const codeInfo = document.getElementById('code-info');
+            const scanHistory = document.getElementById('scan-history');
+            const barcodeStatus = document.getElementById('barcode-status');
+            const qrcodeStatus = document.getElementById('qrcode-status');
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Variables
+            let isScanning = false;
+            let scanHistoryData = [];
+            let currentScanner = 'barcode'; // 'barcode' or 'qrcode'
+            let stream = null;
+
+            // Initialize based on active tab
+            function updateCurrentScanner() {
+                const activeTab = document.querySelector('#scannerTabs .nav-link.active');
+                currentScanner = activeTab.id === 'barcode-tab' ? 'barcode' : 'qrcode';
+                console.log(`Switched to ${currentScanner} scanner`);
+            }
+
+            // Initialize scanners
+            function initBarcodeScanner() {
+                if (typeof Quagga === 'undefined') {
+                    barcodeStatus.textContent = "Error: QuaggaJS not loaded";
+                    return;
+                }
+
+                Quagga.init({
+                    inputStream: {
+                        name: "Live",
+                        type: "LiveStream",
+                        target: document.querySelector('#interactive'),
+                        constraints: {
+                            width: 640,
+                            height: 480,
+                            facingMode: "environment"
+                        },
+                    },
+                    decoder: {
+                        readers: [barcodeTypeSelect.value],
+                        multiple: false
+                    },
+                    locator: {
+                        patchSize: "medium",
+                        halfSample: true
+                    },
+                    locate: true
+                }, function(err) {
+                    if (err) {
+                        barcodeStatus.textContent = "Error: " + err.message;
+                        return;
+                    }
+                    Quagga.start();
+                    barcodeStatus.textContent = "Barcode scanner active - point at barcode";
+                    
+                    Quagga.onDetected(function(result) {
+                        handleScanResult(result.codeResult.code, 'barcode', result.codeResult.format);
+                    });
+                });
+            }
+
+            function initQRCodeScanner() {
+                if (typeof jsQR === 'undefined') {
+                    qrcodeStatus.textContent = "Error: jsQR not loaded";
+                    return;
+                }
+
+                // Get camera stream
+                navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: "environment",
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    } 
+                }).then(function(mediaStream) {
+                    stream = mediaStream;
+                    video.srcObject = stream;
+                    video.play();
+                    
+                    requestAnimationFrame(tick);
+                    qrcodeStatus.textContent = "QR Code scanner active - point at QR code";
+                }).catch(function(err) {
+                    qrcodeStatus.textContent = "Error accessing camera: " + err.message;
+                });
+            }
+
+            // QR Code scanning loop
+            function tick() {
+                if (!isScanning || currentScanner !== 'qrcode') return;
+
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert",
+                    });
+
+                    if (code) {
+                        handleScanResult(code.data, 'qr_code', 'QR Code');
+                        
+                        // Draw bounding box
+                        drawQRCodeBox(code);
                     }
                 }
-                if (err && !(err instanceof ZXing.NotFoundException)) {
-                    console.error(err);
+
+                if (isScanning && currentScanner === 'qrcode') {
+                    requestAnimationFrame(tick);
+                }
+            }
+
+            function drawQRCodeBox(code) {
+                ctx.strokeStyle = "#28a745";
+                ctx.lineWidth = 2;
+                ctx.strokeRect(code.location.topLeftCorner.x, code.location.topLeftCorner.y, 
+                              code.location.bottomRightCorner.x - code.location.topLeftCorner.x,
+                              code.location.bottomRightCorner.y - code.location.topLeftCorner.y);
+            }
+
+            // Start scanning
+            function startScanner() {
+                isScanning = true;
+                startButton.disabled = true;
+                stopButton.disabled = false;
+
+                if (currentScanner === 'barcode') {
+                    initBarcodeScanner();
+                } else {
+                    initQRCodeScanner();
+                }
+            }
+
+            // Stop scanning
+            function stopScanner() {
+                isScanning = false;
+                startButton.disabled = false;
+                stopButton.disabled = true;
+
+                if (currentScanner === 'barcode') {
+                    if (Quagga.initialized) {
+                        Quagga.stop();
+                    }
+                    barcodeStatus.textContent = "Barcode scanner stopped";
+                } else {
+                    if (stream) {
+                        stream.getTracks().forEach(track => track.stop());
+                    }
+                    qrcodeStatus.textContent = "QR Code scanner stopped";
+                }
+            }
+
+            // Reset scanner
+            function resetScanner() {
+                stopScanner();
+                scanResult.textContent = "No code scanned yet";
+                codeInfo.innerHTML = "";
+                scanHistoryData = [];
+                updateHistoryDisplay();
+                
+                if (currentScanner === 'barcode') {
+                    barcodeStatus.textContent = "Barcode scanner ready";
+                } else {
+                    qrcodeStatus.textContent = "QR Code scanner ready";
+                }
+            }
+
+            // Handle scan results
+            function handleScanResult(code, type, format) {
+                scanResult.textContent = code;
+                scanResult.className = "result-text text-success";
+                
+                codeInfo.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <span>Type: </span>
+                        <span class="code-type">${format || type.toUpperCase()}</span>
+                    </div>
+                `;
+
+                addToHistory(code, type, format);
+            }
+
+            // Add to history
+            function addToHistory(code, type, format) {
+                const timestamp = new Date().toLocaleTimeString();
+                scanHistoryData.unshift({ 
+                    code, 
+                    type: format || type, 
+                    timestamp 
+                });
+                updateHistoryDisplay();
+            }
+
+            // Update history display
+            function updateHistoryDisplay() {
+                if (scanHistoryData.length === 0) {
+                    scanHistory.innerHTML = '<div class="text-muted">No scan history yet</div>';
+                    return;
+                }
+
+                scanHistory.innerHTML = '';
+                scanHistoryData.forEach(item => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item';
+                    historyItem.innerHTML = `
+                        <div class="d-flex justify-content-between">
+                            <div class="fw-bold">${item.code}</div>
+                            <span class="code-type">${item.type}</span>
+                        </div>
+                        <small class="text-muted">${item.timestamp}</small>
+                    `;
+                    scanHistory.appendChild(historyItem);
+                });
+            }
+
+            // Event listeners
+            startButton.addEventListener('click', startScanner);
+            stopButton.addEventListener('click', stopScanner);
+            resetButton.addEventListener('click', resetScanner);
+
+            // Tab change handler
+            document.querySelectorAll('#scannerTabs .nav-link').forEach(tab => {
+                tab.addEventListener('shown.bs.tab', function() {
+                    updateCurrentScanner();
+                    if (isScanning) {
+                        stopScanner();
+                        setTimeout(startScanner, 500);
+                    }
+                });
+            });
+
+            // Barcode type change
+            barcodeTypeSelect.addEventListener('change', function() {
+                if (isScanning && currentScanner === 'barcode') {
+                    stopScanner();
+                    setTimeout(startScanner, 500);
                 }
             });
-            document.getElementById('scanner').style.display = 'block'; // Show the scanner
-        }
-    </script>
-</head>
 
-<body>
-    <div class="container" id="container">
-        <h2>QR Code Scanner</h2>
-        <button class="btn btn-primary" onclick="startScanner()">Start QR Code Scanner</button>
-        
-        <div id="scanner">
- <video id="video" width="300" height="200" style="border: 1px solid black;"></video>
-        </div>
-        
-        <h3>Obtained Names/Numbers:</h3>
-        <ul id="itemList" class="list-group"></ul>
-    </div>
+            // Initialize
+            updateCurrentScanner();
+        });
+    </script>
 </body>
 </html>
