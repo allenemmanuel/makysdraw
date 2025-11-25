@@ -185,10 +185,6 @@
             background-color: #dc3545;
         }
         
-        .clear-history-btn {
-            margin-top: 15px;
-        }
-        
         .success-alert {
             background-color: #d4edda;
             border: 1px solid #c3e6cb;
@@ -271,9 +267,6 @@
                         Item successfully added to drawing list!
                     </div>
                     <div class="mt-3">
-                        <button id="copyButton" class="btn btn-outline-primary me-2">
-                            <i class="fas fa-copy me-2"></i> Copy to Clipboard
-                        </button>
                         <button id="openButton" class="btn btn-outline-success">
                             <i class="fas fa-external-link-alt me-2"></i> Open URL
                         </button>
@@ -286,9 +279,6 @@
                 <div class="mt-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h4 class="mb-0">Drawing Items (from QR scans)</h4>
-                        <button id="clearItemsButton" class="btn btn-outline-danger btn-sm clear-history-btn">
-                            <i class="fas fa-trash me-1"></i> Clear All Items
-                        </button>
                     </div>
                     <div id="itemsList" class="mt-3">
                         <div class="text-center text-muted py-4">
@@ -331,7 +321,6 @@
             const toggleFlashButton = document.getElementById('toggleFlash');
             const resultContainer = document.getElementById('resultContainer');
             const resultText = document.getElementById('resultText');
-            const copyButton = document.getElementById('copyButton');
             const openButton = document.getElementById('openButton');
             const resumeButton = document.getElementById('resumeButton');
             const statusIndicator = document.getElementById('statusIndicator');
@@ -339,7 +328,6 @@
             const itemsList = document.getElementById('itemsList');
             const duplicateAlert = document.getElementById('duplicateAlert');
             const successAlert = document.getElementById('successAlert');
-            const clearItemsButton = document.getElementById('clearItemsButton');
             const dbIndicator = document.getElementById('dbIndicator');
             const dbStatus = document.getElementById('dbStatus');
 
@@ -359,10 +347,8 @@
             stopButton.addEventListener('click', stopScanner);
             switchCameraButton.addEventListener('click', switchCamera);
             toggleFlashButton.addEventListener('click', toggleFlash);
-            copyButton.addEventListener('click', copyResult);
             openButton.addEventListener('click', openResult);
             resumeButton.addEventListener('click', resumeScanning);
-            clearItemsButton.addEventListener('click', clearItems);
 
             // Initialize Firebase connection and load items
             initializeFirebase();
@@ -439,27 +425,6 @@
                     .catch((error) => {
                         console.error('Error saving item to database:', error);
                     });
-            }
-
-            // Clear all drawing items
-            function clearItems() {
-                if (drawingItems.length === 0) {
-                    alert('No items to clear.');
-                    return;
-                }
-
-                if (confirm('Are you sure you want to clear all drawing items? This action cannot be undone.')) {
-                    database.ref('drawResults/items').remove()
-                        .then(() => {
-                            drawingItems = [];
-                            updateItemsDisplay();
-                            alert('All items cleared successfully.');
-                        })
-                        .catch((error) => {
-                            console.error('Error clearing items:', error);
-                            alert('Error clearing items: ' + error.message);
-                        });
-                }
             }
 
             // Start scanner function
@@ -643,19 +608,6 @@
                 successAlert.classList.remove('show');
             }
             
-            // Copy result to clipboard
-            function copyResult() {
-                const text = resultText.textContent;
-                navigator.clipboard.writeText(text).then(() => {
-                    // Show temporary feedback
-                    const originalText = copyButton.innerHTML;
-                    copyButton.innerHTML = '<i class="fas fa-check me-2"></i> Copied!';
-                    setTimeout(() => {
-                        copyButton.innerHTML = originalText;
-                    }, 2000);
-                });
-            }
-            
             // Open result if it's a URL
             function openResult() {
                 const url = resultText.textContent;
@@ -682,62 +634,9 @@
                             <div class="flex-grow-1">
                                 <p class="mb-1 fw-bold">${item}</p>
                             </div>
-                            <div>
-                                <button class="btn btn-sm btn-outline-primary copy-item" data-text="${item}">
-                                    <i class="fas fa-copy"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger remove-item" data-text="${item}">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
                         </div>
                     </div>
                 `).join('');
-                
-                // Add event listeners to item copy buttons
-                document.querySelectorAll('.copy-item').forEach(button => {
-                    button.addEventListener('click', function() {
-                        const text = this.getAttribute('data-text');
-                        navigator.clipboard.writeText(text);
-                        
-                        // Show temporary feedback
-                        const originalHTML = this.innerHTML;
-                        this.innerHTML = '<i class="fas fa-check"></i>';
-                        this.classList.remove('btn-outline-primary');
-                        this.classList.add('btn-success');
-                        
-                        setTimeout(() => {
-                            this.innerHTML = originalHTML;
-                            this.classList.remove('btn-success');
-                            this.classList.add('btn-outline-primary');
-                        }, 1500);
-                    });
-                });
-                
-                // Add event listeners to item remove buttons
-                document.querySelectorAll('.remove-item').forEach(button => {
-                    button.addEventListener('click', function() {
-                        const itemToRemove = this.getAttribute('data-text');
-                        removeItem(itemToRemove);
-                    });
-                });
-            }
-            
-            // Remove individual item
-            function removeItem(itemToRemove) {
-                if (confirm(`Are you sure you want to remove "${itemToRemove}" from the drawing items?`)) {
-                    const updatedItems = drawingItems.filter(item => item !== itemToRemove);
-                    
-                    database.ref('drawResults').update({
-                        items: updatedItems
-                    }).then(() => {
-                        drawingItems = updatedItems;
-                        updateItemsDisplay();
-                    }).catch((error) => {
-                        console.error('Error removing item:', error);
-                        alert('Error removing item: ' + error.message);
-                    });
-                }
             }
             
             // Check if string is a valid URL
