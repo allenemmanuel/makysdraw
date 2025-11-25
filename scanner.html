@@ -446,14 +446,15 @@
         let currentFacingMode = 'environment';
         let scanInterval = null;
         let flashOn = false;
-        let drawingItems = [];
+        let drawingItems = []; // This will store raw strings from Firebase
+        let enhancedItems = []; // This will store enhanced items with metadata for display
         let lastScannedCode = null;
         let scanCooldown = false;
         let scanPaused = false;
 
         // Batch Mode Variables
         let batchMode = false;
-        let batchItems = [];
+        let batchItems = []; // Store raw strings for batch
         let batchPaused = false;
         let searchTerm = '';
 
@@ -486,22 +487,22 @@
                     if (data) {
                         // Convert object to array if needed, or use array directly
                         drawingItems = Array.isArray(data) ? data : Object.values(data);
-                        // Convert to enhanced items with metadata
-                        drawingItems = drawingItems.map(item => {
-                            if (typeof item === 'object' && item.data) {
-                                return item; // Already enhanced
-                            }
+                        
+                        // Create enhanced items for display (with metadata)
+                        enhancedItems = drawingItems.map((item, index) => {
+                            // If item is already an object (from previous bug), extract the data
+                            const itemData = typeof item === 'object' ? item.data : item;
                             return {
-                                data: item,
-                                timestamp: new Date().toISOString(),
-                                type: isValidUrl(item) ? 'url' : 'text'
+                                data: itemData,
+                                timestamp: typeof item === 'object' ? item.timestamp : new Date().toISOString(),
+                                type: isValidUrl(itemData) ? 'url' : 'text'
                             };
                         });
-                        // IMPORTANT: Remove the reverse() to keep newest items at top
-                        // Firebase stores items in order, with newest at the beginning
+                        
                         updateItemsDisplay();
                     } else {
                         drawingItems = [];
+                        enhancedItems = [];
                         updateItemsDisplay();
                     }
                     updateDatabaseStatus(true);
@@ -530,15 +531,8 @@
             }
         }
 
-        // Save scanned item to Firebase (drawing items)
+        // Save scanned item to Firebase (drawing items) - ONLY RAW STRINGS
         function saveItemToDatabase(data) {
-            // Create enhanced item with metadata
-            const enhancedItem = {
-                data: data,
-                timestamp: new Date().toISOString(),
-                type: isValidUrl(data) ? 'url' : 'text'
-            };
-
             // Get current items from Firebase
             database.ref('drawResults/items').once('value')
                 .then((snapshot) => {
@@ -550,6 +544,7 @@
                         currentItems = Array.isArray(existingData) ? existingData : Object.values(existingData);
                         
                         // Check if item already exists (by data content)
+                        // Extract raw data if items are objects (from previous bug)
                         const alreadyExists = currentItems.some(item => {
                             const itemData = typeof item === 'object' ? item.data : item;
                             return itemData === data;
@@ -562,8 +557,8 @@
                     }
                     
                     // Add new item to the beginning of the array to maintain order
-                    // This ensures newest items appear at the TOP
-                    currentItems.unshift(enhancedItem);
+                    // Store ONLY the raw string data in Firebase
+                    currentItems.unshift(data);
                     
                     // Save updated items array back to Firebase
                     database.ref('drawResults').update({
@@ -581,7 +576,7 @@
                 });
         }
 
-        // Save batch items to Firebase
+        // Save batch items to Firebase - ONLY RAW STRINGS
         function saveBatchToDatabase() {
             if (batchItems.length === 0) return;
 
@@ -595,11 +590,11 @@
                     }
 
                     // Add only new items from batch (avoid duplicates)
-                    // Add batch items to the BEGINNING of the array
+                    // Store ONLY the raw string data in Firebase
                     batchItems.forEach(batchItem => {
                         const alreadyExists = currentItems.some(item => {
                             const itemData = typeof item === 'object' ? item.data : item;
-                            return itemData === batchItem.data;
+                            return itemData === batchItem;
                         });
                         
                         if (!alreadyExists) {
@@ -795,7 +790,7 @@
             duplicateAlert.classList.remove('show');
             successAlert.classList.remove('show');
             
-            // Save to Firebase database (drawing items)
+            // Save to Firebase database (drawing items) - ONLY RAW STRING
             saveItemToDatabase(data);
             
             // Check if it's a URL
@@ -808,15 +803,8 @@
 
         // Handle batch mode scanning
         function handleBatchScan(data) {
-            // Create enhanced item for batch
-            const enhancedItem = {
-                data: data,
-                timestamp: new Date().toISOString(),
-                type: isValidUrl(data) ? 'url' : 'text'
-            };
-
             // Check if item already exists in current batch
-            const alreadyInBatch = batchItems.some(item => item.data === data);
+            const alreadyInBatch = batchItems.includes(data);
             if (alreadyInBatch) {
                 showBatchDuplicate();
                 return;
@@ -833,8 +821,8 @@
                 return;
             }
 
-            // Add to batch
-            batchItems.push(enhancedItem);
+            // Add to batch (raw string only)
+            batchItems.unshift(data); // Add to beginning for proper order
             updateBatchDisplay();
             
             // Show visual feedback
@@ -992,17 +980,22 @@
                 return;
             }
 
-            batchItemsList.innerHTML = batchItems.map((item, index) => `
-                <div class="batch-item list-group-item d-flex justify-content-between align-items-start ${index === batchItems.length - 1 ? 'new-item' : ''}">
-                    <div class="flex-grow-1">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <span class="fw-bold">${item.data}</span>
-                            <span class="badge ${item.type === 'url' ? 'bg-success' : 'bg-secondary'} item-type-badge">${item.type}</span>
+            batchItemsList.innerHTML = batchItems.map((item, index) => {
+                const timestamp = new Date().toISOString();
+                const type = isValidUrl(item) ? 'url' : 'text';
+                
+                return `
+                    <div class="batch-item list-group-item d-flex justify-content-between align-items-start ${index === 0 ? 'new-item' : ''}">
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <span class="fw-bold">${item}</span>
+                                <span class="badge ${type === 'url' ? 'bg-success' : 'bg-secondary'} item-type-badge">${type}</span>
+                            </div>
+                            <div class="timestamp">${new Date(timestamp).toLocaleString()}</div>
                         </div>
-                        <div class="timestamp">${new Date(item.timestamp).toLocaleString()}</div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
 
             // Scroll to bottom to show newest item
             batchItemsList.scrollTop = batchItemsList.scrollHeight;
@@ -1010,13 +1003,12 @@
         
         // Update items display with search highlighting
         function updateItemsDisplay() {
-            let filteredItems = drawingItems;
+            let filteredItems = enhancedItems;
             
             // Apply search filter
             if (searchTerm) {
-                filteredItems = drawingItems.filter(item => {
-                    const itemData = typeof item === 'object' ? item.data : item;
-                    return itemData.toLowerCase().includes(searchTerm.toLowerCase());
+                filteredItems = enhancedItems.filter(item => {
+                    return item.data.toLowerCase().includes(searchTerm.toLowerCase());
                 });
             }
             
@@ -1031,15 +1023,11 @@
             }
             
             itemsList.innerHTML = filteredItems.map(item => {
-                const itemData = typeof item === 'object' ? item.data : item;
-                const timestamp = typeof item === 'object' ? item.timestamp : new Date().toISOString();
-                const type = typeof item === 'object' ? item.type : (isValidUrl(item) ? 'url' : 'text');
-                
                 // Highlight search term if present
-                let displayText = itemData;
+                let displayText = item.data;
                 if (searchTerm) {
                     const regex = new RegExp(`(${escapeRegex(searchTerm)})`, 'gi');
-                    displayText = itemData.replace(regex, '<mark class="search-highlight">$1</mark>');
+                    displayText = item.data.replace(regex, '<mark class="search-highlight">$1</mark>');
                 }
                 
                 return `
@@ -1048,8 +1036,8 @@
                             <div class="flex-grow-1">
                                 <p class="mb-1">${displayText}</p>
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <small class="timestamp">${new Date(timestamp).toLocaleString()}</small>
-                                    <span class="badge ${type === 'url' ? 'bg-success' : 'bg-secondary'} item-type-badge">${type}</span>
+                                    <small class="timestamp">${new Date(item.timestamp).toLocaleString()}</small>
+                                    <span class="badge ${item.type === 'url' ? 'bg-success' : 'bg-secondary'} item-type-badge">${item.type}</span>
                                 </div>
                             </div>
                         </div>
