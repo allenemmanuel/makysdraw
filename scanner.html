@@ -362,6 +362,8 @@
                         if (data) {
                             // Convert object to array if needed, or use array directly
                             drawingItems = Array.isArray(data) ? data : Object.values(data);
+                            // Reverse the array to show latest items first
+                            drawingItems.reverse();
                             updateItemsDisplay();
                         } else {
                             drawingItems = [];
@@ -408,7 +410,8 @@
                         
                         // Add new item (avoid duplicates)
                         if (!currentItems.includes(data)) {
-                            currentItems.push(data);
+                            // Add new item to the beginning of the array to maintain order
+                            currentItems.unshift(data);
                             
                             // Save updated items array back to Firebase
                             database.ref('drawResults').update({
