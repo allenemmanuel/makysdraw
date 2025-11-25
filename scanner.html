@@ -8,6 +8,11 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.21.0/firebase-database-compat.js"></script>
+    
     <style>
         body {
             background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
@@ -157,6 +162,32 @@
         .duplicate-alert.show {
             display: block;
         }
+        
+        .database-status {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .db-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .db-connected {
+            background-color: #28a745;
+        }
+        
+        .db-disconnected {
+            background-color: #dc3545;
+        }
+        
+        .clear-history-btn {
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
@@ -166,6 +197,10 @@
                 <h1><i class="fas fa-qrcode scanner-icon"></i></h1>
                 <h2>QR Code Scanner</h2>
                 <p class="mb-0">Point your camera at a QR code to scan it</p>
+                <small class="database-status">
+                    <span class="db-indicator db-connected" id="dbIndicator"></span>
+                    <span id="dbStatus">Database Connected</span>
+                </small>
             </div>
             
             <div class="p-4">
@@ -232,7 +267,12 @@
                 </div>
                 
                 <div class="mt-4">
-                    <h4>Scan History</h4>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="mb-0">Scan History</h4>
+                        <button id="clearHistoryButton" class="btn btn-outline-danger btn-sm clear-history-btn">
+                            <i class="fas fa-trash me-1"></i> Clear History
+                        </button>
+                    </div>
                     <div id="historyList" class="mt-3">
                         <div class="text-center text-muted py-4">
                             <i class="fas fa-history fa-2x mb-2"></i>
@@ -251,6 +291,21 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Firebase Configuration (using the same as your drawing app)
+            const firebaseConfig = {
+                apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
+                authDomain: "makysdraw-87237.firebaseapp.com",
+                databaseURL: "https://makysdraw-87237-default-rtdb.firebaseio.com",
+                projectId: "makysdraw-87237",
+                storageBucket: "makysdraw-87237.firebasestorage.app",
+                messagingSenderId: "1044977366090",
+                appId: "1:1044977366090:web:37af3eaa9c3f5bfc7822b3"
+            };
+
+            // Initialize Firebase
+            const app = firebase.initializeApp(firebaseConfig);
+            const database = firebase.database();
+
             // Elements
             const video = document.getElementById('video');
             const startButton = document.getElementById('startButton');
@@ -266,18 +321,21 @@
             const statusText = document.getElementById('statusText');
             const historyList = document.getElementById('historyList');
             const duplicateAlert = document.getElementById('duplicateAlert');
-            
+            const clearHistoryButton = document.getElementById('clearHistoryButton');
+            const dbIndicator = document.getElementById('dbIndicator');
+            const dbStatus = document.getElementById('dbStatus');
+
             // Variables
             let stream = null;
             let isScanning = false;
-            let currentFacingMode = 'environment'; // 'user' for front camera, 'environment' for back
+            let currentFacingMode = 'environment';
             let scanInterval = null;
             let flashOn = false;
             let scanHistory = [];
             let lastScannedCode = null;
             let scanCooldown = false;
             let scanPaused = false;
-            
+
             // Initialize event listeners
             startButton.addEventListener('click', startScanner);
             stopButton.addEventListener('click', stopScanner);
@@ -286,7 +344,83 @@
             copyButton.addEventListener('click', copyResult);
             openButton.addEventListener('click', openResult);
             resumeButton.addEventListener('click', resumeScanning);
-            
+            clearHistoryButton.addEventListener('click', clearHistory);
+
+            // Initialize Firebase connection and load history
+            initializeFirebase();
+
+            // Initialize Firebase and load scan history
+            async function initializeFirebase() {
+                try {
+                    // Set up realtime listener for scan history
+                    database.ref('scanHistory').on('value', (snapshot) => {
+                        const data = snapshot.val();
+                        if (data) {
+                            // Convert object to array and sort by timestamp (newest first)
+                            scanHistory = Object.values(data).sort((a, b) => 
+                                new Date(b.timestamp) - new Date(a.timestamp)
+                            );
+                            updateHistoryDisplay();
+                        }
+                        updateDatabaseStatus(true);
+                    });
+
+                    // Monitor connection state
+                    database.ref('.info/connected').on('value', (snapshot) => {
+                        const connected = snapshot.val() === true;
+                        updateDatabaseStatus(connected);
+                    });
+
+                } catch (error) {
+                    console.error('Firebase initialization error:', error);
+                    updateDatabaseStatus(false);
+                }
+            }
+
+            // Update database connection status
+            function updateDatabaseStatus(connected) {
+                if (connected) {
+                    dbIndicator.className = 'db-indicator db-connected';
+                    dbStatus.textContent = 'Database Connected';
+                } else {
+                    dbIndicator.className = 'db-indicator db-disconnected';
+                    dbStatus.textContent = 'Database Disconnected';
+                }
+            }
+
+            // Save scan to Firebase
+            function saveScanToDatabase(data) {
+                const scanData = {
+                    data: data,
+                    timestamp: new Date().toISOString(),
+                    displayTime: new Date().toLocaleString()
+                };
+
+                // Push to Firebase (automatically generates unique ID)
+                database.ref('scanHistory').push(scanData);
+            }
+
+            // Clear all scan history
+            function clearHistory() {
+                if (scanHistory.length === 0) {
+                    alert('No scan history to clear.');
+                    return;
+                }
+
+                if (confirm('Are you sure you want to clear all scan history? This action cannot be undone.')) {
+                    database.ref('scanHistory').remove()
+                        .then(() => {
+                            scanHistory = [];
+                            updateHistoryDisplay();
+                            alert('Scan history cleared successfully.');
+                        })
+                        .catch((error) => {
+                            console.error('Error clearing history:', error);
+                            alert('Error clearing history: ' + error.message);
+                        });
+                }
+            }
+
             // Start scanner function
             async function startScanner() {
                 try {
@@ -406,8 +540,15 @@
             
             // Handle detected QR code
             function handleQRCodeDetected(data) {
-                // Check if this is the same code as the last one
+                // Check if this code has already been scanned in this session
                 if (data === lastScannedCode) {
+                    showDuplicateAlert();
+                    return;
+                }
+
+                // Check if this code exists in the database history
+                const alreadyScanned = scanHistory.some(scan => scan.data === data);
+                if (alreadyScanned) {
                     showDuplicateAlert();
                     return;
                 }
@@ -430,8 +571,8 @@
                 resultContainer.classList.add('show');
                 duplicateAlert.classList.remove('show');
                 
-                // Add to history
-                addToHistory(data);
+                // Save to Firebase database
+                saveScanToDatabase(data);
                 
                 // Check if it's a URL
                 if (isValidUrl(data)) {
@@ -480,20 +621,6 @@
                 }
             }
             
-            // Add scan to history
-            function addToHistory(data) {
-                const timestamp = new Date().toLocaleString();
-                scanHistory.unshift({ data, timestamp });
-                
-                // Update history display
-                updateHistoryDisplay();
-                
-                // Limit history to 10 items
-                if (scanHistory.length > 10) {
-                    scanHistory.pop();
-                }
-            }
-            
             // Update history display
             function updateHistoryDisplay() {
                 if (scanHistory.length === 0) {
@@ -511,7 +638,7 @@
                         <div class="d-flex justify-content-between align-items-start">
                             <div class="flex-grow-1">
                                 <p class="mb-1 fw-bold">${item.data}</p>
-                                <small class="text-muted">${item.timestamp}</small>
+                                <small class="text-muted">${item.displayTime}</small>
                             </div>
                             <div>
                                 <button class="btn btn-sm btn-outline-primary copy-history" data-text="${item.data}">
@@ -552,9 +679,6 @@
                     return false;
                 }
             }
-            
-            // Initialize history display
-            updateHistoryDisplay();
         });
     </script>
 </body>
