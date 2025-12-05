@@ -384,6 +384,32 @@
             gap: 5px;
         }
         
+        /* Concurrent scanning status */
+        .concurrent-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
+            font-size: 0.85rem;
+            z-index: 1002;
+            display: none;
+        }
+        
+        .concurrent-status.show {
+            display: block;
+            animation: fadeInOut 3s ease;
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-10px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); }
+        }
+        
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .fab-container {
@@ -418,10 +444,18 @@
     </style>
 </head>
 <body>
+    <!-- Concurrent Scanning Status -->
+    <div class="concurrent-status" id="concurrentStatus">
+        <i class="fas fa-sync-alt me-2"></i>
+        <span>Processing scan...</span>
+    </div>
+    
     <div class="container">
         <div class="scanner-container">
             <div class="scanner-header">
+                <h1><i class="fas fa-qrcode scanner-icon"></i></h1>
                 <h2>QR Code Scanner</h2>
+                <p class="mb-0">Scan QR codes to add them to the drawing items</p>
                 <small class="database-status">
                     <span class="db-indicator db-connected" id="dbIndicator"></span>
                     <span id="dbStatus">Database Connected</span>
@@ -602,6 +636,7 @@
         const searchInput = document.getElementById('searchInput');
         const clearSearch = document.getElementById('clearSearch');
         const cameraInfo = document.getElementById('cameraInfo');
+        const concurrentStatus = document.getElementById('concurrentStatus');
 
         // FAB Elements
         const fabMain = document.getElementById('fabMain');
@@ -642,6 +677,10 @@
         let searchTerm = '';
         let flashSupported = false;
 
+        // Transaction retry counter
+        let transactionRetries = 0;
+        const MAX_TRANSACTION_RETRIES = 3;
+
         // Initialize event listeners
         openButton.addEventListener('click', openResult);
         resumeButton.addEventListener('click', resumeScanning);
@@ -672,13 +711,12 @@
                 database.ref('drawResults/items').on('value', (snapshot) => {
                     const data = snapshot.val();
                     if (data) {
-                        // FIRST: Always treat items as strings
                         // Convert object to array if needed, or use array directly
                         drawingItems = Array.isArray(data) ? data : Object.values(data);
                         
                         // Create enhanced items for display (with metadata)
                         enhancedItems = drawingItems.map((item, index) => {
-                            // Always treat item as string (no object handling)
+                            // Always treat item as string
                             const itemData = String(item);
                             return {
                                 data: itemData,
@@ -767,23 +805,101 @@
                 '<i class="fas fa-layer-group"></i><span>Batch Mode</span>';
         }
 
-        // FIRST: Save scanned item to Firebase (drawing items) - ONLY RAW STRINGS
+        // ====================================================================
+        // CONCURRENT SCANNING SOLUTION: TRANSACTION-BASED SAVING
+        // ====================================================================
+
+        // Save scanned item to Firebase with transaction support
         function saveItemToDatabase(data) {
-            // Get current items from Firebase
+            showConcurrentStatus('Processing scan...');
+            transactionRetries = 0;
+            performSaveTransaction(data, false);
+        }
+
+        function performSaveTransaction(data, isRetry) {
+            if (isRetry) {
+                showConcurrentStatus(`Retrying scan... (${transactionRetries}/${MAX_TRANSACTION_RETRIES})`);
+            }
+
+            const itemsRef = database.ref('drawResults/items');
+            
+            itemsRef.transaction((currentItems) => {
+                if (currentItems === null) {
+                    // First item ever
+                    return [String(data)];
+                }
+                
+                // Convert to array if needed (handles both array and object storage)
+                const itemsArray = Array.isArray(currentItems) ? currentItems : Object.values(currentItems);
+                
+                // Check for duplicates
+                const alreadyExists = itemsArray.some(item => String(item) === String(data));
+                
+                if (!alreadyExists) {
+                    // Add new item to beginning (newest first)
+                    itemsArray.unshift(String(data));
+                    return itemsArray;
+                }
+                
+                // Return current items (no change) if duplicate
+                return currentItems;
+            }).then((result) => {
+                if (result.committed) {
+                    const itemsArray = result.snapshot.val();
+                    const finalArray = Array.isArray(itemsArray) ? itemsArray : Object.values(itemsArray);
+                    
+                    // Check if our item was actually added (first in array)
+                    const itemAdded = finalArray.length > 0 && String(finalArray[0]) === String(data);
+                    
+                    if (itemAdded) {
+                        // Success - item was added
+                        concurrentStatus.classList.remove('show');
+                        successAlert.classList.add('show');
+                        setTimeout(() => {
+                            successAlert.classList.remove('show');
+                        }, 3000);
+                    } else {
+                        // Item already exists (duplicate)
+                        concurrentStatus.classList.remove('show');
+                        showDuplicateAlert();
+                    }
+                } else {
+                    // Transaction not committed (shouldn't happen with our logic)
+                    console.log('Transaction not committed');
+                    concurrentStatus.classList.remove('show');
+                    showDuplicateAlert();
+                }
+            }).catch((error) => {
+                console.error('Transaction failed:', error);
+                
+                // Retry logic with exponential backoff
+                if (transactionRetries < MAX_TRANSACTION_RETRIES) {
+                    transactionRetries++;
+                    const delay = Math.pow(2, transactionRetries) * 100; // 200ms, 400ms, 800ms
+                    setTimeout(() => {
+                        performSaveTransaction(data, true);
+                    }, delay);
+                } else {
+                    // Max retries reached, use fallback
+                    concurrentStatus.classList.remove('show');
+                    saveItemWithFallback(data);
+                }
+            });
+        }
+
+        // Fallback method if transaction fails after retries
+        function saveItemWithFallback(data) {
+            console.log('Using fallback save method');
+            
             database.ref('drawResults/items').once('value')
                 .then((snapshot) => {
                     let currentItems = [];
                     const existingData = snapshot.val();
                     
                     if (existingData) {
-                        // Convert to array if it's an object, or use directly if it's already an array
                         currentItems = Array.isArray(existingData) ? existingData : Object.values(existingData);
                         
-                        // Check if item already exists (by data content)
-                        // Always treat items as strings for comparison
-                        const alreadyExists = currentItems.some(item => {
-                            return String(item) === String(data);
-                        });
+                        const alreadyExists = currentItems.some(item => String(item) === String(data));
                         
                         if (alreadyExists) {
                             showDuplicateAlert();
@@ -791,28 +907,72 @@
                         }
                     }
                     
-                    // Add new item to the beginning of the array to maintain order
-                    // Store ONLY the raw string data in Firebase
                     currentItems.unshift(String(data));
                     
-                    // Save updated items array back to Firebase
-                    database.ref('drawResults').update({
-                        items: currentItems
-                    }).then(() => {
-                        // Show success message
-                        successAlert.classList.add('show');
-                        setTimeout(() => {
-                            successAlert.classList.remove('show');
-                        }, 3000);
+                    // Use set instead of update to overwrite (last write wins in fallback)
+                    return database.ref('drawResults').set({
+                        items: currentItems,
+                        lastUpdated: Date.now()
                     });
                 })
+                .then(() => {
+                    successAlert.classList.add('show');
+                    setTimeout(() => {
+                        successAlert.classList.remove('show');
+                    }, 3000);
+                })
                 .catch((error) => {
-                    console.error('Error saving item to database:', error);
+                    console.error('Fallback save failed:', error);
+                    alert('Error saving item. Please try again.');
                 });
         }
 
-        // FIRST: Save batch items to Firebase - ONLY RAW STRINGS
+        // Save batch items to Firebase with transaction support
         function saveBatchToDatabase() {
+            if (batchItems.length === 0) return;
+
+            showConcurrentStatus('Processing batch...');
+            
+            const itemsRef = database.ref('drawResults/items');
+            
+            itemsRef.transaction((currentItems) => {
+                if (currentItems === null) {
+                    // First items ever - convert all batch items to strings
+                    return batchItems.map(item => String(item));
+                }
+                
+                // Convert to array if needed
+                const itemsArray = Array.isArray(currentItems) ? currentItems : Object.values(currentItems);
+                
+                // Filter out duplicates from batch
+                const newItems = batchItems.filter(batchItem => {
+                    const batchItemString = String(batchItem);
+                    return !itemsArray.some(item => String(item) === batchItemString);
+                });
+                
+                if (newItems.length > 0) {
+                    // Add new items to beginning (maintain newest-first order)
+                    const newItemsAsStrings = newItems.map(item => String(item));
+                    return [...newItemsAsStrings, ...itemsArray];
+                }
+                
+                // Return current items (no change) if all are duplicates
+                return currentItems;
+            }).then((result) => {
+                if (result.committed) {
+                    concurrentStatus.classList.remove('show');
+                    const itemsAdded = batchItems.length;
+                    showBatchSuccess(itemsAdded);
+                    batchItems = []; // Clear batch after successful save
+                }
+            }).catch((error) => {
+                console.error('Batch transaction failed:', error);
+                concurrentStatus.classList.remove('show');
+                saveBatchWithFallback();
+            });
+        }
+
+        function saveBatchWithFallback() {
             if (batchItems.length === 0) return;
 
             database.ref('drawResults/items').once('value')
@@ -825,32 +985,45 @@
                     }
 
                     // Add only new items from batch (avoid duplicates)
-                    // Store ONLY the raw string data in Firebase
+                    let addedCount = 0;
                     batchItems.forEach(batchItem => {
                         const batchItemString = String(batchItem);
-                        const alreadyExists = currentItems.some(item => {
-                            return String(item) === batchItemString;
-                        });
+                        const alreadyExists = currentItems.some(item => String(item) === batchItemString);
                         
                         if (!alreadyExists) {
                             // Add to beginning to maintain newest-first order
                             currentItems.unshift(batchItemString);
+                            addedCount++;
                         }
                     });
                     
-                    // Save updated items array back to Firebase
-                    return database.ref('drawResults').update({
-                        items: currentItems
-                    });
-                })
-                .then(() => {
-                    // Show batch success message
-                    showBatchSuccess(batchItems.length);
+                    if (addedCount > 0) {
+                        return database.ref('drawResults').set({
+                            items: currentItems,
+                            lastUpdated: Date.now()
+                        }).then(() => {
+                            showBatchSuccess(addedCount);
+                            batchItems = []; // Clear batch after successful save
+                        });
+                    } else {
+                        showBatchSuccess(0);
+                        batchItems = [];
+                    }
                 })
                 .catch((error) => {
-                    console.error('Error saving batch to database:', error);
+                    console.error('Batch fallback save failed:', error);
+                    alert('Error saving batch. Please try again.');
                 });
         }
+
+        function showConcurrentStatus(message) {
+            concurrentStatus.querySelector('span').textContent = message;
+            concurrentStatus.classList.add('show');
+        }
+
+        // ====================================================================
+        // END OF CONCURRENT SCANNING SOLUTION
+        // ====================================================================
 
         // Start scanner function
         async function startScanner() {
@@ -1021,7 +1194,7 @@
 
         // Handle normal scanning mode
         function handleNormalScan(data) {
-            // Check if this code exists in the drawing items
+            // Check if this code exists in the drawing items (local cache)
             const alreadyAdded = drawingItems.some(item => {
                 return String(item) === String(data);
             });
@@ -1041,7 +1214,7 @@
             duplicateAlert.classList.remove('show');
             successAlert.classList.remove('show');
             
-            // Save to Firebase database (drawing items) - ONLY RAW STRING
+            // Save to Firebase database (drawing items) - Uses transaction now
             saveItemToDatabase(data);
             
             // Check if it's a URL
@@ -1061,7 +1234,7 @@
                 return;
             }
 
-            // Check if item exists in database
+            // Check if item exists in database (local cache)
             const alreadyInDatabase = drawingItems.some(item => {
                 return String(item) === String(data);
             });
