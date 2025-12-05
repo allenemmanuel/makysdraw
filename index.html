@@ -348,11 +348,28 @@
             firebase.database().ref('drawResults').on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
-                    items = data.items || [];
+                    // FIRST: SANITIZE DATA FOR BACKWARD COMPATIBILITY
+                    let rawItems = data.items || [];
+                    
+                    // Convert any objects back to strings (for backward compatibility)
+                    items = rawItems.map(item => {
+                        if (typeof item === 'object' && item !== null && item.data) {
+                            console.log('Converting object to string:', item.data);
+                            return item.data; // Extract string from old object format
+                        }
+                        return String(item); // Ensure it's a string
+                    });
+                    
+                    // Remove duplicates after sanitization
+                    items = removeDuplicates(items.filter(item => item.trim() !== ''));
+                    
                     drawnItems = data.drawnItems || [];
                     allResults = data.allResults || [];
                     document.getElementById('inputNames').value = items.join(', ');
                     updatePreviousResults();
+                    
+                    // Write sanitized data back to Firebase
+                    writeDataToFirebase();
                 }
             });
         };
@@ -376,10 +393,10 @@
         });
 
         // Create an audio object for the slot machine sound
-const slotMachineSound = new Audio('slot-machine.mp3'); 
-slotMachineSound.loop = true; // Loop the sound while the animation is playing
+        const slotMachineSound = new Audio('slot-machine.mp3'); 
+        slotMachineSound.loop = true; // Loop the sound while the animation is playing
 
-document.getElementById('drawButton').addEventListener('click', function () {
+        document.getElementById('drawButton').addEventListener('click', function () {
             // Show the modal with the slot machine animation
             const modal = new bootstrap.Modal(document.getElementById('slotMachineModal'));
             
@@ -463,10 +480,8 @@ document.getElementById('drawButton').addEventListener('click', function () {
                 }, -10);
 
                 document.getElementById('removeDrawnButton').style.display = 'inline-block';
-            }, 5000); // 7000 milliseconds = 7 seconds
+            }, 5000); // 5000 milliseconds = 5 seconds
         });
-
-
 
         document.getElementById('removeDrawnButton').addEventListener('click', function () {
             items = items.filter(item => !drawnItems.includes(item));
@@ -543,30 +558,87 @@ document.getElementById('drawButton').addEventListener('click', function () {
         });
 
         function fadeInCharacterByCharacter(text, container) {
-    container.innerHTML = ''; // Clear previous content
-    let index = 0;
+            container.innerHTML = ''; // Clear previous content
+            let index = 0;
 
-    function showNextCharacter() {
-        if (index < text.length) {
-            const span = document.createElement('span');
-            span.innerText = text[index];
-            span.style.opacity = '0';
-            span.style.transition = 'opacity 0.3s ease-in-out';
-            span.style.display = 'inline-block'; // Ensures characters appear in a line
-            container.appendChild(span);
+            function showNextCharacter() {
+                if (index < text.length) {
+                    const span = document.createElement('span');
+                    span.innerText = text[index];
+                    span.style.opacity = '0';
+                    span.style.transition = 'opacity 0.3s ease-in-out';
+                    span.style.display = 'inline-block'; // Ensures characters appear in a line
+                    container.appendChild(span);
 
-            // Small delay to trigger opacity transition
-            setTimeout(() => {
-                span.style.opacity = '1';
-            }, 50 * index);
+                    // Small delay to trigger opacity transition
+                    setTimeout(() => {
+                        span.style.opacity = '1';
+                    }, 50 * index);
 
-            index++;
-            setTimeout(showNextCharacter, 2000); // Controls the speed of character appearance
+                    index++;
+                    setTimeout(showNextCharacter, 2000); // Controls the speed of character appearance
+                }
+            }
+
+            showNextCharacter();
         }
-    }
 
-    showNextCharacter();
-}
+        // THIRD: One-time cleanup function to fix existing corrupted data
+        function sanitizeFirebaseData() {
+            console.log('Starting Firebase data sanitization...');
+            
+            database.ref('drawResults').once('value')
+                .then((snapshot) => {
+                    const data = snapshot.val();
+                    if (!data) {
+                        console.log('No data to sanitize');
+                        return;
+                    }
+                    
+                    const rawItems = data.items || [];
+                    
+                    // Convert all items to strings
+                    const sanitizedItems = rawItems.map(item => {
+                        if (typeof item === 'object' && item !== null && item.data) {
+                            console.log('Converting object to string:', item.data);
+                            return item.data;
+                        }
+                        return String(item);
+                    }).filter(item => item.trim() !== '');
+                    
+                    // Remove duplicates
+                    const uniqueItems = [...new Set(sanitizedItems)];
+                    
+                    console.log('Sanitized items:', uniqueItems);
+                    
+                    // Update Firebase with clean data
+                    return database.ref('drawResults').update({
+                        items: uniqueItems,
+                        drawnItems: data.drawnItems || [],
+                        allResults: data.allResults || []
+                    });
+                })
+                .then(() => {
+                    console.log('Firebase data sanitized successfully');
+                    alert('Data sanitization completed successfully!');
+                })
+                .catch(error => {
+                    console.error('Error sanitizing data:', error);
+                    alert('Error during data sanitization: ' + error.message);
+                });
+        }
+
+        // Optional: Add a button to trigger sanitization manually
+        // Uncomment if you want a manual sanitization button
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const sanitizeButton = document.createElement('button');
+            sanitizeButton.className = 'btn btn-info mt-4';
+            sanitizeButton.innerHTML = '<i class="fas fa-broom"></i> Sanitize Data';
+            sanitizeButton.onclick = sanitizeFirebaseData;
+            document.getElementById('container2').appendChild(sanitizeButton);
+        });
+        
 
     </script>
 </body>
