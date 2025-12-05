@@ -228,11 +228,6 @@
             border-radius: 3px;
         }
         
-        .timestamp {
-            font-size: 0.75rem;
-            color: #6c757d;
-        }
-        
         .item-type-badge {
             font-size: 0.7rem;
             padding: 2px 6px;
@@ -664,7 +659,6 @@
         let scanInterval = null;
         let flashOn = false;
         let drawingItems = []; // This will store raw strings from Firebase
-        let enhancedItems = []; // This will store enhanced items with metadata for display
         let lastScannedCode = null;
         let scanCooldown = false;
         let scanPaused = false;
@@ -713,22 +707,9 @@
                     if (data) {
                         // Convert object to array if needed, or use array directly
                         drawingItems = Array.isArray(data) ? data : Object.values(data);
-                        
-                        // Create enhanced items for display (with metadata)
-                        enhancedItems = drawingItems.map((item, index) => {
-                            // Always treat item as string
-                            const itemData = String(item);
-                            return {
-                                data: itemData,
-                                timestamp: new Date().toISOString(),
-                                type: isValidUrl(itemData) ? 'url' : 'text'
-                            };
-                        });
-                        
                         updateItemsDisplay();
                     } else {
                         drawingItems = [];
-                        enhancedItems = [];
                         updateItemsDisplay();
                     }
                     updateDatabaseStatus(true);
@@ -911,8 +892,7 @@
                     
                     // Use set instead of update to overwrite (last write wins in fallback)
                     return database.ref('drawResults').set({
-                        items: currentItems,
-                        lastUpdated: Date.now()
+                        items: currentItems
                     });
                 })
                 .then(() => {
@@ -999,8 +979,7 @@
                     
                     if (addedCount > 0) {
                         return database.ref('drawResults').set({
-                            items: currentItems,
-                            lastUpdated: Date.now()
+                            items: currentItems
                         }).then(() => {
                             showBatchSuccess(addedCount);
                             batchItems = []; // Clear batch after successful save
@@ -1403,7 +1382,6 @@
             }
 
             batchItemsList.innerHTML = batchItems.map((item, index) => {
-                const timestamp = new Date().toISOString();
                 const type = isValidUrl(item) ? 'url' : 'text';
                 
                 return `
@@ -1413,7 +1391,6 @@
                                 <span class="fw-bold">${item}</span>
                                 <span class="badge ${type === 'url' ? 'bg-success' : 'bg-secondary'} item-type-badge">${type}</span>
                             </div>
-                            <div class="timestamp">${new Date(timestamp).toLocaleString()}</div>
                         </div>
                     </div>
                 `;
@@ -1425,12 +1402,12 @@
         
         // Update items display with search highlighting
         function updateItemsDisplay() {
-            let filteredItems = enhancedItems;
+            let filteredItems = drawingItems;
             
             // Apply search filter
             if (searchTerm) {
-                filteredItems = enhancedItems.filter(item => {
-                    return item.data.toLowerCase().includes(searchTerm.toLowerCase());
+                filteredItems = drawingItems.filter(item => {
+                    return String(item).toLowerCase().includes(searchTerm.toLowerCase());
                 });
             }
             
@@ -1445,11 +1422,15 @@
             }
             
             itemsList.innerHTML = filteredItems.map(item => {
+                // Always treat item as string
+                const itemString = String(item);
+                const type = isValidUrl(itemString) ? 'url' : 'text';
+                
                 // Highlight search term if present
-                let displayText = item.data;
+                let displayText = itemString;
                 if (searchTerm) {
                     const regex = new RegExp(`(${escapeRegex(searchTerm)})`, 'gi');
-                    displayText = item.data.replace(regex, '<mark class="search-highlight">$1</mark>');
+                    displayText = itemString.replace(regex, '<mark class="search-highlight">$1</mark>');
                 }
                 
                 return `
@@ -1457,9 +1438,8 @@
                         <div class="d-flex justify-content-between align-items-start">
                             <div class="flex-grow-1">
                                 <p class="mb-1">${displayText}</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="timestamp">${new Date(item.timestamp).toLocaleString()}</small>
-                                    <span class="badge ${item.type === 'url' ? 'bg-success' : 'bg-secondary'} item-type-badge">${item.type}</span>
+                                <div class="d-flex justify-content-end">
+                                    <span class="badge ${type === 'url' ? 'bg-success' : 'bg-secondary'} item-type-badge">${type}</span>
                                 </div>
                             </div>
                         </div>
