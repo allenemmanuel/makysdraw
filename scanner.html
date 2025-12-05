@@ -27,6 +27,7 @@
             overflow: hidden;
             max-width: 800px;
             margin: 0 auto;
+            position: relative;
         }
         
         .scanner-header {
@@ -61,7 +62,6 @@
             height: 70%;
             border: 2px solid #fff;
             border-radius: 10px;
-            /* REMOVED: box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.3); */
             z-index: 10;
         }
         
@@ -237,6 +237,184 @@
             font-size: 0.7rem;
             padding: 2px 6px;
         }
+        
+        /* FAB Styles */
+        .fab-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+        }
+        
+        .fab-main {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(to right, #4a00e0, #8e2de2);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+        
+        .fab-main:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .fab-main.active {
+            transform: rotate(45deg);
+            background: linear-gradient(to right, #dc3545, #ff6b6b);
+        }
+        
+        .fab-menu {
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            padding: 10px;
+            min-width: 180px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .fab-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .fab-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            transition: all 0.2s ease;
+            color: #495057;
+            cursor: pointer;
+        }
+        
+        .fab-item:hover {
+            background-color: #f8f9fa;
+            color: #4a00e0;
+        }
+        
+        .fab-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .fab-item i {
+            width: 24px;
+            font-size: 18px;
+            margin-right: 10px;
+        }
+        
+        .fab-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .fab-item.disabled:hover {
+            background-color: transparent;
+            color: #495057;
+        }
+        
+        .fab-divider {
+            height: 1px;
+            background-color: #e9ecef;
+            margin: 8px 0;
+        }
+        
+        /* Status Bar */
+        .status-bar {
+            background-color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .status-badge.active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-badge.inactive {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .camera-info {
+            font-size: 0.85rem;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .fab-container {
+                bottom: 20px;
+                right: 20px;
+            }
+            
+            .fab-main {
+                width: 56px;
+                height: 56px;
+                font-size: 22px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .fab-container {
+                bottom: 15px;
+                right: 15px;
+            }
+            
+            .fab-main {
+                width: 52px;
+                height: 52px;
+                font-size: 20px;
+            }
+            
+            .fab-menu {
+                min-width: 160px;
+                right: -5px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -260,45 +438,15 @@
                     </div>
                 </div>
                 
-                <div class="controls mt-4">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <button id="startButton" class="btn btn-custom w-100">
-                                <i class="fas fa-play me-2"></i> Start Scanner
-                            </button>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <button id="stopButton" class="btn btn-secondary w-100" disabled>
-                                <i class="fas fa-stop me-2"></i> Stop Scanner
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <button id="switchCamera" class="btn btn-outline-primary w-100">
-                                <i class="fas fa-camera-rotate me-2"></i> Switch Camera
-                            </button>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <button id="toggleFlash" class="btn btn-outline-warning w-100">
-                                <i class="fas fa-lightbulb me-2"></i> Toggle Flash
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Batch Mode Button -->
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <button id="batchModeButton" class="btn btn-outline-info w-100">
-                                <i class="fas fa-layer-group me-2"></i> Start Batch Mode
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="d-flex align-items-center mb-3">
+                <!-- Status Bar -->
+                <div class="status-bar mt-4">
+                    <div class="status-info">
                         <span class="status-indicator status-inactive" id="statusIndicator"></span>
                         <span id="statusText" class="fw-bold">Scanner is inactive</span>
+                    </div>
+                    <div class="camera-info" id="cameraInfo">
+                        <i class="fas fa-video"></i>
+                        <span>Rear Camera</span>
                     </div>
                 </div>
                 
@@ -387,6 +535,37 @@
         </div>
     </div>
 
+    <!-- FAB Container -->
+    <div class="fab-container">
+        <div class="fab-menu" id="fabMenu">
+            <button class="fab-item" id="fabStart">
+                <i class="fas fa-play"></i>
+                <span>Start Scanner</span>
+            </button>
+            <button class="fab-item disabled" id="fabStop">
+                <i class="fas fa-stop"></i>
+                <span>Stop Scanner</span>
+            </button>
+            <div class="fab-divider"></div>
+            <button class="fab-item" id="fabSwitchCamera">
+                <i class="fas fa-camera-rotate"></i>
+                <span>Switch Camera</span>
+            </button>
+            <button class="fab-item" id="fabToggleFlash">
+                <i class="fas fa-lightbulb"></i>
+                <span>Toggle Flash</span>
+            </button>
+            <div class="fab-divider"></div>
+            <button class="fab-item" id="fabBatchMode">
+                <i class="fas fa-layer-group"></i>
+                <span>Batch Mode</span>
+            </button>
+        </div>
+        <button class="fab-main" id="fabMain">
+            <i class="fas fa-plus"></i>
+        </button>
+    </div>
+
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- QR Code Scanner Library -->
@@ -411,10 +590,6 @@
 
         // Elements
         const video = document.getElementById('video');
-        const startButton = document.getElementById('startButton');
-        const stopButton = document.getElementById('stopButton');
-        const switchCameraButton = document.getElementById('switchCamera');
-        const toggleFlashButton = document.getElementById('toggleFlash');
         const resultContainer = document.getElementById('resultContainer');
         const resultText = document.getElementById('resultText');
         const openButton = document.getElementById('openButton');
@@ -428,9 +603,18 @@
         const dbStatus = document.getElementById('dbStatus');
         const searchInput = document.getElementById('searchInput');
         const clearSearch = document.getElementById('clearSearch');
+        const cameraInfo = document.getElementById('cameraInfo');
+
+        // FAB Elements
+        const fabMain = document.getElementById('fabMain');
+        const fabMenu = document.getElementById('fabMenu');
+        const fabStart = document.getElementById('fabStart');
+        const fabStop = document.getElementById('fabStop');
+        const fabSwitchCamera = document.getElementById('fabSwitchCamera');
+        const fabToggleFlash = document.getElementById('fabToggleFlash');
+        const fabBatchMode = document.getElementById('fabBatchMode');
 
         // Batch Mode Elements
-        const batchModeButton = document.getElementById('batchModeButton');
         const batchPanel = document.getElementById('batchPanel');
         const batchCount = document.getElementById('batchCount');
         const batchItemsList = document.getElementById('batchItemsList');
@@ -451,25 +635,30 @@
         let lastScannedCode = null;
         let scanCooldown = false;
         let scanPaused = false;
+        let fabOpen = false;
 
         // Batch Mode Variables
         let batchMode = false;
         let batchItems = []; // Store raw strings for batch
         let batchPaused = false;
         let searchTerm = '';
+        let flashSupported = false;
 
         // Initialize event listeners
-        startButton.addEventListener('click', startScanner);
-        stopButton.addEventListener('click', stopScanner);
-        switchCameraButton.addEventListener('click', switchCamera);
-        toggleFlashButton.addEventListener('click', toggleFlash);
         openButton.addEventListener('click', openResult);
         resumeButton.addEventListener('click', resumeScanning);
         searchInput.addEventListener('input', handleSearch);
         clearSearch.addEventListener('click', clearSearchInput);
 
+        // FAB Event Listeners
+        fabMain.addEventListener('click', toggleFabMenu);
+        fabStart.addEventListener('click', startScanner);
+        fabStop.addEventListener('click', stopScanner);
+        fabSwitchCamera.addEventListener('click', switchCamera);
+        fabToggleFlash.addEventListener('click', toggleFlash);
+        fabBatchMode.addEventListener('click', toggleBatchMode);
+
         // Batch Mode Event Listeners
-        batchModeButton.addEventListener('click', toggleBatchMode);
         pauseBatch.addEventListener('click', pauseBatchScanning);
         resumeBatch.addEventListener('click', resumeBatchScanning);
         finishBatch.addEventListener('click', finishBatchMode);
@@ -530,6 +719,54 @@
                 dbIndicator.className = 'db-indicator db-disconnected';
                 dbStatus.textContent = 'Database Disconnected';
             }
+        }
+
+        // Toggle FAB Menu
+        function toggleFabMenu() {
+            fabOpen = !fabOpen;
+            if (fabOpen) {
+                fabMenu.classList.add('show');
+                fabMain.classList.add('active');
+            } else {
+                fabMenu.classList.remove('show');
+                fabMain.classList.remove('active');
+            }
+        }
+
+        // Close FAB Menu when clicking outside
+        document.addEventListener('click', function(event) {
+            if (fabOpen && !fabMain.contains(event.target) && !fabMenu.contains(event.target)) {
+                toggleFabMenu();
+            }
+        });
+
+        // Update FAB buttons state
+        function updateFABState() {
+            if (isScanning) {
+                fabStart.classList.add('disabled');
+                fabStop.classList.remove('disabled');
+                fabMain.innerHTML = '<i class="fas fa-stop"></i>';
+                fabMain.style.background = 'linear-gradient(to right, #dc3545, #ff6b6b)';
+            } else {
+                fabStart.classList.remove('disabled');
+                fabStop.classList.add('disabled');
+                fabMain.innerHTML = '<i class="fas fa-plus"></i>';
+                fabMain.style.background = 'linear-gradient(to right, #4a00e0, #8e2de2)';
+            }
+
+            // Update camera info
+            const cameraType = currentFacingMode === 'environment' ? 'Rear Camera' : 'Front Camera';
+            cameraInfo.innerHTML = `<i class="fas fa-video"></i><span>${cameraType}</span>`;
+
+            // Update flash button text
+            fabToggleFlash.innerHTML = flashOn ? 
+                '<i class="fas fa-lightbulb"></i><span>Flash On</span>' : 
+                '<i class="far fa-lightbulb"></i><span>Flash Off</span>';
+
+            // Update batch mode button
+            fabBatchMode.innerHTML = batchMode ? 
+                '<i class="fas fa-times"></i><span>Exit Batch</span>' : 
+                '<i class="fas fa-layer-group"></i><span>Batch Mode</span>';
         }
 
         // FIRST: Save scanned item to Firebase (drawing items) - ONLY RAW STRINGS
@@ -636,10 +873,23 @@
                 // Update UI
                 isScanning = true;
                 scanPaused = false;
-                startButton.disabled = true;
-                stopButton.disabled = false;
                 statusIndicator.className = 'status-indicator status-active';
                 statusText.textContent = 'Scanner is active';
+                
+                // Check flash support
+                const videoTrack = stream.getVideoTracks()[0];
+                if (videoTrack && 'torch' in videoTrack.getCapabilities()) {
+                    flashSupported = true;
+                } else {
+                    flashSupported = false;
+                    fabToggleFlash.classList.add('disabled');
+                }
+                
+                // Update FAB state
+                updateFABState();
+                
+                // Close FAB menu
+                if (fabOpen) toggleFabMenu();
                 
                 // Start scanning for QR codes
                 startScanning();
@@ -669,11 +919,15 @@
             
             // Update UI
             video.srcObject = null;
-            startButton.disabled = false;
-            stopButton.disabled = true;
             statusIndicator.className = 'status-indicator status-inactive';
             statusText.textContent = 'Scanner is inactive';
             resultContainer.classList.remove('show');
+            
+            // Update FAB state
+            updateFABState();
+            
+            // Close FAB menu
+            if (fabOpen) toggleFabMenu();
             
             // Exit batch mode if active
             if (batchMode) {
@@ -692,24 +946,24 @@
                 currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
                 stopScanner();
                 await startScanner();
+                if (fabOpen) toggleFabMenu();
             }
         }
         
         // Toggle flash function
         function toggleFlash() {
-            if (stream) {
+            if (stream && flashSupported) {
                 const videoTrack = stream.getVideoTracks()[0];
-                if (videoTrack && 'torch' in videoTrack.getCapabilities()) {
+                if (videoTrack) {
                     flashOn = !flashOn;
                     videoTrack.applyConstraints({
                         advanced: [{ torch: flashOn }]
                     });
-                    toggleFlashButton.innerHTML = flashOn ? 
-                        '<i class="fas fa-lightbulb me-2"></i> Flash On' : 
-                        '<i class="far fa-lightbulb me-2"></i> Flash Off';
-                } else {
-                    alert('Flash is not supported on this device or camera');
+                    updateFABState();
+                    if (fabOpen) toggleFabMenu();
                 }
+            } else if (!flashSupported) {
+                alert('Flash is not supported on this device or camera');
             }
         }
         
@@ -910,6 +1164,9 @@
                 // Exit batch mode
                 exitBatchMode();
             }
+            
+            updateFABState();
+            if (fabOpen) toggleFabMenu();
         }
 
         function enterBatchMode() {
@@ -918,8 +1175,6 @@
             batchPaused = false;
             
             // Update UI
-            batchModeButton.innerHTML = '<i class="fas fa-times me-2"></i> Exit Batch Mode';
-            batchModeButton.className = 'btn btn-outline-danger w-100';
             batchPanel.style.display = 'block';
             statusText.textContent = 'Batch mode active - continuous scanning';
             
@@ -929,8 +1184,6 @@
         function exitBatchMode() {
             batchMode = false;
             batchPanel.style.display = 'none';
-            batchModeButton.innerHTML = '<i class="fas fa-layer-group me-2"></i> Start Batch Mode';
-            batchModeButton.className = 'btn btn-outline-info w-100';
             
             if (isScanning) {
                 statusText.textContent = 'Scanner is active';
@@ -1069,6 +1322,9 @@
                 return false;
             }
         }
+
+        // Initial FAB state update
+        updateFABState();
     });
 </script>
 </body>
