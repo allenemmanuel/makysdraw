@@ -1143,8 +1143,22 @@
             }, 200); // Scan every 200ms
         }
         
-        // Handle detected QR code
+        // Handle detected QR code - UPDATED FOR NUMERIC QR CODES
         function handleQRCodeDetected(data) {
+            // FIX FOR NUMERIC QR CODES FROM YOUR SPREADSHEET
+            // Check if it's a 1-4 digit number (like 1, 12, 001, 0001, etc.)
+            if (data && /^\d{1,4}$/.test(data)) {
+                // Ensure it's always 4 digits with leading zeros to match your spreadsheet format
+                const originalData = data;
+                data = data.padStart(4, '0');
+                console.log("Formatted numeric QR code:", originalData, "→", data);
+                
+                // Also add debug logging to help troubleshoot
+                console.log("QR Code detected (formatted):", data);
+                console.log("Type:", typeof data);
+                console.log("Length:", data.length);
+            }
+            
             // Check if this code has already been scanned in this session
             if (data === lastScannedCode) {
                 if (!batchMode) {
