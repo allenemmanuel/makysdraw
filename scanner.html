@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -43,6 +42,7 @@
             width: 100%;
             padding-top: 75%; /* 4:3 Aspect Ratio */
             background-color: #000;
+            overflow: hidden;
         }
         
         #video {
@@ -52,6 +52,11 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transform: scaleX(-1); /* Mirror for front camera */
+        }
+        
+        #video.rear-camera {
+            transform: scaleX(1); /* Normal for rear camera */
         }
         
         .scan-area {
@@ -64,6 +69,7 @@
             border: 2px solid #fff;
             border-radius: 10px;
             z-index: 10;
+            pointer-events: none;
         }
         
         .scan-line {
@@ -406,6 +412,24 @@
             100% { opacity: 0; transform: translateY(-10px); }
         }
         
+        /* Performance indicator */
+        .performance-indicator {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .performance-indicator.show {
+            display: block;
+        }
+        
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .fab-container {
@@ -417,6 +441,10 @@
                 width: 56px;
                 height: 56px;
                 font-size: 22px;
+            }
+            
+            .video-container {
+                padding-top: 100%; /* Square for mobile */
             }
         }
         
@@ -436,6 +464,11 @@
                 min-width: 160px;
                 right: -5px;
             }
+            
+            .scan-area {
+                width: 80%;
+                height: 40%; /* Taller scan area for mobile */
+            }
         }
     </style>
 </head>
@@ -444,6 +477,11 @@
     <div class="concurrent-status" id="concurrentStatus">
         <i class="fas fa-sync-alt me-2"></i>
         <span>Processing scan...</span>
+    </div>
+    
+    <!-- Performance Indicator -->
+    <div class="performance-indicator" id="performanceIndicator">
+        <span id="fpsCounter">0 FPS</span>
     </div>
     
     <div class="container">
@@ -601,7 +639,7 @@
     
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Firebase Configuration (using the same as your drawing app)
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
             authDomain: "makysdraw-87237.firebaseapp.com",
@@ -633,6 +671,8 @@
         const clearSearch = document.getElementById('clearSearch');
         const cameraInfo = document.getElementById('cameraInfo');
         const concurrentStatus = document.getElementById('concurrentStatus');
+        const performanceIndicator = document.getElementById('performanceIndicator');
+        const fpsCounter = document.getElementById('fpsCounter');
 
         // FAB Elements
         const fabMain = document.getElementById('fabMain');
@@ -653,13 +693,19 @@
         const cancelBatch = document.getElementById('cancelBatch');
         const batchStats = document.getElementById('batchStats');
 
-        // Variables
+        // Performance monitoring variables
+        let frameCount = 0;
+        let lastFpsUpdate = Date.now();
+        let fps = 0;
+
+        // Scanner variables
         let stream = null;
         let isScanning = false;
         let currentFacingMode = 'environment';
         let scanInterval = null;
+        let scanAnimationFrame = null;
         let flashOn = false;
-        let drawingItems = []; // This will store raw strings from Firebase
+        let drawingItems = [];
         let lastScannedCode = null;
         let scanCooldown = false;
         let scanPaused = false;
@@ -667,7 +713,7 @@
 
         // Batch Mode Variables
         let batchMode = false;
-        let batchItems = []; // Store raw strings for batch
+        let batchItems = [];
         let batchPaused = false;
         let searchTerm = '';
         let flashSupported = false;
@@ -675,6 +721,13 @@
         // Transaction retry counter
         let transactionRetries = 0;
         const MAX_TRANSACTION_RETRIES = 3;
+
+        // Performance optimized scanning variables
+        let isProcessing = false;
+        let lastScanTime = 0;
+        const MIN_SCAN_INTERVAL = 150; // 150ms between scans (reduced from 200ms)
+        const SCAN_DEBOUNCE = 1000; // 1 second debounce for same code
+        let scanDebounceTimer = null;
 
         // Initialize event listeners
         openButton.addEventListener('click', openResult);
@@ -1002,24 +1055,59 @@
         }
 
         // ====================================================================
-        // END OF CONCURRENT SCANNING SOLUTION
+        // PERFORMANCE OPTIMIZED SCANNING FUNCTIONS
         // ====================================================================
 
-        // Start scanner function
+        // Optimized start scanner function
         async function startScanner() {
             try {
-                // Request camera access
-                stream = await navigator.mediaDevices.getUserMedia({
+                stopScanner(); // Clean up any existing streams first
+                
+                // Request camera access with optimized settings
+                const constraints = {
                     video: {
                         facingMode: currentFacingMode,
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
+                        width: { ideal: 640 }, // Reduced resolution for better performance
+                        height: { ideal: 480 },
+                        frameRate: { ideal: 24, max: 30 } // Limited frame rate
                     }
-                });
+                };
+
+                // Try to get the camera stream
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
                 
-                // Set video source
+                // Set video source and update camera orientation
                 video.srcObject = stream;
-                await video.play();
+                
+                // Update video class based on camera type
+                if (currentFacingMode === 'environment') {
+                    video.classList.add('rear-camera');
+                    video.classList.remove('front-camera');
+                } else {
+                    video.classList.add('front-camera');
+                    video.classList.remove('rear-camera');
+                }
+                
+                // Wait for video to be ready
+                await new Promise((resolve, reject) => {
+                    video.onloadedmetadata = () => {
+                        video.play()
+                            .then(() => {
+                                // Start performance monitoring
+                                startPerformanceMonitoring();
+                                resolve();
+                            })
+                            .catch(reject);
+                    };
+                    video.onerror = reject;
+                    
+                    // Timeout for video to load
+                    setTimeout(() => {
+                        if (video.readyState < 2) {
+                            reject(new Error('Video failed to load'));
+                        }
+                    }, 5000);
+                });
                 
                 // Update UI
                 isScanning = true;
@@ -1028,12 +1116,15 @@
                 statusText.textContent = 'Scanner is active';
                 
                 // Check flash support
-                const videoTrack = stream.getVideoTracks()[0];
-                if (videoTrack && 'torch' in videoTrack.getCapabilities()) {
-                    flashSupported = true;
-                } else {
-                    flashSupported = false;
-                    fabToggleFlash.classList.add('disabled');
+                if (stream) {
+                    const videoTrack = stream.getVideoTracks()[0];
+                    if (videoTrack && 'torch' in videoTrack.getCapabilities()) {
+                        flashSupported = true;
+                        fabToggleFlash.classList.remove('disabled');
+                    } else {
+                        flashSupported = false;
+                        fabToggleFlash.classList.add('disabled');
+                    }
                 }
                 
                 // Update FAB state
@@ -1042,21 +1133,31 @@
                 // Close FAB menu
                 if (fabOpen) toggleFabMenu();
                 
-                // Start scanning for QR codes
+                // Start scanning for QR codes using requestAnimationFrame
                 startScanning();
                 
             } catch (error) {
                 console.error('Error accessing camera:', error);
-                alert('Error accessing camera: ' + error.message);
+                alert('Error accessing camera. Please make sure you have granted camera permissions.');
+                stopScanner();
             }
         }
-        
-        // Stop scanner function
+
+        // Optimized stop scanner function
         function stopScanner() {
             isScanning = false;
             scanPaused = false;
             
-            // Clear scanning interval
+            // Stop performance monitoring
+            stopPerformanceMonitoring();
+            
+            // Stop scanning loop
+            if (scanAnimationFrame) {
+                cancelAnimationFrame(scanAnimationFrame);
+                scanAnimationFrame = null;
+            }
+            
+            // Clear interval if exists
             if (scanInterval) {
                 clearInterval(scanInterval);
                 scanInterval = null;
@@ -1064,12 +1165,16 @@
             
             // Stop all video tracks
             if (stream) {
-                stream.getTracks().forEach(track => track.stop());
+                stream.getTracks().forEach(track => {
+                    track.stop();
+                });
                 stream = null;
             }
             
-            // Update UI
+            // Clear video source
             video.srcObject = null;
+            
+            // Update UI
             statusIndicator.className = 'status-indicator status-inactive';
             statusText.textContent = 'Scanner is inactive';
             resultContainer.classList.remove('show');
@@ -1090,63 +1195,155 @@
                 toggleFlash();
             }
         }
-        
+
+        // Optimized scanning using requestAnimationFrame
+        function startScanning() {
+            if (!isScanning || scanAnimationFrame) return;
+            
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            let lastScanAttempt = 0;
+            
+            // Use requestAnimationFrame for smoother performance
+            function scanFrame() {
+                if (!isScanning || scanPaused || batchPaused) return;
+                
+                frameCount++;
+                
+                // Try to scan QR code at appropriate intervals
+                const now = Date.now();
+                if (now - lastScanAttempt >= MIN_SCAN_INTERVAL && 
+                    video.readyState === video.HAVE_ENOUGH_DATA && 
+                    !isProcessing) {
+                    
+                    lastScanAttempt = now;
+                    isProcessing = true;
+                    
+                    try {
+                        // Set canvas size optimized for scanning
+                        const scale = 0.5; // Reduced resolution for faster processing
+                        canvas.width = video.videoWidth * scale;
+                        canvas.height = video.videoHeight * scale;
+                        
+                        // Draw video frame to canvas
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        
+                        // Get image data from canvas
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        
+                        // Scan for QR code
+                        const code = jsQR(imageData.data, imageData.width, canvas.height);
+                        
+                        if (code && !scanCooldown) {
+                            handleQRCodeDetected(code.data);
+                        }
+                    } catch (error) {
+                        console.warn('Scan error:', error);
+                    } finally {
+                        isProcessing = false;
+                    }
+                }
+                
+                // Continue the animation loop
+                if (isScanning) {
+                    scanAnimationFrame = requestAnimationFrame(scanFrame);
+                }
+            }
+            
+            // Start the scanning loop
+            scanAnimationFrame = requestAnimationFrame(scanFrame);
+        }
+
+        // Performance monitoring
+        function startPerformanceMonitoring() {
+            performanceIndicator.classList.add('show');
+            
+            function updateFPS() {
+                const now = Date.now();
+                if (now - lastFpsUpdate >= 1000) {
+                    fps = Math.round((frameCount * 1000) / (now - lastFpsUpdate));
+                    fpsCounter.textContent = `${fps} FPS`;
+                    frameCount = 0;
+                    lastFpsUpdate = now;
+                    
+                    // Show warning if FPS is too low
+                    if (fps < 15) {
+                        fpsCounter.style.color = '#dc3545';
+                    } else if (fps < 24) {
+                        fpsCounter.style.color = '#ffc107';
+                    } else {
+                        fpsCounter.style.color = '#28a745';
+                    }
+                }
+                if (isScanning) {
+                    requestAnimationFrame(updateFPS);
+                }
+            }
+            
+            updateFPS();
+        }
+
+        function stopPerformanceMonitoring() {
+            performanceIndicator.classList.remove('show');
+            fps = 0;
+            frameCount = 0;
+        }
+
         // Switch camera function
         async function switchCamera() {
-            if (isScanning) {
-                currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
-                stopScanner();
-                await startScanner();
-                if (fabOpen) toggleFabMenu();
+            if (!isScanning) {
+                alert('Please start the scanner first');
+                return;
             }
+
+            // Toggle camera facing mode
+            currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+            
+            // Restart scanner with new camera
+            stopScanner();
+            await startScanner();
+            
+            if (fabOpen) toggleFabMenu();
         }
         
         // Toggle flash function
-        function toggleFlash() {
-            if (stream && flashSupported) {
-                const videoTrack = stream.getVideoTracks()[0];
-                if (videoTrack) {
-                    flashOn = !flashOn;
-                    videoTrack.applyConstraints({
-                        advanced: [{ torch: flashOn }]
-                    });
-                    updateFABState();
-                    if (fabOpen) toggleFabMenu();
-                }
-            } else if (!flashSupported) {
+        async function toggleFlash() {
+            if (!stream || !flashSupported) {
                 alert('Flash is not supported on this device or camera');
+                return;
+            }
+
+            const videoTrack = stream.getVideoTracks()[0];
+            if (!videoTrack) return;
+
+            try {
+                flashOn = !flashOn;
+                await videoTrack.applyConstraints({
+                    advanced: [{ torch: flashOn }]
+                });
+                updateFABState();
+                if (fabOpen) toggleFabMenu();
+            } catch (error) {
+                console.error('Error toggling flash:', error);
+                flashOn = false;
+                alert('Failed to toggle flash. Your device might not support this feature.');
             }
         }
-        
-        // Start scanning for QR codes
-        function startScanning() {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
-            scanInterval = setInterval(() => {
-                if (video.readyState === video.HAVE_ENOUGH_DATA && !scanPaused && !batchPaused) {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    
-                    // Draw video frame to canvas
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    
-                    // Get image data from canvas
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    
-                    // Scan for QR code
-                    const code = jsQR(imageData.data, imageData.width, imageData.height);
-                    
-                    if (code && !scanCooldown) {
-                        handleQRCodeDetected(code.data);
-                    }
-                }
-            }, 200); // Scan every 200ms
-        }
-        
-        // Handle detected QR code
+
+        // Handle detected QR code with debouncing
         function handleQRCodeDetected(data) {
-            // Check if this code has already been scanned in this session
+            // Clear any existing debounce timer
+            if (scanDebounceTimer) {
+                clearTimeout(scanDebounceTimer);
+            }
+
+            // Set cooldown to prevent rapid scanning
+            scanCooldown = true;
+            setTimeout(() => {
+                scanCooldown = false;
+            }, 500); // Reduced to 500ms cooldown
+
+            // Debounce same code detection
             if (data === lastScannedCode) {
                 if (!batchMode) {
                     showDuplicateAlert();
@@ -1154,20 +1351,15 @@
                 return;
             }
 
-            // Set cooldown to prevent rapid scanning
-            scanCooldown = true;
-            setTimeout(() => {
-                scanCooldown = false;
-            }, 1000); // 1 second cooldown
-            
-            // Update last scanned code
+            // Update last scanned code with debouncing
             lastScannedCode = data;
-            
+            scanDebounceTimer = setTimeout(() => {
+                lastScannedCode = null;
+            }, SCAN_DEBOUNCE);
+
             if (batchMode) {
-                // Handle batch mode scanning
                 handleBatchScan(data);
             } else {
-                // Handle normal mode scanning
                 handleNormalScan(data);
             }
         }
@@ -1194,7 +1386,7 @@
             duplicateAlert.classList.remove('show');
             successAlert.classList.remove('show');
             
-            // Save to Firebase database (drawing items) - Uses transaction now
+            // Save to Firebase database (drawing items)
             saveItemToDatabase(data);
             
             // Check if it's a URL
@@ -1208,7 +1400,7 @@
         // Handle batch mode scanning
         function handleBatchScan(data) {
             // Check if item already exists in current batch
-            const alreadyInBatch = batchItems.includes(data);
+            const alreadyInBatch = batchItems.some(item => String(item) === String(data));
             if (alreadyInBatch) {
                 showBatchDuplicate();
                 return;
@@ -1309,10 +1501,8 @@
             batchMode = !batchMode;
 
             if (batchMode) {
-                // Enter batch mode
                 enterBatchMode();
             } else {
-                // Exit batch mode
                 exitBatchMode();
             }
             
