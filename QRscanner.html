@@ -70,11 +70,28 @@
             overflow: hidden;
             position: relative;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            min-height: 400px;
         }
         
         #qr-reader {
             width: 100%;
-            height: 400px;
+            height: 100%;
+        }
+        
+        .camera-selector {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 20;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 12px;
+            border-radius: 20px;
+            color: white;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
         }
         
         .scanner-overlay {
@@ -97,6 +114,23 @@
             border: 3px solid #00f2fe;
             border-radius: 10px;
             box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.6);
+        }
+        
+        .camera-feed-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 20px;
+            text-align: center;
+            color: #ccc;
+        }
+        
+        .camera-feed-placeholder i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: #4facfe;
         }
         
         .results-container {
@@ -184,6 +218,13 @@
         #reset-button {
             background: linear-gradient(to right, #8e2de2, #4a00e0);
             color: white;
+        }
+        
+        #camera-select-btn {
+            background: linear-gradient(to right, #4facfe, #00f2fe);
+            color: white;
+            padding: 10px 20px;
+            font-size: 0.9rem;
         }
         
         button:hover {
@@ -284,6 +325,14 @@
             opacity: 0.9;
         }
         
+        .permission-help {
+            background-color: rgba(255, 65, 108, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid #ff416c;
+        }
+        
         footer {
             margin-top: 30px;
             text-align: center;
@@ -322,7 +371,13 @@
     <div class="container">
         <div class="scanner-section">
             <div class="scanner-container">
-                <div id="qr-reader"></div>
+                <div id="qr-reader">
+                    <div class="camera-feed-placeholder">
+                        <i class="fas fa-camera"></i>
+                        <h3>Camera Feed</h3>
+                        <p>Click "Start Scanner" to begin</p>
+                    </div>
+                </div>
                 <div class="scanner-overlay">
                     <div class="scanner-frame"></div>
                 </div>
@@ -336,6 +391,7 @@
                     <p><span>Status:</span> <span id="scanner-status">Ready to scan</span></p>
                     <p><span>Last scan:</span> <span id="last-scan-time">--</span></p>
                     <p><span>Total scanned:</span> <span id="total-scanned">0</span></p>
+                    <p><span>Camera:</span> <span id="camera-info">Not active</span></p>
                 </div>
                 
                 <div class="controls">
@@ -348,6 +404,17 @@
                     <button id="reset-button">
                         <i class="fas fa-redo"></i> Clear Results
                     </button>
+                </div>
+                
+                <div class="permission-help">
+                    <p><strong>Camera Permission Issues?</strong></p>
+                    <p>If the scanner doesn't start, try these steps:</p>
+                    <ol style="font-size: 0.9rem; padding-left: 20px; margin-top: 10px;">
+                        <li>Refresh the page and allow camera access when prompted</li>
+                        <li>Check browser settings to ensure camera access is allowed</li>
+                        <li>Try opening in Chrome, Firefox, or Edge (mobile Safari may have limitations)</li>
+                        <li>Ensure no other app is using your camera</li>
+                    </ol>
                 </div>
             </div>
         </div>
@@ -396,41 +463,83 @@
         const lastScanTime = document.getElementById('last-scan-time');
         const totalScanned = document.getElementById('total-scanned');
         const scannedCodesList = document.getElementById('scanned-codes-list');
+        const cameraInfo = document.getElementById('camera-info');
         
         // Scanner variables
         let html5QrCode;
         let isScanning = false;
         let scannedCodes = [];
         let scanCount = 0;
+        let availableCameras = [];
+        let selectedCameraId = null;
         
         // Initialize the QR scanner
-        function initScanner() {
-            html5QrCode = new Html5Qrcode("qr-reader");
-            
-            // Check if we can access the camera
-            Html5Qrcode.getCameras().then(cameras => {
-                if (cameras && cameras.length) {
-                    console.log(`Found ${cameras.length} camera(s)`);
+        async function initScanner() {
+            try {
+                html5QrCode = new Html5Qrcode("qr-reader");
+                
+                // Try to get available cameras
+                availableCameras = await Html5Qrcode.getCameras();
+                
+                if (availableCameras && availableCameras.length) {
+                    console.log(`Found ${availableCameras.length} camera(s):`, availableCameras);
+                    
+                    // Try to select rear camera first, otherwise use first available
+                    const rearCamera = availableCameras.find(cam => 
+                        cam.label.toLowerCase().includes('rear') || 
+                        cam.label.toLowerCase().includes('back') ||
+                        cam.label.toLowerCase().includes('environment')
+                    );
+                    
+                    selectedCameraId = rearCamera ? rearCamera.id : availableCameras[0].id;
+                    cameraInfo.textContent = rearCamera ? 'Rear camera' : 'Default camera';
+                    
                 } else {
-                    alert("No camera found. Please ensure your device has a camera and you've granted permission.");
+                    console.warn("No cameras found");
+                    cameraInfo.textContent = "No camera detected";
                 }
-            }).catch(err => {
-                console.error("Error getting cameras:", err);
-                alert("Unable to access camera. Please check permissions.");
-            });
+            } catch (err) {
+                console.error("Error initializing scanner:", err);
+                cameraInfo.textContent = "Error detecting camera";
+                cameraInfo.style.color = "#ff416c";
+            }
         }
         
         // Start scanning
         startButton.addEventListener('click', async () => {
             try {
-                // Start with the rear camera if available, otherwise use default
+                // Check if we have camera access
+                if (!selectedCameraId) {
+                    // If no camera was selected, try to get cameras again
+                    try {
+                        availableCameras = await Html5Qrcode.getCameras();
+                        if (availableCameras && availableCameras.length) {
+                            selectedCameraId = availableCameras[0].id;
+                            cameraInfo.textContent = 'Default camera';
+                        } else {
+                            throw new Error("No cameras available");
+                        }
+                    } catch (cameraErr) {
+                        alert("No camera found or camera access denied. Please ensure your device has a camera and you've granted permission.");
+                        return;
+                    }
+                }
+                
+                // Clear the placeholder
+                const placeholder = document.querySelector('.camera-feed-placeholder');
+                if (placeholder) {
+                    placeholder.style.display = 'none';
+                }
+                
+                // Start the scanner
                 const cameraConfig = { 
                     fps: 10, 
-                    qrbox: { width: 250, height: 250 } 
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0
                 };
                 
                 await html5QrCode.start(
-                    { facingMode: "environment" }, 
+                    selectedCameraId, 
                     cameraConfig, 
                     onScanSuccess, 
                     onScanError
@@ -440,9 +549,41 @@
                 updateUIForScanning();
                 scannerStatus.textContent = "Scanning...";
                 scannerStatus.style.color = "#96c93d";
+                cameraInfo.textContent = "Active";
+                cameraInfo.style.color = "#96c93d";
+                
             } catch (err) {
                 console.error("Failed to start scanner:", err);
-                alert("Failed to start scanner. Please ensure camera permissions are granted.");
+                
+                // Try alternative camera if available
+                if (availableCameras.length > 1) {
+                    console.log("Trying alternative camera...");
+                    // Try the next camera in the list
+                    const currentIndex = availableCameras.findIndex(cam => cam.id === selectedCameraId);
+                    const nextIndex = (currentIndex + 1) % availableCameras.length;
+                    selectedCameraId = availableCameras[nextIndex].id;
+                    
+                    // Try again with the new camera
+                    setTimeout(() => startButton.click(), 100);
+                } else {
+                    scannerStatus.textContent = "Failed to start";
+                    scannerStatus.style.color = "#ff416c";
+                    cameraInfo.textContent = "Error starting camera";
+                    cameraInfo.style.color = "#ff416c";
+                    
+                    // Show the placeholder again
+                    const placeholder = document.querySelector('.camera-feed-placeholder');
+                    if (placeholder) {
+                        placeholder.style.display = 'flex';
+                        placeholder.innerHTML = `
+                            <i class="fas fa-exclamation-triangle" style="color: #ff416c;"></i>
+                            <h3>Camera Error</h3>
+                            <p>Failed to start camera. Please check permissions.</p>
+                        `;
+                    }
+                    
+                    alert("Failed to start camera. Please ensure camera permissions are granted and try again.");
+                }
             }
         });
         
@@ -454,6 +595,19 @@
                     updateUIForStopped();
                     scannerStatus.textContent = "Scanner stopped";
                     scannerStatus.style.color = "#ff4b2b";
+                    cameraInfo.textContent = "Not active";
+                    cameraInfo.style.color = "#00f2fe";
+                    
+                    // Show placeholder
+                    const placeholder = document.querySelector('.camera-feed-placeholder');
+                    if (placeholder) {
+                        placeholder.style.display = 'flex';
+                        placeholder.innerHTML = `
+                            <i class="fas fa-camera"></i>
+                            <h3>Camera Feed</h3>
+                            <p>Click "Start Scanner" to begin</p>
+                        `;
+                    }
                 }).catch(err => {
                     console.error("Failed to stop scanner:", err);
                 });
@@ -577,9 +731,17 @@
         }
         
         // Initialize when page loads
-        window.addEventListener('load', () => {
-            initScanner();
+        window.addEventListener('load', async () => {
+            await initScanner();
             updateScannedList();
+            
+            // Check if we're on HTTPS (required for camera access on many browsers)
+            if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                const warning = document.createElement('div');
+                warning.style.cssText = 'background: rgba(255, 65, 108, 0.3); border-radius: 10px; padding: 15px; margin-top: 20px; border-left: 4px solid #ff416c;';
+                warning.innerHTML = '<p><strong>Note:</strong> Camera access may require HTTPS. For best results, try opening this page via HTTPS or from a local server.</p>';
+                document.querySelector('.instructions').appendChild(warning);
+            }
         });
         
         // Handle page visibility change (stop scanner when page is hidden)
