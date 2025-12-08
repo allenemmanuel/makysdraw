@@ -40,29 +40,81 @@
         .video-container {
             position: relative;
             width: 100%;
-            padding-top: 75%; /* 4:3 Aspect Ratio */
+            height: 400px;
             background-color: #000;
+            overflow: hidden;
         }
         
         #video {
-            position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
         
-        .scan-area {
+        .scan-overlay {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        
+        .scan-frame {
             width: 70%;
             height: 70%;
-            border: 2px solid #fff;
+            border: 3px solid #fff;
             border-radius: 10px;
-            z-index: 10;
+            position: relative;
+            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.5);
+        }
+        
+        .scan-corner {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-color: #4a00e0;
+            border-width: 5px;
+        }
+        
+        .corner-tl {
+            top: -5px;
+            left: -5px;
+            border-top-style: solid;
+            border-left-style: solid;
+            border-right: none;
+            border-bottom: none;
+        }
+        
+        .corner-tr {
+            top: -5px;
+            right: -5px;
+            border-top-style: solid;
+            border-right-style: solid;
+            border-left: none;
+            border-bottom: none;
+        }
+        
+        .corner-bl {
+            bottom: -5px;
+            left: -5px;
+            border-bottom-style: solid;
+            border-left-style: solid;
+            border-right: none;
+            border-top: none;
+        }
+        
+        .corner-br {
+            bottom: -5px;
+            right: -5px;
+            border-bottom-style: solid;
+            border-right-style: solid;
+            border-left: none;
+            border-top: none;
         }
         
         .scan-line {
@@ -70,16 +122,29 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 3px;
-            background: #4a00e0;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, #4a00e0, transparent);
             animation: scan 2s linear infinite;
             z-index: 11;
         }
         
         @keyframes scan {
-            0% { top: 0; }
-            50% { top: calc(100% - 3px); }
-            100% { top: 0; }
+            0% { top: 0; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: calc(100% - 4px); opacity: 0; }
+        }
+        
+        .scan-instruction {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            z-index: 10;
         }
         
         .controls {
@@ -407,6 +472,10 @@
         
         /* Responsive adjustments */
         @media (max-width: 768px) {
+            .video-container {
+                height: 350px;
+            }
+            
             .fab-container {
                 bottom: 20px;
                 right: 20px;
@@ -420,6 +489,15 @@
         }
         
         @media (max-width: 576px) {
+            .video-container {
+                height: 300px;
+            }
+            
+            .scan-frame {
+                width: 80%;
+                height: 60%;
+            }
+            
             .fab-container {
                 bottom: 15px;
                 right: 15px;
@@ -460,8 +538,18 @@
             <div class="p-4">
                 <div class="video-container">
                     <video id="video" autoplay playsinline></video>
-                    <div class="scan-area">
-                        <div class="scan-line"></div>
+                    <div class="scan-overlay">
+                        <div class="scan-frame">
+                            <div class="scan-corner corner-tl"></div>
+                            <div class="scan-corner corner-tr"></div>
+                            <div class="scan-corner corner-bl"></div>
+                            <div class="scan-corner corner-br"></div>
+                            <div class="scan-line"></div>
+                        </div>
+                        <div class="scan-instruction">
+                            <i class="fas fa-hand-point-up me-2"></i>
+                            Align QR code within the frame
+                        </div>
                     </div>
                 </div>
                 
@@ -663,6 +751,8 @@
         let scanCooldown = false;
         let scanPaused = false;
         let fabOpen = false;
+        let scanCanvas = null;
+        let scanContext = null;
 
         // Batch Mode Variables
         let batchMode = false;
@@ -785,10 +875,6 @@
                 '<i class="fas fa-times"></i><span>Exit Batch</span>' : 
                 '<i class="fas fa-layer-group"></i><span>Batch Mode</span>';
         }
-
-        // ====================================================================
-        // CONCURRENT SCANNING SOLUTION: TRANSACTION-BASED SAVING
-        // ====================================================================
 
         // Save scanned item to Firebase with transaction support
         function saveItemToDatabase(data) {
@@ -1000,10 +1086,6 @@
             concurrentStatus.classList.add('show');
         }
 
-        // ====================================================================
-        // END OF CONCURRENT SCANNING SOLUTION
-        // ====================================================================
-
         // Start scanner function
         async function startScanner() {
             try {
@@ -1011,8 +1093,8 @@
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: {
                         facingMode: currentFacingMode,
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
                     }
                 });
                 
@@ -1020,11 +1102,15 @@
                 video.srcObject = stream;
                 await video.play();
                 
+                // Create canvas for scanning
+                scanCanvas = document.createElement('canvas');
+                scanContext = scanCanvas.getContext('2d');
+                
                 // Update UI
                 isScanning = true;
                 scanPaused = false;
                 statusIndicator.className = 'status-indicator status-active';
-                statusText.textContent = 'Scanner is active';
+                statusText.textContent = 'Scanner is active - Ready to scan';
                 
                 // Check flash support
                 const videoTrack = stream.getVideoTracks()[0];
@@ -1119,40 +1205,44 @@
         
         // Start scanning for QR codes
         function startScanning() {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            
             scanInterval = setInterval(() => {
-                if (video.readyState === video.HAVE_ENOUGH_DATA && !scanPaused && !batchPaused) {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
+                if (video.readyState === video.HAVE_ENOUGH_DATA && !scanPaused && !batchPaused && !scanCooldown) {
+                    // Calculate scan area (70% of video size, centered)
+                    const videoWidth = video.videoWidth;
+                    const videoHeight = video.videoHeight;
+                    const scanWidth = Math.floor(videoWidth * 0.7);
+                    const scanHeight = Math.floor(videoHeight * 0.7);
+                    const scanX = Math.floor((videoWidth - scanWidth) / 2);
+                    const scanY = Math.floor((videoHeight - scanHeight) / 2);
                     
-                    // Draw video frame to canvas
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    // Set canvas to scan area size
+                    scanCanvas.width = scanWidth;
+                    scanCanvas.height = scanHeight;
                     
-                    // Get image data from canvas
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    // Draw only the scan area from video to canvas
+                    scanContext.drawImage(
+                        video, 
+                        scanX, scanY, scanWidth, scanHeight,  // source rectangle (from video)
+                        0, 0, scanWidth, scanHeight            // destination rectangle (to canvas)
+                    );
+                    
+                    // Get image data from scan area only
+                    const imageData = scanContext.getImageData(0, 0, scanWidth, scanHeight);
                     
                     // Scan for QR code
-                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: 'dontInvert',
+                    });
                     
-                    if (code && !scanCooldown) {
+                    if (code) {
                         handleQRCodeDetected(code.data);
                     }
                 }
-            }, 200); // Scan every 200ms
+            }, 500); // Scan every 500ms - slower but more reliable
         }
         
         // Handle detected QR code
         function handleQRCodeDetected(data) {
-            // Check if this code has already been scanned in this session
-            if (data === lastScannedCode) {
-                if (!batchMode) {
-                    showDuplicateAlert();
-                }
-                return;
-            }
-
             // Set cooldown to prevent rapid scanning
             scanCooldown = true;
             setTimeout(() => {
@@ -1193,7 +1283,7 @@
             duplicateAlert.classList.remove('show');
             successAlert.classList.remove('show');
             
-            // Save to Firebase database (drawing items) - Uses transaction now
+            // Save to Firebase database (drawing items)
             saveItemToDatabase(data);
             
             // Check if it's a URL
@@ -1284,7 +1374,8 @@
         // Resume scanning after a code has been detected
         function resumeScanning() {
             scanPaused = false;
-            statusText.textContent = 'Scanner is active';
+            scanCooldown = false;
+            statusText.textContent = 'Scanner is active - Ready to scan';
             resultContainer.classList.remove('show');
             duplicateAlert.classList.remove('show');
             successAlert.classList.remove('show');
@@ -1323,6 +1414,7 @@
             batchMode = true;
             batchItems = [];
             batchPaused = false;
+            scanCooldown = false;
             
             // Update UI
             batchPanel.style.display = 'block';
@@ -1336,7 +1428,7 @@
             batchPanel.style.display = 'none';
             
             if (isScanning) {
-                statusText.textContent = 'Scanner is active';
+                statusText.textContent = 'Scanner is active - Ready to scan';
             }
         }
 
