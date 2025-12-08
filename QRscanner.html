@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Scanner</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            margin-top: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #4facfe, #00f2fe);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        
+        .scanner-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .scanner-container {
+            flex: 1;
+            min-width: 300px;
+            background-color: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+        
+        #qr-reader {
+            width: 100%;
+            height: 400px;
+        }
+        
+        .scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .scanner-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70%;
+            height: 70%;
+            border: 3px solid #00f2fe;
+            border-radius: 10px;
+            box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.6);
+        }
+        
+        .results-container {
+            flex: 1;
+            min-width: 300px;
+            background-color: rgba(30, 30, 46, 0.8);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .results-container h2 {
+            margin-bottom: 20px;
+            color: #4facfe;
+            border-bottom: 2px solid #4facfe;
+            padding-bottom: 10px;
+        }
+        
+        #scanned-result {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            word-break: break-all;
+        }
+        
+        .result-info {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .result-info p {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .result-info span:last-child {
+            font-weight: bold;
+            color: #00f2fe;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        #start-button {
+            background: linear-gradient(to right, #00b09b, #96c93d);
+            color: white;
+        }
+        
+        #stop-button {
+            background: linear-gradient(to right, #ff416c, #ff4b2b);
+            color: white;
+        }
+        
+        #reset-button {
+            background: linear-gradient(to right, #8e2de2, #4a00e0);
+            color: white;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .scanned-list {
+            background-color: rgba(30, 30, 46, 0.8);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 100%;
+        }
+        
+        .scanned-list h2 {
+            color: #4facfe;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #4facfe;
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        #scanned-codes-list {
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .scanned-item {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .scanned-item:hover {
+            background-color: rgba(0, 0, 0, 0.5);
+            transform: translateX(5px);
+        }
+        
+        .code-value {
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .code-time {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .instructions {
+            background-color: rgba(30, 30, 46, 0.8);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 100%;
+        }
+        
+        .instructions h2 {
+            color: #4facfe;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #4facfe;
+            padding-bottom: 10px;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        
+        .instructions p {
+            margin-top: 15px;
+            font-style: italic;
+            opacity: 0.9;
+        }
+        
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            width: 100%;
+            padding: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .scanner-section {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            #qr-reader {
+                height: 300px;
+            }
+            
+            button {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1><i class="fas fa-qrcode"></i> QR Code Scanner</h1>
+        <p class="subtitle">Scan QR codes generated from your spreadsheet (e.g., 0001, 0002, ... 0026)</p>
+    </header>
+    
+    <div class="container">
+        <div class="scanner-section">
+            <div class="scanner-container">
+                <div id="qr-reader"></div>
+                <div class="scanner-overlay">
+                    <div class="scanner-frame"></div>
+                </div>
+            </div>
+            
+            <div class="results-container">
+                <h2><i class="fas fa-search"></i> Scan Results</h2>
+                <div id="scanned-result">No code scanned yet</div>
+                
+                <div class="result-info">
+                    <p><span>Status:</span> <span id="scanner-status">Ready to scan</span></p>
+                    <p><span>Last scan:</span> <span id="last-scan-time">--</span></p>
+                    <p><span>Total scanned:</span> <span id="total-scanned">0</span></p>
+                </div>
+                
+                <div class="controls">
+                    <button id="start-button">
+                        <i class="fas fa-play"></i> Start Scanner
+                    </button>
+                    <button id="stop-button" disabled>
+                        <i class="fas fa-stop"></i> Stop Scanner
+                    </button>
+                    <button id="reset-button">
+                        <i class="fas fa-redo"></i> Clear Results
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="scanned-list">
+            <h2>
+                <span><i class="fas fa-list"></i> Recently Scanned Codes</span>
+                <span id="clear-list" style="font-size: 0.9rem; cursor: pointer; color: #ff416c;">
+                    <i class="fas fa-trash-alt"></i> Clear List
+                </span>
+            </h2>
+            <div id="scanned-codes-list">
+                <!-- Scanned codes will appear here -->
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h2><i class="fas fa-info-circle"></i> How to Use This QR Scanner</h2>
+            <ol>
+                <li>Click the "Start Scanner" button to activate your camera for scanning.</li>
+                <li>Position one of the QR codes from your spreadsheet within the scanning frame.</li>
+                <li>The scanner will automatically detect and decode the QR code.</li>
+                <li>Scanned codes will appear in the "Scan Results" section and be added to the list below.</li>
+                <li>Click "Stop Scanner" to turn off the camera when finished.</li>
+                <li>Use "Clear Results" to reset the scanner and clear all scanned codes.</li>
+            </ol>
+            <p><strong>Note:</strong> Your spreadsheet contains QR codes for values 0001 to 0026. This scanner will detect these codes and display the corresponding values (e.g., 0001, 0002, etc.).</p>
+        </div>
+    </div>
+    
+    <footer>
+        <p>QR Scanner for Spreadsheet Codes | Compatible with codes generated by QuickChart.io QR codes</p>
+    </footer>
+    
+    <!-- Include the QR code scanner library -->
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    
+    <script>
+        // DOM Elements
+        const startButton = document.getElementById('start-button');
+        const stopButton = document.getElementById('stop-button');
+        const resetButton = document.getElementById('reset-button');
+        const clearListButton = document.getElementById('clear-list');
+        const scannedResult = document.getElementById('scanned-result');
+        const scannerStatus = document.getElementById('scanner-status');
+        const lastScanTime = document.getElementById('last-scan-time');
+        const totalScanned = document.getElementById('total-scanned');
+        const scannedCodesList = document.getElementById('scanned-codes-list');
+        
+        // Scanner variables
+        let html5QrCode;
+        let isScanning = false;
+        let scannedCodes = [];
+        let scanCount = 0;
+        
+        // Initialize the QR scanner
+        function initScanner() {
+            html5QrCode = new Html5Qrcode("qr-reader");
+            
+            // Check if we can access the camera
+            Html5Qrcode.getCameras().then(cameras => {
+                if (cameras && cameras.length) {
+                    console.log(`Found ${cameras.length} camera(s)`);
+                } else {
+                    alert("No camera found. Please ensure your device has a camera and you've granted permission.");
+                }
+            }).catch(err => {
+                console.error("Error getting cameras:", err);
+                alert("Unable to access camera. Please check permissions.");
+            });
+        }
+        
+        // Start scanning
+        startButton.addEventListener('click', async () => {
+            try {
+                // Start with the rear camera if available, otherwise use default
+                const cameraConfig = { 
+                    fps: 10, 
+                    qrbox: { width: 250, height: 250 } 
+                };
+                
+                await html5QrCode.start(
+                    { facingMode: "environment" }, 
+                    cameraConfig, 
+                    onScanSuccess, 
+                    onScanError
+                );
+                
+                isScanning = true;
+                updateUIForScanning();
+                scannerStatus.textContent = "Scanning...";
+                scannerStatus.style.color = "#96c93d";
+            } catch (err) {
+                console.error("Failed to start scanner:", err);
+                alert("Failed to start scanner. Please ensure camera permissions are granted.");
+            }
+        });
+        
+        // Stop scanning
+        stopButton.addEventListener('click', () => {
+            if (html5QrCode && isScanning) {
+                html5QrCode.stop().then(() => {
+                    isScanning = false;
+                    updateUIForStopped();
+                    scannerStatus.textContent = "Scanner stopped";
+                    scannerStatus.style.color = "#ff4b2b";
+                }).catch(err => {
+                    console.error("Failed to stop scanner:", err);
+                });
+            }
+        });
+        
+        // Reset/clear results
+        resetButton.addEventListener('click', () => {
+            scannedCodes = [];
+            scanCount = 0;
+            updateScannedList();
+            scannedResult.textContent = "No code scanned yet";
+            scannedResult.style.color = "";
+            totalScanned.textContent = "0";
+            lastScanTime.textContent = "--";
+            scannerStatus.textContent = "Ready to scan";
+            scannerStatus.style.color = "#fff";
+        });
+        
+        // Clear the list
+        clearListButton.addEventListener('click', () => {
+            scannedCodes = [];
+            updateScannedList();
+        });
+        
+        // Handle successful scan
+        function onScanSuccess(decodedText, decodedResult) {
+            // Avoid duplicate scans in quick succession
+            if (scannedCodes.length > 0 && scannedCodes[0].code === decodedText) {
+                const timeDiff = Date.now() - scannedCodes[0].timestamp;
+                if (timeDiff < 1000) { // 1 second threshold
+                    return;
+                }
+            }
+            
+            // Format the scanned text (remove any extra spaces/line breaks)
+            const scannedCode = decodedText.trim();
+            
+            // Update the scanned result display
+            scannedResult.textContent = scannedCode;
+            scannedResult.style.color = "#96c93d";
+            
+            // Update scan info
+            scanCount++;
+            totalScanned.textContent = scanCount;
+            const now = new Date();
+            lastScanTime.textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            
+            // Add to scanned codes list
+            scannedCodes.unshift({
+                code: scannedCode,
+                timestamp: Date.now(),
+                timeString: now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})
+            });
+            
+            // Keep only the last 20 scans
+            if (scannedCodes.length > 20) {
+                scannedCodes.pop();
+            }
+            
+            // Update the list display
+            updateScannedList();
+            
+            // Provide visual feedback
+            flashScannerFrame();
+        }
+        
+        // Handle scan errors
+        function onScanError(error) {
+            // We'll ignore most errors as they're usually just "no QR code found"
+            // Only log actual errors
+            if (!error.includes("No QR code found")) {
+                console.warn(`QR Code scan error: ${error}`);
+            }
+        }
+        
+        // Update the scanned codes list UI
+        function updateScannedList() {
+            if (scannedCodes.length === 0) {
+                scannedCodesList.innerHTML = '<div class="scanned-item" style="justify-content: center; opacity: 0.7;">No codes scanned yet</div>';
+                return;
+            }
+            
+            scannedCodesList.innerHTML = scannedCodes.map(item => `
+                <div class="scanned-item">
+                    <div>
+                        <div class="code-value">${item.code}</div>
+                        <div class="code-time">Scanned at ${item.timeString}</div>
+                    </div>
+                    <div>
+                        <i class="fas fa-check-circle" style="color: #96c93d; font-size: 1.5rem;"></i>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Update UI when scanning starts
+        function updateUIForScanning() {
+            startButton.disabled = true;
+            stopButton.disabled = false;
+            startButton.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Scanning...';
+        }
+        
+        // Update UI when scanning stops
+        function updateUIForStopped() {
+            startButton.disabled = false;
+            stopButton.disabled = true;
+            startButton.innerHTML = '<i class="fas fa-play"></i> Start Scanner';
+        }
+        
+        // Visual feedback when a code is scanned
+        function flashScannerFrame() {
+            const frame = document.querySelector('.scanner-frame');
+            frame.style.borderColor = '#96c93d';
+            frame.style.boxShadow = '0 0 0 1000px rgba(150, 201, 61, 0.2)';
+            
+            setTimeout(() => {
+                frame.style.borderColor = '#00f2fe';
+                frame.style.boxShadow = '0 0 0 1000px rgba(0, 0, 0, 0.6)';
+            }, 300);
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            initScanner();
+            updateScannedList();
+        });
+        
+        // Handle page visibility change (stop scanner when page is hidden)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && isScanning) {
+                stopButton.click();
+            }
+        });
+    </script>
+</body>
+</html>
