@@ -121,11 +121,22 @@
             margin-bottom: 10px;
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
             transition: all 0.3s;
+            border-left: 4px solid #28a745;
+        }
+        
+        .history-item.drawn {
+            border-left-color: #dc3545;
+            opacity: 0.7;
         }
         
         .history-item:hover {
             transform: translateY(-3px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+        }
+        
+        .history-item.drawn:hover {
+            transform: none;
+            cursor: not-allowed;
         }
         
         .status-indicator {
@@ -195,6 +206,19 @@
         }
         
         .success-alert.show {
+            display: block;
+        }
+        
+        .warning-alert {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .warning-alert.show {
             display: block;
         }
         
@@ -405,6 +429,39 @@
             100% { opacity: 0; transform: translateY(-10px); }
         }
         
+        /* Items Summary */
+        .items-summary {
+            background-color: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .summary-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .summary-value {
+            font-weight: bold;
+        }
+        
+        /* Drawn item styling */
+        .drawn-item-badge {
+            background-color: #dc3545 !important;
+        }
+        
+        .available-item-badge {
+            background-color: #28a745 !important;
+        }
+        
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .fab-container {
@@ -416,6 +473,11 @@
                 width: 56px;
                 height: 56px;
                 font-size: 22px;
+            }
+            
+            .summary-row {
+                flex-direction: column;
+                align-items: flex-start;
             }
         }
         
@@ -458,6 +520,22 @@
             </div>
             
             <div class="p-4">
+                <!-- Items Summary -->
+                <div class="items-summary">
+                    <div class="summary-row">
+                        <span class="summary-label">Total Items:</span>
+                        <span class="summary-value text-primary" id="totalItemsCount">0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Available Items:</span>
+                        <span class="summary-value text-success" id="availableItemsCount">0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Drawn Items:</span>
+                        <span class="summary-value text-danger" id="drawnItemsCount">0</span>
+                    </div>
+                </div>
+                
                 <div class="video-container">
                     <video id="video" autoplay playsinline></video>
                     <div class="scan-area">
@@ -524,6 +602,10 @@
                     <div class="duplicate-alert" id="duplicateAlert">
                         <i class="fas fa-exclamation-triangle me-2"></i>
                         This item has already been added to the drawing list.
+                    </div>
+                    <div class="warning-alert" id="warningAlert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <span id="warningText">This item has already been drawn!</span>
                     </div>
                     <div class="success-alert" id="successAlert">
                         <i class="fas fa-check-circle me-2"></i>
@@ -600,7 +682,7 @@
     
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Firebase Configuration (using the same as your drawing app)
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
             authDomain: "makysdraw-87237.firebaseapp.com",
@@ -625,6 +707,8 @@
         const statusText = document.getElementById('statusText');
         const itemsList = document.getElementById('itemsList');
         const duplicateAlert = document.getElementById('duplicateAlert');
+        const warningAlert = document.getElementById('warningAlert');
+        const warningText = document.getElementById('warningText');
         const successAlert = document.getElementById('successAlert');
         const dbIndicator = document.getElementById('dbIndicator');
         const dbStatus = document.getElementById('dbStatus');
@@ -632,6 +716,11 @@
         const clearSearch = document.getElementById('clearSearch');
         const cameraInfo = document.getElementById('cameraInfo');
         const concurrentStatus = document.getElementById('concurrentStatus');
+        
+        // Summary elements
+        const totalItemsCount = document.getElementById('totalItemsCount');
+        const availableItemsCount = document.getElementById('availableItemsCount');
+        const drawnItemsCount = document.getElementById('drawnItemsCount');
 
         // FAB Elements
         const fabMain = document.getElementById('fabMain');
@@ -658,7 +747,7 @@
         let currentFacingMode = 'environment';
         let scanInterval = null;
         let flashOn = false;
-        let drawingItems = []; // This will store raw strings from Firebase
+        let drawingItems = []; // Array of objects: {id: string, drawn: boolean}
         let lastScannedCode = null;
         let scanCooldown = false;
         let scanPaused = false;
@@ -698,21 +787,40 @@
         // Initialize Firebase connection and load items
         initializeFirebase();
 
+        // Normalize items data (handle both object and string formats)
+        function normalizeItems(data) {
+            if (!data) return [];
+            
+            if (Array.isArray(data)) {
+                return data.map(item => {
+                    if (typeof item === 'object' && item !== null && item.id !== undefined) {
+                        // Already in object format
+                        return {
+                            id: String(item.id),
+                            drawn: Boolean(item.drawn)
+                        };
+                    } else {
+                        // String format - convert to object
+                        return {
+                            id: String(item),
+                            drawn: false
+                        };
+                    }
+                });
+            }
+            
+            return [];
+        }
+
         // Initialize Firebase and load drawing items
         async function initializeFirebase() {
             try {
                 // Set up realtime listener for drawing items
                 database.ref('drawResults/items').on('value', (snapshot) => {
                     const data = snapshot.val();
-                    if (data) {
-                        // Convert object to array if needed, or use array directly
-                        drawingItems = Array.isArray(data) ? data : Object.values(data);
-                        updateItemsDisplay();
-                    } else {
-                        drawingItems = [];
-                        updateItemsDisplay();
-                    }
-                    updateDatabaseStatus(true);
+                    drawingItems = normalizeItems(data);
+                    updateItemsDisplay();
+                    updateSummaryCounts();
                 });
 
                 // Monitor connection state
@@ -736,6 +844,17 @@
                 dbIndicator.className = 'db-indicator db-disconnected';
                 dbStatus.textContent = 'Database Disconnected';
             }
+        }
+
+        // Update summary counts
+        function updateSummaryCounts() {
+            const total = drawingItems.length;
+            const drawn = drawingItems.filter(item => item.drawn).length;
+            const available = total - drawn;
+
+            totalItemsCount.textContent = total;
+            drawnItemsCount.textContent = drawn;
+            availableItemsCount.textContent = available;
         }
 
         // Toggle FAB Menu
@@ -807,18 +926,18 @@
             itemsRef.transaction((currentItems) => {
                 if (currentItems === null) {
                     // First item ever
-                    return [String(data)];
+                    return [{ id: String(data), drawn: false }];
                 }
                 
-                // Convert to array if needed (handles both array and object storage)
-                const itemsArray = Array.isArray(currentItems) ? currentItems : Object.values(currentItems);
+                // Normalize current items
+                const itemsArray = normalizeItems(currentItems);
                 
-                // Check for duplicates
-                const alreadyExists = itemsArray.some(item => String(item) === String(data));
+                // Check for duplicates (same ID)
+                const existingItem = itemsArray.find(item => item.id === String(data));
                 
-                if (!alreadyExists) {
+                if (!existingItem) {
                     // Add new item to beginning (newest first)
-                    itemsArray.unshift(String(data));
+                    itemsArray.unshift({ id: String(data), drawn: false });
                     return itemsArray;
                 }
                 
@@ -826,27 +945,12 @@
                 return currentItems;
             }).then((result) => {
                 if (result.committed) {
-                    const itemsArray = result.snapshot.val();
-                    const finalArray = Array.isArray(itemsArray) ? itemsArray : Object.values(itemsArray);
-                    
-                    // Check if our item was actually added (first in array)
-                    const itemAdded = finalArray.length > 0 && String(finalArray[0]) === String(data);
-                    
-                    if (itemAdded) {
-                        // Success - item was added
-                        concurrentStatus.classList.remove('show');
-                        successAlert.classList.add('show');
-                        setTimeout(() => {
-                            successAlert.classList.remove('show');
-                        }, 3000);
-                    } else {
-                        // Item already exists (duplicate)
-                        concurrentStatus.classList.remove('show');
-                        showDuplicateAlert();
-                    }
+                    concurrentStatus.classList.remove('show');
+                    successAlert.classList.add('show');
+                    setTimeout(() => {
+                        successAlert.classList.remove('show');
+                    }, 3000);
                 } else {
-                    // Transaction not committed (shouldn't happen with our logic)
-                    console.log('Transaction not committed');
                     concurrentStatus.classList.remove('show');
                     showDuplicateAlert();
                 }
@@ -856,12 +960,11 @@
                 // Retry logic with exponential backoff
                 if (transactionRetries < MAX_TRANSACTION_RETRIES) {
                     transactionRetries++;
-                    const delay = Math.pow(2, transactionRetries) * 100; // 200ms, 400ms, 800ms
+                    const delay = Math.pow(2, transactionRetries) * 100;
                     setTimeout(() => {
                         performSaveTransaction(data, true);
                     }, delay);
                 } else {
-                    // Max retries reached, use fallback
                     concurrentStatus.classList.remove('show');
                     saveItemWithFallback(data);
                 }
@@ -878,9 +981,9 @@
                     const existingData = snapshot.val();
                     
                     if (existingData) {
-                        currentItems = Array.isArray(existingData) ? existingData : Object.values(existingData);
+                        currentItems = normalizeItems(existingData);
                         
-                        const alreadyExists = currentItems.some(item => String(item) === String(data));
+                        const alreadyExists = currentItems.some(item => item.id === String(data));
                         
                         if (alreadyExists) {
                             showDuplicateAlert();
@@ -888,12 +991,9 @@
                         }
                     }
                     
-                    currentItems.unshift(String(data));
+                    currentItems.unshift({ id: String(data), drawn: false });
                     
-                    // Use set instead of update to overwrite (last write wins in fallback)
-                    return database.ref('drawResults').set({
-                        items: currentItems
-                    });
+                    return database.ref('drawResults/items').set(currentItems);
                 })
                 .then(() => {
                     successAlert.classList.add('show');
@@ -917,23 +1017,23 @@
             
             itemsRef.transaction((currentItems) => {
                 if (currentItems === null) {
-                    // First items ever - convert all batch items to strings
-                    return batchItems.map(item => String(item));
+                    // First items ever
+                    return batchItems.map(item => ({ id: String(item), drawn: false }));
                 }
                 
-                // Convert to array if needed
-                const itemsArray = Array.isArray(currentItems) ? currentItems : Object.values(currentItems);
+                // Normalize current items
+                const itemsArray = normalizeItems(currentItems);
                 
                 // Filter out duplicates from batch
                 const newItems = batchItems.filter(batchItem => {
-                    const batchItemString = String(batchItem);
-                    return !itemsArray.some(item => String(item) === batchItemString);
+                    const batchItemId = String(batchItem);
+                    return !itemsArray.some(item => item.id === batchItemId);
                 });
                 
                 if (newItems.length > 0) {
-                    // Add new items to beginning (maintain newest-first order)
-                    const newItemsAsStrings = newItems.map(item => String(item));
-                    return [...newItemsAsStrings, ...itemsArray];
+                    // Add new items to beginning
+                    const newItemsAsObjects = newItems.map(item => ({ id: String(item), drawn: false }));
+                    return [...newItemsAsObjects, ...itemsArray];
                 }
                 
                 // Return current items (no change) if all are duplicates
@@ -961,28 +1061,25 @@
                     const existingData = snapshot.val();
                     
                     if (existingData) {
-                        currentItems = Array.isArray(existingData) ? existingData : Object.values(existingData);
+                        currentItems = normalizeItems(existingData);
                     }
 
                     // Add only new items from batch (avoid duplicates)
                     let addedCount = 0;
                     batchItems.forEach(batchItem => {
-                        const batchItemString = String(batchItem);
-                        const alreadyExists = currentItems.some(item => String(item) === batchItemString);
+                        const batchItemId = String(batchItem);
+                        const alreadyExists = currentItems.some(item => item.id === batchItemId);
                         
                         if (!alreadyExists) {
-                            // Add to beginning to maintain newest-first order
-                            currentItems.unshift(batchItemString);
+                            currentItems.unshift({ id: batchItemId, drawn: false });
                             addedCount++;
                         }
                     });
                     
                     if (addedCount > 0) {
-                        return database.ref('drawResults').set({
-                            items: currentItems
-                        }).then(() => {
+                        return database.ref('drawResults/items').set(currentItems).then(() => {
                             showBatchSuccess(addedCount);
-                            batchItems = []; // Clear batch after successful save
+                            batchItems = [];
                         });
                     } else {
                         showBatchSuccess(0);
@@ -1157,7 +1254,7 @@
             scanCooldown = true;
             setTimeout(() => {
                 scanCooldown = false;
-            }, 1000); // 1 second cooldown
+            }, 1000);
             
             // Update last scanned code
             lastScannedCode = data;
@@ -1173,13 +1270,15 @@
 
         // Handle normal scanning mode
         function handleNormalScan(data) {
-            // Check if this code exists in the drawing items (local cache)
-            const alreadyAdded = drawingItems.some(item => {
-                return String(item) === String(data);
-            });
+            // Check if this code exists in the drawing items
+            const existingItem = drawingItems.find(item => item.id === String(data));
 
-            if (alreadyAdded) {
-                showDuplicateAlert();
+            if (existingItem) {
+                if (existingItem.drawn) {
+                    showWarningAlert('This item has already been drawn!');
+                } else {
+                    showDuplicateAlert();
+                }
                 return;
             }
             
@@ -1191,9 +1290,10 @@
             resultText.textContent = data;
             resultContainer.classList.add('show');
             duplicateAlert.classList.remove('show');
+            warningAlert.classList.remove('show');
             successAlert.classList.remove('show');
             
-            // Save to Firebase database (drawing items) - Uses transaction now
+            // Save to Firebase database
             saveItemToDatabase(data);
             
             // Check if it's a URL
@@ -1202,6 +1302,16 @@
             } else {
                 openButton.style.display = 'none';
             }
+        }
+
+        // Show warning alert
+        function showWarningAlert(message) {
+            warningText.textContent = message;
+            warningAlert.classList.add('show');
+            
+            setTimeout(() => {
+                warningAlert.classList.remove('show');
+            }, 3000);
         }
 
         // Handle batch mode scanning
@@ -1213,18 +1323,25 @@
                 return;
             }
 
-            // Check if item exists in database (local cache)
-            const alreadyInDatabase = drawingItems.some(item => {
-                return String(item) === String(data);
-            });
+            // Check if item exists in database
+            const existingItem = drawingItems.find(item => item.id === String(data));
 
-            if (alreadyInDatabase) {
-                showBatchDuplicate();
+            if (existingItem) {
+                if (existingItem.drawn) {
+                    batchStats.textContent = 'Item already drawn - not added to batch';
+                    batchStats.className = 'text-danger';
+                } else {
+                    batchStats.textContent = 'Duplicate item - not added to batch';
+                    batchStats.className = 'text-warning';
+                }
+                setTimeout(() => {
+                    batchStats.className = 'text-muted';
+                }, 2000);
                 return;
             }
 
-            // Add to batch (raw string only)
-            batchItems.unshift(data); // Add to beginning for proper order
+            // Add to batch
+            batchItems.unshift(data);
             updateBatchDisplay();
             
             // Show visual feedback
@@ -1253,7 +1370,6 @@
         function showDuplicateAlert() {
             duplicateAlert.classList.add('show');
             
-            // Hide the alert after 3 seconds
             setTimeout(() => {
                 duplicateAlert.classList.remove('show');
             }, 3000);
@@ -1261,7 +1377,6 @@
 
         // Show batch success message
         function showBatchSuccess(itemCount) {
-            // Create temporary success message
             const successMsg = document.createElement('div');
             successMsg.className = 'alert alert-success alert-dismissible fade show';
             successMsg.innerHTML = `
@@ -1270,10 +1385,8 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
             
-            // Insert before items list
             itemsList.parentNode.insertBefore(successMsg, itemsList);
             
-            // Auto remove after 5 seconds
             setTimeout(() => {
                 if (successMsg.parentNode) {
                     successMsg.remove();
@@ -1287,6 +1400,7 @@
             statusText.textContent = 'Scanner is active';
             resultContainer.classList.remove('show');
             duplicateAlert.classList.remove('show');
+            warningAlert.classList.remove('show');
             successAlert.classList.remove('show');
         }
         
@@ -1308,10 +1422,8 @@
             batchMode = !batchMode;
 
             if (batchMode) {
-                // Enter batch mode
                 enterBatchMode();
             } else {
-                // Exit batch mode
                 exitBatchMode();
             }
             
@@ -1324,7 +1436,6 @@
             batchItems = [];
             batchPaused = false;
             
-            // Update UI
             batchPanel.style.display = 'block';
             statusText.textContent = 'Batch mode active - continuous scanning';
             
@@ -1396,7 +1507,6 @@
                 `;
             }).join('');
 
-            // Scroll to bottom to show newest item
             batchItemsList.scrollTop = batchItemsList.scrollHeight;
         }
         
@@ -1407,7 +1517,7 @@
             // Apply search filter
             if (searchTerm) {
                 filteredItems = drawingItems.filter(item => {
-                    return String(item).toLowerCase().includes(searchTerm.toLowerCase());
+                    return item.id.toLowerCase().includes(searchTerm.toLowerCase());
                 });
             }
             
@@ -1422,26 +1532,30 @@
             }
             
             itemsList.innerHTML = filteredItems.map(item => {
-                // Always treat item as string
-                const itemString = String(item);
-                const type = isValidUrl(itemString) ? 'url' : 'text';
+                const type = isValidUrl(item.id) ? 'url' : 'text';
                 
                 // Highlight search term if present
-                let displayText = itemString;
+                let displayText = item.id;
                 if (searchTerm) {
                     const regex = new RegExp(`(${escapeRegex(searchTerm)})`, 'gi');
-                    displayText = itemString.replace(regex, '<mark class="search-highlight">$1</mark>');
+                    displayText = item.id.replace(regex, '<mark class="search-highlight">$1</mark>');
                 }
                 
+                const statusClass = item.drawn ? 'drawn' : '';
+                const statusBadge = item.drawn ? 
+                    '<span class="badge drawn-item-badge">Drawn</span>' : 
+                    '<span class="badge available-item-badge">Available</span>';
+                
                 return `
-                    <div class="history-item">
+                    <div class="history-item ${statusClass}">
                         <div class="d-flex justify-content-between align-items-start">
                             <div class="flex-grow-1">
                                 <p class="mb-1">${displayText}</p>
-                                <div class="d-flex justify-content-end">
-                                    <span class="badge ${type === 'url' ? 'bg-success' : 'bg-secondary'} item-type-badge">${type}</span>
-                                </div>
                             </div>
+                            ${statusBadge}
+                        </div>
+                        <div class="d-flex justify-content-end mt-2">
+                            <span class="badge ${type === 'url' ? 'bg-success' : 'bg-secondary'} item-type-badge">${type}</span>
                         </div>
                     </div>
                 `;
