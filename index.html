@@ -195,6 +195,30 @@
             font-style: italic;
         }
 
+        /* Item Status Display */
+        .item-status-container {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            color: white;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .status-label {
+            font-weight: bold;
+        }
+
+        .status-value {
+            font-weight: bold;
+            color: #ffcc00;
+        }
+
         @media (max-width: 767px) {
             #container1, #container2 {
                 padding: 20px;
@@ -212,6 +236,10 @@
             .btn {
                 font-size: 0.9rem;
                 padding: 8px 15px;
+            }
+
+            .status-row {
+                flex-direction: column;
             }
         }
 
@@ -264,10 +292,27 @@
         <h1 style="text-align: center; color: white;"> KUMPULAN YAYASAN SABAH </h1>
         <h1 style="text-align: center; color: white;"> Cabutan Tiket Bertuah </h1>
 
+        <!-- Item Status Display -->
+        <div class="item-status-container">
+            <div class="status-row">
+                <span class="status-label">Total Items:</span>
+                <span class="status-value" id="totalCount">0</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">Available Items:</span>
+                <span class="status-value" id="availableCount">0</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">Drawn Items:</span>
+                <span class="status-value" id="drawnCount">0</span>
+            </div>
+        </div>
+
         <!-- Buttons -->
         <div class="text-center mb-4 mt-4">
             <button class="btn" id="drawButton"><i class="fas fa-random"></i> Draw</button>
             <button class="btn" id="removeDrawnButton" style="display: none;"><i class="fas fa-trash-alt"></i> Clear Drawn</button>
+            <button class="btn" id="resetItemsButton" style="background: linear-gradient(135deg, #ff9800, #e65100);"><i class="fas fa-undo"></i> Reset All Items</button>
         </div>
 
         <!-- Result Display -->
@@ -291,6 +336,15 @@
     <div class="container" id="container2">
         <h2 style="color: antiquewhite;">The Mechanics</h2>
         <textarea class="form-control" id="inputNames" rows="5" placeholder="Enter names or numbers here..."></textarea>
+        
+        <!-- Display Items List -->
+        <div class="mt-4">
+            <h4 style="color: antiquewhite;">Current Items List:</h4>
+            <div id="itemsListDisplay" class="p-3 bg-dark text-light rounded" style="max-height: 200px; overflow-y: auto;">
+                <div class="text-center text-muted">No items added yet</div>
+            </div>
+        </div>
+        
         <input type="number" class="form-control" id="numberOfDraws" min="1" value="1" style="margin-top: 20px;">
         <div class="mt-4">
             <label for="fontSizeInput" style="color: antiquewhite;">Font Size (px):</label>
@@ -318,8 +372,8 @@
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
+        // Store items as objects with {id: string, drawn: boolean}
         let items = [];
-        let drawnItems = [];
         let allResults = [];
         let currentFontSize = 30;
 
@@ -331,70 +385,153 @@
         // Function to create sparkles
         function createSparkles() {
             const sparklesContainer = document.getElementById('sparkles');
-            const numSparkles = 50; // Number of sparkles to create
+            const numSparkles = 50;
 
             for (let i = 0; i < numSparkles; i++) {
                 const sparkle = document.createElement('div');
                 sparkle.style.left = `${Math.random() * 100}%`;
                 sparkle.style.top = `${Math.random() * 100}%`;
-                sparkle.style.animationDelay = `${Math.random() * 2}s`; // Random delay for animation
+                sparkle.style.animationDelay = `${Math.random() * 2}s`;
                 sparklesContainer.appendChild(sparkle);
             }
         }
 
-        // Call the function to create sparkles when the page loads
-        window.onload = function () {
-            createSparkles();
-            firebase.database().ref('drawResults').on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    // FIRST: SANITIZE DATA FOR BACKWARD COMPATIBILITY
-                    let rawItems = data.items || [];
-                    
-                    // Convert any objects back to strings (for backward compatibility)
-                    items = rawItems.map(item => {
-                        if (typeof item === 'object' && item !== null && item.data) {
-                            console.log('Converting object to string:', item.data);
-                            return item.data; // Extract string from old object format
-                        }
-                        return String(item); // Ensure it's a string
-                    });
-                    
-                    // Remove duplicates after sanitization
-                    items = removeDuplicates(items.filter(item => item.trim() !== ''));
-                    
-                    drawnItems = data.drawnItems || [];
-                    allResults = data.allResults || [];
-                    document.getElementById('inputNames').value = items.join(', ');
-                    updatePreviousResults();
-                    
-                    // Write sanitized data back to Firebase
-                    writeDataToFirebase();
-                }
-            });
-        };
+        // Convert string items to object format for backward compatibility
+        function normalizeItems(data) {
+            if (!data) return [];
+            
+            if (Array.isArray(data)) {
+                return data.map(item => {
+                    if (typeof item === 'object' && item !== null && item.id !== undefined) {
+                        // Already in object format
+                        return {
+                            id: String(item.id),
+                            drawn: item.drawn || false
+                        };
+                    } else {
+                        // String format - convert to object
+                        return {
+                            id: String(item),
+                            drawn: false
+                        };
+                    }
+                });
+            }
+            
+            return [];
+        }
 
+        // Update item status display
+        function updateItemStatusDisplay() {
+            const totalItems = items.length;
+            const drawnItems = items.filter(item => item.drawn).length;
+            const availableItems = totalItems - drawnItems;
+
+            document.getElementById('totalCount').textContent = totalItems;
+            document.getElementById('drawnCount').textContent = drawnItems;
+            document.getElementById('availableCount').textContent = availableItems;
+
+            // Show/hide buttons based on state
+            if (drawnItems > 0) {
+                document.getElementById('removeDrawnButton').style.display = 'inline-block';
+            } else {
+                document.getElementById('removeDrawnButton').style.display = 'none';
+            }
+        }
+
+        // Update items list display
+        function updateItemsListDisplay() {
+            const itemsListDisplay = document.getElementById('itemsListDisplay');
+            
+            if (items.length === 0) {
+                itemsListDisplay.innerHTML = '<div class="text-center text-muted">No items added yet</div>';
+                return;
+            }
+
+            let html = '';
+            items.forEach(item => {
+                const statusClass = item.drawn ? 'text-decoration-line-through text-muted' : 'text-light';
+                const statusBadge = item.drawn ? 
+                    '<span class="badge bg-danger ms-2">Drawn</span>' : 
+                    '<span class="badge bg-success ms-2">Available</span>';
+                
+                html += `
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="${statusClass}">${item.id}</span>
+                        ${statusBadge}
+                    </div>
+                `;
+            });
+
+            itemsListDisplay.innerHTML = html;
+        }
+
+        // Write data to Firebase
         function writeDataToFirebase() {
             firebase.database().ref('drawResults').set({
                 items: items,
-                drawnItems: drawnItems,
                 allResults: allResults
             });
         }
 
         function removeDuplicates(array) {
-            return [...new Set(array)];
+            const seen = new Set();
+            return array.filter(item => {
+                const key = item.id;
+                if (seen.has(key)) {
+                    return false;
+                }
+                seen.add(key);
+                return true;
+            });
         }
+
+        // Initialize on page load
+        window.onload = function () {
+            createSparkles();
+            firebase.database().ref('drawResults').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    items = normalizeItems(data.items);
+                    allResults = data.allResults || [];
+                    
+                    // Update textarea with all items (for editing)
+                    document.getElementById('inputNames').value = items.map(item => item.id).join(', ');
+                    
+                    updateItemStatusDisplay();
+                    updateItemsListDisplay();
+                    updatePreviousResults();
+                }
+            });
+        };
 
         document.getElementById('inputNames').addEventListener('input', function () {
             const input = this.value;
-            items = removeDuplicates(input.split(/[,|\n]+/).map(item => item.trim()).filter(item => item));
+            const newItems = removeDuplicates(
+                input.split(/[,|\n]+/)
+                    .map(item => item.trim())
+                    .filter(item => item)
+                    .map(id => ({ id, drawn: false }))
+            );
+            
+            // Merge with existing items, preserving drawn status
+            items.forEach(existingItem => {
+                const existingIndex = newItems.findIndex(newItem => newItem.id === existingItem.id);
+                if (existingIndex !== -1) {
+                    // Preserve drawn status if item already exists
+                    newItems[existingIndex].drawn = existingItem.drawn;
+                }
+            });
+            
+            items = newItems;
             writeDataToFirebase();
+            updateItemStatusDisplay();
+            updateItemsListDisplay();
         });
 
         // Create an audio object for the slot machine sound
         const slotMachineSound = new Audio('slot-machine.mp3'); 
-        slotMachineSound.loop = true; // Loop the sound while the animation is playing
+        slotMachineSound.loop = true;
 
         document.getElementById('drawButton').addEventListener('click', function () {
             // Show the modal with the slot machine animation
@@ -421,21 +558,37 @@
                 const numberOfDraws = parseInt(document.getElementById('numberOfDraws').value, 10);
                 const resultDiv = document.getElementById('result');
 
-                if (numberOfDraws > items.length) {
-                    alert("Number of draws cannot exceed the number of unique items.");
+                // Get available items (not drawn)
+                const availableItems = items.filter(item => !item.drawn);
+                
+                if (numberOfDraws > availableItems.length) {
+                    alert("Number of draws cannot exceed the number of available items.");
                     return;
                 }
 
-                const availableItems = items.filter(item => !drawnItems.includes(item));
-                const shuffledItems = availableItems.sort(() => 0.5 - Math.random());
+                // Shuffle and select items
+                const shuffledItems = [...availableItems].sort(() => 0.5 - Math.random());
                 const selectedItems = shuffledItems.slice(0, numberOfDraws);
 
-                drawnItems.push(...selectedItems);
-                allResults.push(selectedItems.join(', '));
+                // Mark selected items as drawn
+                selectedItems.forEach(selectedItem => {
+                    const itemIndex = items.findIndex(item => item.id === selectedItem.id);
+                    if (itemIndex !== -1) {
+                        items[itemIndex].drawn = true;
+                    }
+                });
 
+                // Add to results history
+                const selectedIds = selectedItems.map(item => item.id);
+                allResults.push(selectedIds.join(', '));
+
+                // Write to Firebase and update displays
                 writeDataToFirebase();
+                updateItemStatusDisplay();
+                updateItemsListDisplay();
                 updatePreviousResults();
 
+                // Display results
                 resultDiv.innerHTML = '';
                 resultDiv.style.display = 'block';
 
@@ -451,9 +604,9 @@
                         card.style.opacity = 1;
                     });
 
-                    fadeInCharacterByCharacter(selectedItems[0], card);
+                    fadeInCharacterByCharacter(selectedIds[0], card);
                 } else {
-                    selectedItems.forEach((item, index) => {
+                    selectedIds.forEach((item, index) => {
                         const card = document.createElement('div');
                         card.className = 'card';
                         card.style.fontSize = currentFontSize + 'px';
@@ -477,19 +630,42 @@
 
                 setTimeout(() => {
                     playSound('fanfare-sound.mp3');
-                }, -10);
+                }, 100);
 
                 document.getElementById('removeDrawnButton').style.display = 'inline-block';
-            }, 5000); // 5000 milliseconds = 5 seconds
+            }, 5000);
         });
 
+        // Clear Drawn Items (remove permanently)
         document.getElementById('removeDrawnButton').addEventListener('click', function () {
-            items = items.filter(item => !drawnItems.includes(item));
-            drawnItems = [];
-            document.getElementById('result').innerHTML = '';
-            writeDataToFirebase();
-            document.getElementById('inputNames').value = items.join(', ');
-            document.getElementById('removeDrawnButton').style.display = 'none';
+            if (confirm("Are you sure you want to permanently remove all drawn items?")) {
+                // Remove drawn items permanently
+                items = items.filter(item => !item.drawn);
+                
+                // Update textarea
+                document.getElementById('inputNames').value = items.map(item => item.id).join(', ');
+                
+                writeDataToFirebase();
+                updateItemStatusDisplay();
+                updateItemsListDisplay();
+                
+                document.getElementById('removeDrawnButton').style.display = 'none';
+                document.getElementById('result').innerHTML = '';
+            }
+        });
+
+        // Reset All Items (mark all as available)
+        document.getElementById('resetItemsButton').addEventListener('click', function () {
+            if (confirm("Are you sure you want to reset all items to available status?")) {
+                items.forEach(item => {
+                    item.drawn = false;
+                });
+                
+                writeDataToFirebase();
+                updateItemStatusDisplay();
+                updateItemsListDisplay();
+                document.getElementById('result').innerHTML = '';
+            }
         });
 
         document.getElementById('fullscreenButton').addEventListener('click', function () {
@@ -558,7 +734,7 @@
         });
 
         function fadeInCharacterByCharacter(text, container) {
-            container.innerHTML = ''; // Clear previous content
+            container.innerHTML = '';
             let index = 0;
 
             function showNextCharacter() {
@@ -567,23 +743,22 @@
                     span.innerText = text[index];
                     span.style.opacity = '0';
                     span.style.transition = 'opacity 0.3s ease-in-out';
-                    span.style.display = 'inline-block'; // Ensures characters appear in a line
+                    span.style.display = 'inline-block';
                     container.appendChild(span);
 
-                    // Small delay to trigger opacity transition
                     setTimeout(() => {
                         span.style.opacity = '1';
                     }, 50 * index);
 
                     index++;
-                    setTimeout(showNextCharacter, 2000); // Controls the speed of character appearance
+                    setTimeout(showNextCharacter, 2000);
                 }
             }
 
             showNextCharacter();
         }
 
-        // THIRD: One-time cleanup function to fix existing corrupted data
+        // One-time cleanup function
         function sanitizeFirebaseData() {
             console.log('Starting Firebase data sanitization...');
             
@@ -595,26 +770,12 @@
                         return;
                     }
                     
-                    const rawItems = data.items || [];
+                    const sanitizedItems = normalizeItems(data.items);
                     
-                    // Convert all items to strings
-                    const sanitizedItems = rawItems.map(item => {
-                        if (typeof item === 'object' && item !== null && item.data) {
-                            console.log('Converting object to string:', item.data);
-                            return item.data;
-                        }
-                        return String(item);
-                    }).filter(item => item.trim() !== '');
+                    console.log('Sanitized items:', sanitizedItems);
                     
-                    // Remove duplicates
-                    const uniqueItems = [...new Set(sanitizedItems)];
-                    
-                    console.log('Sanitized items:', uniqueItems);
-                    
-                    // Update Firebase with clean data
                     return database.ref('drawResults').update({
-                        items: uniqueItems,
-                        drawnItems: data.drawnItems || [],
+                        items: sanitizedItems,
                         allResults: data.allResults || []
                     });
                 })
@@ -628,9 +789,7 @@
                 });
         }
 
-        // Optional: Add a button to trigger sanitization manually
-        // Uncomment if you want a manual sanitization button
-        
+        // Add sanitize button
         document.addEventListener('DOMContentLoaded', function() {
             const sanitizeButton = document.createElement('button');
             sanitizeButton.className = 'btn btn-info mt-4';
@@ -638,8 +797,6 @@
             sanitizeButton.onclick = sanitizeFirebaseData;
             document.getElementById('container2').appendChild(sanitizeButton);
         });
-        
-
     </script>
 </body>
 </html>
