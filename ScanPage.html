@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Data Collector</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #166088;
+            --success-color: #28a745;
+            --light-bg: #f8f9fa;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1.5rem 0;
+            border-radius: 0 0 10px 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card {
+            border-radius: 10px;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 1.5rem;
+            transition: transform 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .scan-card {
+            background-color: white;
+            border-left: 5px solid var(--success-color);
+        }
+        
+        .stats-card {
+            background-color: white;
+            border-left: 5px solid var(--primary-color);
+        }
+        
+        .data-entry {
+            background-color: var(--light-bg);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            border-left: 4px solid var(--primary-color);
+            transition: all 0.2s;
+        }
+        
+        .data-entry:hover {
+            background-color: #e9ecef;
+        }
+        
+        .scan-input {
+            font-size: 1.1rem;
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            transition: all 0.3s;
+        }
+        
+        .scan-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(74, 111, 165, 0.25);
+        }
+        
+        .btn-scan {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            padding: 12px 24px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-scan:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-online {
+            background-color: var(--success-color);
+        }
+        
+        .status-offline {
+            background-color: #dc3545;
+        }
+        
+        .badge-count {
+            font-size: 0.9rem;
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+        
+        .user-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            margin: 0 5px 5px 0;
+            font-size: 0.85rem;
+            background-color: #e3f2fd;
+            color: var(--secondary-color);
+        }
+        
+        .last-update {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 2rem;
+            padding: 1rem;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="header text-center">
+            <h1 class="mb-2">QR Code Data Collector</h1>
+            <p class="mb-0">Scan and synchronize QR code data with your team in real-time</p>
+        </div>
+        
+        <div class="container">
+            <div class="row">
+                <!-- Left Column: Scanning Interface -->
+                <div class="col-lg-8">
+                    <!-- Scanning Card -->
+                    <div class="card scan-card">
+                        <div class="card-header bg-white">
+                            <h4 class="mb-0">Add QR Code Data</h4>
+                            <p class="text-muted mb-0">Enter the text from your scanned QR code</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-4">
+                                <div class="col-md-9">
+                                    <input type="text" class="form-control scan-input" id="qrDataInput" placeholder="Paste or type QR code content here...">
+                                </div>
+                                <div class="col-md-3">
+                                    <button class="btn btn-scan btn-primary w-100 h-100" id="addDataBtn">Add to Collection</button>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <strong>Tip:</strong> You can also scan directly by focusing on this input field and using your QR scanner device.
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="scannerName" class="form-label">Your Scanner Name</label>
+                                <input type="text" class="form-control" id="scannerName" placeholder="Enter your name (e.g., Scanner 1, John, etc.)" value="Scanner 1">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Data Display Card -->
+                    <div class="card">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">Collected QR Codes</h4>
+                            <span class="badge bg-primary badge-count" id="totalCount">0 items</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control" id="searchInput" placeholder="Search collected data...">
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="autoRefreshToggle" checked>
+                                        <label class="form-check-label" for="autoRefreshToggle">Auto-refresh data</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">#</th>
+                                            <th scope="col">QR Code Data</th>
+                                            <th scope="col">Scanner</th>
+                                            <th scope="col">Time</th>
+                                            <th scope="col">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dataTable">
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-4">No QR codes scanned yet. Start scanning to see data here.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column: Stats & Sync Status -->
+                <div class="col-lg-4">
+                    <!-- Stats Card -->
+                    <div class="card stats-card mb-4">
+                        <div class="card-header bg-white">
+                            <h4 class="mb-0">Scanning Statistics</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center mb-3">
+                                <div class="col-6">
+                                    <div class="display-6 fw-bold text-primary" id="todayCount">0</div>
+                                    <div class="text-muted">Today</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="display-6 fw-bold text-success" id="totalCountCard">0</div>
+                                    <div class="text-muted">Total</div>
+                                </div>
+                            </div>
+                            
+                            <div class="progress mb-3" style="height: 10px;">
+                                <div class="progress-bar bg-success" id="progressBar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="1000"></div>
+                            </div>
+                            <div class="text-center mb-3">
+                                <small class="text-muted"><span id="currentProgress">0</span> of 1000 target scans</small>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <h6>Active Scanners</h6>
+                                <div id="activeScanners">
+                                    <span class="user-badge">Scanner 1</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sync Status Card -->
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h4 class="mb-0">Sync Status</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <span class="status-indicator status-online" id="statusIndicator"></span>
+                                <span class="fw-bold" id="statusText">Connected to Firebase</span>
+                            </div>
+                            
+                            <div class="alert alert-success">
+                                <h6><i class="fas fa-check-circle"></i> Real-time Sync Active</h6>
+                                <p class="mb-0 small">Data is automatically synchronized with your team members.</p>
+                            </div>
+                            
+                            <div class="last-update">
+                                <strong>Last update:</strong> <span id="lastUpdateTime">Just now</span>
+                            </div>
+                            
+                            <hr>
+                            
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-primary" id="exportBtn">Export Data as CSV</button>
+                                <button class="btn btn-outline-secondary" id="clearLocalBtn">Clear All Data</button>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <h6>Instructions:</h6>
+                                <ol class="small">
+                                    <li>Enter your scanner name</li>
+                                    <li>Scan QR codes with your device</li>
+                                    <li>Data automatically appears in the table</li>
+                                    <li>Data syncs with your team in real-time</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="footer">
+                <p>QR Code Data Collector | Firebase Real-time Database | Designed for team scanning projects</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Firebase and App Script -->
+    <script>
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
+            authDomain: "makysdraw-87237.firebaseapp.com",
+            databaseURL: "https://makysdraw-87237-default-rtdb.firebaseio.com",
+            projectId: "makysdraw-87237",
+            storageBucket: "makysdraw-87237.firebasestorage.app",
+            messagingSenderId: "1044977366090",
+            appId: "1:1044977366090:web:37af3eaa9c3f5bfc7822b3"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // Global variables
+        let qrDataList = [];
+        let scannerId = Math.floor(Math.random() * 10000);
+        let scannerName = "Scanner 1";
+        let lastUpdateTime = new Date();
+        
+        // DOM Elements
+        const qrDataInput = document.getElementById('qrDataInput');
+        const addDataBtn = document.getElementById('addDataBtn');
+        const scannerNameInput = document.getElementById('scannerName');
+        const dataTable = document.getElementById('dataTable');
+        const totalCount = document.getElementById('totalCount');
+        const totalCountCard = document.getElementById('totalCountCard');
+        const todayCount = document.getElementById('todayCount');
+        const progressBar = document.getElementById('progressBar');
+        const currentProgress = document.getElementById('currentProgress');
+        const searchInput = document.getElementById('searchInput');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const lastUpdateTimeElement = document.getElementById('lastUpdateTime');
+        const exportBtn = document.getElementById('exportBtn');
+        const clearLocalBtn = document.getElementById('clearLocalBtn');
+        const activeScanners = document.getElementById('activeScanners');
+        
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set scanner name
+            scannerName = scannerNameInput.value;
+            
+            // Load data from Firebase
+            loadDataFromFirebase();
+            
+            // Set up event listeners
+            addDataBtn.addEventListener('click', addQRData);
+            qrDataInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addQRData();
+                }
+            });
+            
+            scannerNameInput.addEventListener('change', function() {
+                scannerName = this.value;
+                updateScannerPresence();
+            });
+            
+            searchInput.addEventListener('input', filterData);
+            exportBtn.addEventListener('click', exportDataAsCSV);
+            clearLocalBtn.addEventListener('click', clearAllData);
+            
+            // Update scanner presence in Firebase
+            updateScannerPresence();
+            
+            // Set up auto-refresh
+            setInterval(updateLastUpdateTime, 60000);
+            
+            // Focus on input field for easy scanning
+            qrDataInput.focus();
+        });
+        
+        // Function to add QR data
+        function addQRData() {
+            const qrData = qrDataInput.value.trim();
+            
+            if (qrData === "") {
+                alert("Please enter QR code data");
+                return;
+            }
+            
+            // Create data object
+            const dataItem = {
+                id: Date.now(), // Unique ID based on timestamp
+                data: qrData,
+                scanner: scannerName,
+                timestamp: new Date().toISOString(),
+                date: new Date().toLocaleDateString()
+            };
+            
+            // Save to Firebase
+            saveToFirebase(dataItem);
+            
+            // Clear input and focus for next scan
+            qrDataInput.value = "";
+            qrDataInput.focus();
+            
+            // Show success message
+            showAlert("QR code data added successfully!", "success");
+        }
+        
+        // Function to save data to Firebase
+        function saveToFirebase(dataItem) {
+            const newDataRef = database.ref('qrCodes').push();
+            newDataRef.set(dataItem)
+                .then(() => {
+                    console.log("Data saved to Firebase");
+                    updateLastUpdateTime();
+                })
+                .catch((error) => {
+                    console.error("Error saving data: ", error);
+                    // Store locally if Firebase fails
+                    storeLocal(dataItem);
+                    showAlert("Data saved locally (Firebase error)", "warning");
+                });
+        }
+        
+        // Function to load data from Firebase
+        function loadDataFromFirebase() {
+            database.ref('qrCodes').on('value', (snapshot) => {
+                qrDataList = [];
+                const data = snapshot.val();
+                
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        qrDataList.push({
+                            id: key,
+                            ...data[key]
+                        });
+                    });
+                    
+                    // Sort by timestamp (newest first)
+                    qrDataList.sort((a, b) => {
+                        return new Date(b.timestamp) - new Date(a.timestamp);
+                    });
+                    
+                    updateUI();
+                } else {
+                    // No data in Firebase
+                    dataTable.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No QR codes scanned yet. Start scanning to see data here.</td>
+                        </tr>
+                    `;
+                    updateStats();
+                }
+                
+                statusIndicator.className = "status-indicator status-online";
+                statusText.textContent = "Connected to Firebase";
+            }, (error) => {
+                console.error("Firebase error: ", error);
+                statusIndicator.className = "status-indicator status-offline";
+                statusText.textContent = "Offline - Using local storage";
+                
+                // Try to load from local storage if Firebase fails
+                loadLocalData();
+            });
+            
+            // Also listen for active scanners
+            database.ref('activeScanners').on('value', (snapshot) => {
+                const scanners = snapshot.val();
+                updateActiveScannersUI(scanners);
+            });
+        }
+        
+        // Function to update the UI with data
+        function updateUI() {
+            // Update table
+            if (qrDataList.length > 0) {
+                let tableHTML = "";
+                qrDataList.forEach((item, index) => {
+                    const time = new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    const date = new Date(item.timestamp).toLocaleDateString();
+                    
+                    tableHTML += `
+                    <tr>
+                        <th scope="row">${index + 1}</th>
+                        <td><strong>${item.data}</strong></td>
+                        <td><span class="badge bg-secondary">${item.scanner || 'Unknown'}</span></td>
+                        <td>${date} ${time}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteData('${item.id}')">Delete</button>
+                        </td>
+                    </tr>
+                    `;
+                });
+                
+                dataTable.innerHTML = tableHTML;
+            } else {
+                dataTable.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">No QR codes scanned yet. Start scanning to see data here.</td>
+                    </tr>
+                `;
+            }
+            
+            // Update stats
+            updateStats();
+        }
+        
+        // Function to update statistics
+        function updateStats() {
+            const total = qrDataList.length;
+            totalCount.textContent = `${total} items`;
+            totalCountCard.textContent = total;
+            
+            // Calculate today's count
+            const today = new Date().toLocaleDateString();
+            const todayItems = qrDataList.filter(item => item.date === today);
+            todayCount.textContent = todayItems.length;
+            
+            // Update progress bar
+            const progressPercent = Math.min((total / 1000) * 100, 100);
+            progressBar.style.width = `${progressPercent}%`;
+            currentProgress.textContent = total;
+            
+            // Update progress bar color based on progress
+            if (progressPercent >= 100) {
+                progressBar.className = "progress-bar bg-success";
+            } else if (progressPercent >= 70) {
+                progressBar.className = "progress-bar bg-warning";
+            } else {
+                progressBar.className = "progress-bar bg-primary";
+            }
+        }
+        
+        // Function to filter data based on search input
+        function filterData() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const rows = dataTable.getElementsByTagName('tr');
+            
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const cells = row.getElementsByTagName('td');
+                let found = false;
+                
+                for (let j = 0; j < cells.length; j++) {
+                    const cellText = cells[j]?.textContent.toLowerCase();
+                    if (cellText && cellText.includes(searchTerm)) {
+                        found = true;
+                        break;
+                    }
+                }
+                
+                row.style.display = found ? '' : 'none';
+            }
+        }
+        
+        // Function to update scanner presence in Firebase
+        function updateScannerPresence() {
+            const scannerRef = database.ref('activeScanners/' + scannerId);
+            
+            // Set scanner as active
+            scannerRef.set({
+                name: scannerName,
+                lastActive: new Date().toISOString()
+            });
+            
+            // Remove scanner when page is closed
+            window.addEventListener('beforeunload', function() {
+                scannerRef.remove();
+            });
+            
+            // Update presence every 30 seconds to show we're still active
+            setInterval(() => {
+                scannerRef.update({
+                    lastActive: new Date().toISOString()
+                });
+            }, 30000);
+        }
+        
+        // Function to update active scanners UI
+        function updateActiveScannersUI(scanners) {
+            if (!scanners) {
+                activeScanners.innerHTML = '<span class="user-badge">Scanner 1</span>';
+                return;
+            }
+            
+            // Filter out scanners that haven't been active in the last 2 minutes
+            const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+            let activeHTML = "";
+            
+            Object.keys(scanners).forEach(key => {
+                if (scanners[key].lastActive > twoMinutesAgo) {
+                    activeHTML += `<span class="user-badge">${scanners[key].name}</span>`;
+                }
+            });
+            
+            activeScanners.innerHTML = activeHTML || '<span class="text-muted">No active scanners</span>';
+        }
+        
+        // Function to delete data
+        function deleteData(id) {
+            if (confirm("Are you sure you want to delete this item?")) {
+                database.ref('qrCodes/' + id).remove()
+                    .then(() => {
+                        showAlert("Data deleted successfully", "success");
+                        updateLastUpdateTime();
+                    })
+                    .catch((error) => {
+                        console.error("Error deleting data: ", error);
+                        showAlert("Error deleting data", "danger");
+                    });
+            }
+        }
+        
+        // Function to export data as CSV
+        function exportDataAsCSV() {
+            if (qrDataList.length === 0) {
+                alert("No data to export");
+                return;
+            }
+            
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "ID,QR Code Data,Scanner,Date,Time\n";
+            
+            qrDataList.forEach(item => {
+                const time = new Date(item.timestamp).toLocaleTimeString();
+                const date = new Date(item.timestamp).toLocaleDateString();
+                const row = `${item.id},"${item.data}",${item.scanner},${date},${time}`;
+                csvContent += row + "\n";
+            });
+            
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `qr_code_data_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showAlert("Data exported as CSV file", "success");
+        }
+        
+        // Function to clear all data
+        function clearAllData() {
+            if (confirm("Are you sure you want to clear ALL data? This cannot be undone!")) {
+                database.ref('qrCodes').remove()
+                    .then(() => {
+                        showAlert("All data cleared", "success");
+                        updateLastUpdateTime();
+                    })
+                    .catch((error) => {
+                        console.error("Error clearing data: ", error);
+                        showAlert("Error clearing data", "danger");
+                    });
+            }
+        }
+        
+        // Function to update last update time
+        function updateLastUpdateTime() {
+            lastUpdateTime = new Date();
+            const timeString = lastUpdateTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            lastUpdateTimeElement.textContent = `${timeString}`;
+        }
+        
+        // Function to show alert
+        function showAlert(message, type) {
+            // Create alert element
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alertDiv.style.top = "20px";
+            alertDiv.style.right = "20px";
+            alertDiv.style.zIndex = "9999";
+            alertDiv.style.minWidth = "300px";
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            // Add to page
+            document.body.appendChild(alertDiv);
+            
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 3000);
+        }
+        
+        // Local storage fallback functions
+        function storeLocal(dataItem) {
+            let localData = JSON.parse(localStorage.getItem('qrCodesLocal')) || [];
+            localData.push(dataItem);
+            localStorage.setItem('qrCodesLocal', JSON.stringify(localData));
+        }
+        
+        function loadLocalData() {
+            const localData = JSON.parse(localStorage.getItem('qrCodesLocal')) || [];
+            if (localData.length > 0) {
+                qrDataList = localData;
+                updateUI();
+                showAlert("Loaded data from local storage", "info");
+            }
+        }
+        
+        // Set initial update time
+        updateLastUpdateTime();
+    </script>
+</body>
+</html>
