@@ -92,22 +92,38 @@
             padding: 2px 6px;
             border-radius: 10px;
         }
-        .loading-spinner {
-            display: none;
-            text-align: center;
-            padding: 20px;
+        .duplicate-alert {
+            animation: shake 0.5s ease-in-out;
         }
-        .controls-row {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(13, 202, 240, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(13, 202, 240, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(13, 202, 240, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+        }
+        .scan-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            z-index: 1000;
+            display: none;
+        }
+        .scan-success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        .scan-duplicate {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffeaa7;
         }
         @media (max-width: 1400px) {
             .scanned-items-grid {
@@ -140,30 +156,29 @@
     <div class="container">
         <h1 class="text-center mb-4">📱 QR Code Scanner Data Collector</h1>
         
+        <!-- Scan Indicator (Top Right) -->
+        <div id="scanIndicator" class="scan-indicator">
+            Scan processed
+        </div>
+        
         <!-- Stats Section -->
         <div class="row mb-4">
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="stats-card">
                     <h5>Total Scanned</h5>
                     <h2 id="total-count" class="text-primary">0</h2>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="stats-card">
                     <h5>Unique Items</h5>
                     <h2 id="unique-count" class="text-success">0</h2>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="stats-card">
-                    <h5>Duplicates</h5>
+                    <h5>Duplicates Blocked</h5>
                     <h2 id="duplicate-count" class="text-warning">0</h2>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <h5>Connected Users</h5>
-                    <h2 id="connected-users" class="text-info">1</h2>
                 </div>
             </div>
         </div>
@@ -171,70 +186,57 @@
         <!-- Scanner Input Section -->
         <div class="scanner-input">
             <h3>🔍 Current Scan</h3>
-            <div class="alert alert-warning" id="duplicate-alert" style="display: none;">
-                ⚠️ <strong>Duplicate detected!</strong> This item has already been scanned. 
-                <button class="btn btn-sm btn-outline-warning ms-2" onclick="forceAddDuplicate()">Add Anyway</button>
+            
+            <!-- Real-time Duplicate Warning -->
+            <div class="alert alert-warning duplicate-alert" id="duplicate-alert" style="display: none;">
+                ⚠️ <strong>DUPLICATE DETECTED!</strong> 
+                <span id="duplicate-info"></span>
+                <br>
+                <small>This item was already scanned and will NOT be added again.</small>
             </div>
+            
+            <!-- Success Message -->
+            <div class="alert alert-success" id="success-alert" style="display: none;">
+                ✅ <strong>Item added successfully!</strong>
+            </div>
+            
             <div class="mb-3">
-                <label for="qrInput" class="form-label">Enter QR Code Data (or paste scanned content):</label>
+                <label for="qrInput" class="form-label">Scan QR Code (or type manually):</label>
                 <input type="text" class="form-control form-control-lg" id="qrInput" 
-                       placeholder="Scan QR code or type data here..." autofocus>
-                <div class="form-text">Auto-check for duplicates enabled</div>
+                       placeholder="Scan QR code here - auto-detects duplicates" autofocus>
+                <div class="form-text">QR scanners auto-press Enter - duplicates are automatically blocked</div>
             </div>
+            
             <div class="d-flex gap-2">
-                <button class="btn btn-primary btn-lg flex-grow-1" onclick="addItem()">
-                    ✅ Add to Database
+                <button class="btn btn-primary btn-lg flex-grow-1" onclick="processScan()">
+                    ✅ Process Scan
                 </button>
-                <button class="btn btn-outline-secondary btn-lg" onclick="clearCurrent()">
-                    ✨ Clear
+                <button class="btn btn-outline-secondary btn-lg" onclick="clearInput()">
+                    ✨ Clear Field
                 </button>
             </div>
         </div>
 
-        <!-- Controls and Search Section -->
-        <div class="controls-row">
-            <div class="row">
-                <div class="col-md-8">
-                    <h5>🔍 Search & Filter</h5>
-                    <div class="input-group">
-                        <input type="text" class="form-control" id="searchInput" 
-                               placeholder="Search scanned items...">
-                        <button class="btn btn-outline-primary" onclick="searchItems()">
-                            Search
-                        </button>
-                        <button class="btn btn-outline-secondary" onclick="clearSearch()">
-                            Clear
-                        </button>
-                    </div>
-                    <div class="form-text mt-1">
-                        Search by content. Press Enter to search, Esc to clear.
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <h5>⚙️ View Options</h5>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="showDuplicates" checked 
-                               onchange="toggleDuplicates()">
-                        <label class="form-check-label" for="showDuplicates">
-                            Show Duplicates
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="highlightDuplicates" checked
-                               onchange="highlightDuplicates()">
-                        <label class="form-check-label" for="highlightDuplicates">
-                            Highlight Duplicates
-                        </label>
-                    </div>
-                </div>
+        <!-- Search Section -->
+        <div class="search-container">
+            <h5>🔍 Search Items</h5>
+            <div class="input-group mb-3">
+                <input type="text" class="form-control" id="searchInput" 
+                       placeholder="Search scanned items...">
+                <button class="btn btn-outline-primary" onclick="searchItems()">
+                    Search
+                </button>
+                <button class="btn btn-outline-secondary" onclick="clearSearch()">
+                    Clear
+                </button>
             </div>
         </div>
 
-        <!-- Scanned Items Display Section -->
+        <!-- Scanned Items Display -->
         <div class="search-container">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3>📦 All Scanned Items</h3>
-                <span class="badge bg-primary" id="display-count">Displaying 0 items</span>
+                <h3>📦 All Scanned Items (Unique Only)</h3>
+                <span class="badge bg-primary" id="display-count">0 items</span>
             </div>
             
             <div id="searchResults" style="display: none;" class="alert alert-info mb-3">
@@ -243,28 +245,21 @@
                 <button class="btn btn-sm btn-outline-info ms-2" onclick="clearSearch()">Show All</button>
             </div>
             
-            <div class="loading-spinner" id="loading">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-2">Loading scanned items...</p>
-            </div>
-            
             <div id="itemsContainer">
-                <!-- Items will be displayed here in a 10-column grid -->
+                <!-- Items will be displayed here -->
             </div>
         </div>
 
         <!-- Instructions -->
         <div class="alert alert-info mt-4">
-            <h5>📋 How to Use:</h5>
+            <h5>📋 How to Use with QR Scanner:</h5>
             <ol class="mb-0">
-                <li>Scan a QR code or type/paste the data into the input field</li>
-                <li>The system automatically checks for duplicates</li>
-                <li>Click "Add to Database" or press Enter to save</li>
-                <li>All data syncs automatically with your team members</li>
-                <li>Use the search bar to find specific items</li>
-                <li>Toggle duplicate highlighting on/off as needed</li>
+                <li><strong>Scan QR code</strong> - scanner will auto-fill the field and press Enter</li>
+                <li><strong>System instantly checks</strong> if it's a duplicate</li>
+                <li><strong>If unique</strong>: Added to database with green confirmation</li>
+                <li><strong>If duplicate</strong>: Blocked automatically with warning showing original scan number</li>
+                <li><strong>Field auto-clears</strong> after each scan for next QR code</li>
+                <li><strong>All team members</strong> see updates in real-time</li>
             </ol>
         </div>
     </div>
@@ -287,8 +282,7 @@
         
         // Global variables
         let allItems = [];
-        let currentScan = '';
-        let isDuplicate = false;
+        let duplicatesBlocked = 0;
         let searchActive = false;
         let searchTerm = '';
 
@@ -300,42 +294,35 @@
 
         // Set up Firebase real-time listeners
         function setupFirebaseListeners() {
-            // Reference to the items in database
             const itemsRef = database.ref('items');
             
-            // Listen for changes in items
             itemsRef.on('value', (snapshot) => {
                 allItems = [];
                 const itemsData = snapshot.val();
                 
                 if (itemsData) {
-                    // Convert object to array with IDs
                     Object.keys(itemsData).forEach(key => {
                         allItems.push({
                             id: key,
                             content: itemsData[key].content,
                             timestamp: itemsData[key].timestamp || Date.now(),
-                            scannedBy: itemsData[key].scannedBy || 'Unknown'
+                            scannedBy: itemsData[key].scannedBy || 'Unknown',
+                            scanNumber: itemsData[key].scanNumber || 0
                         });
                     });
                     
-                    // Sort by timestamp (newest first)
+                    // Sort by timestamp (newest first for display, but keep original order for numbering)
                     allItems.sort((a, b) => b.timestamp - a.timestamp);
+                    
+                    // Re-number items based on original scan order
+                    const sortedByScanNumber = [...allItems].sort((a, b) => a.scanNumber - b.scanNumber);
+                    sortedByScanNumber.forEach((item, index) => {
+                        item.displayNumber = index + 1;
+                    });
                 }
                 
                 updateDisplay();
                 updateStats();
-                
-                // Check if current scan is a duplicate
-                checkDuplicate();
-            });
-            
-            // Monitor connected users
-            const connectedRef = database.ref('.info/connected');
-            connectedRef.on('value', (snapshot) => {
-                if (snapshot.val() === true) {
-                    updateUserCount();
-                }
             });
         }
 
@@ -343,127 +330,103 @@
         function setupEventListeners() {
             const qrInput = document.getElementById('qrInput');
             
-            // Enter key to add item
+            // Handle Enter key (from QR scanner or keyboard)
             qrInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
-                    addItem();
+                    e.preventDefault(); // Prevent form submission
+                    processScan();
                 }
             });
             
-            // Input change - check for duplicate in real-time
+            // Handle input from scanner (immediate processing for scanners that don't send Enter)
+            let scannerTimeout;
             qrInput.addEventListener('input', (e) => {
-                currentScan = e.target.value.trim();
-                checkDuplicate();
+                // If scanner quickly fills the field, process it
+                clearTimeout(scannerTimeout);
+                scannerTimeout = setTimeout(() => {
+                    if (e.target.value.length > 0) {
+                        // Check if this looks like scanner input (fast typing or complete data)
+                        processScan();
+                    }
+                }, 100); // Short delay to catch scanner input
             });
             
-            // Escape key to clear input
-            qrInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    clearCurrent();
-                }
-            });
-            
-            // Search input listeners
+            // Search functionality
             const searchInput = document.getElementById('searchInput');
             searchInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     searchItems();
                 }
             });
-            searchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    clearSearch();
-                }
-            });
         }
 
-        // Check if current scan is a duplicate
-        function checkDuplicate() {
-            if (!currentScan) {
-                document.getElementById('duplicate-alert').style.display = 'none';
-                isDuplicate = false;
-                return;
-            }
-            
-            // Check if item already exists (case insensitive)
-            const existingItem = allItems.find(item => 
-                item.content.toLowerCase() === currentScan.toLowerCase()
-            );
-            
-            isDuplicate = !!existingItem;
-            
-            const duplicateAlert = document.getElementById('duplicate-alert');
-            if (isDuplicate) {
-                duplicateAlert.style.display = 'block';
-            } else {
-                duplicateAlert.style.display = 'none';
-            }
-        }
-
-        // Add item to database
-        function addItem() {
+        // Main function to process scans (works for both manual and QR scanner input)
+        function processScan() {
             const qrInput = document.getElementById('qrInput');
             const content = qrInput.value.trim();
             
+            // Hide previous alerts
+            document.getElementById('duplicate-alert').style.display = 'none';
+            document.getElementById('success-alert').style.display = 'none';
+            
             if (!content) {
-                alert('Please enter or scan some data first!');
+                showScanIndicator('Please scan a QR code first!', 'warning');
                 return;
             }
             
-            // Create new item
+            // Check for duplicate (case-insensitive)
+            const existingItem = allItems.find(item => 
+                item.content.toLowerCase() === content.toLowerCase()
+            );
+            
+            if (existingItem) {
+                // DUPLICATE DETECTED - DO NOT ADD
+                duplicatesBlocked++;
+                
+                // Show duplicate warning with original scan number
+                const duplicateAlert = document.getElementById('duplicate-alert');
+                duplicateAlert.style.display = 'block';
+                document.getElementById('duplicate-info').innerHTML = 
+                    `Item "<strong>${escapeHtml(content)}</strong>" was already scanned as item #${existingItem.displayNumber}`;
+                
+                // Show scan indicator
+                showScanIndicator(`Duplicate blocked! (Was #${existingItem.displayNumber})`, 'duplicate');
+                
+                // Clear input and refocus for next scan
+                setTimeout(() => {
+                    qrInput.value = '';
+                    qrInput.focus();
+                }, 100);
+                
+                updateStats();
+                return;
+            }
+            
+            // UNIQUE ITEM - Add to database
+            const scanNumber = allItems.length + 1;
             const newItem = {
                 content: content,
                 timestamp: Date.now(),
-                scannedBy: 'User ' + Math.floor(Math.random() * 4 + 1) // Simulate 4 users
+                scannedBy: getRandomUser(),
+                scanNumber: scanNumber
             };
             
-            // Add to Firebase
             database.ref('items').push(newItem)
                 .then(() => {
-                    qrInput.value = '';
-                    currentScan = '';
-                    qrInput.focus();
-                    document.getElementById('duplicate-alert').style.display = 'none';
+                    // Show success
+                    document.getElementById('success-alert').style.display = 'block';
+                    showScanIndicator(`Added as item #${scanNumber}`, 'success');
                     
-                    // Show success message
-                    showToast('✅ Item added successfully!', 'success');
+                    // Clear input and refocus for next scan
+                    qrInput.value = '';
+                    qrInput.focus();
+                    
+                    updateStats();
                 })
                 .catch((error) => {
                     console.error('Error adding item:', error);
-                    alert('Error adding item. Please try again.');
+                    showScanIndicator('Error adding item', 'error');
                 });
-        }
-
-        // Force add duplicate item
-        function forceAddDuplicate() {
-            const qrInput = document.getElementById('qrInput');
-            const content = qrInput.value.trim();
-            
-            if (!content) return;
-            
-            const newItem = {
-                content: content,
-                timestamp: Date.now(),
-                scannedBy: 'User ' + Math.floor(Math.random() * 4 + 1),
-                isDuplicate: true
-            };
-            
-            database.ref('items').push(newItem)
-                .then(() => {
-                    qrInput.value = '';
-                    currentScan = '';
-                    qrInput.focus();
-                    document.getElementById('duplicate-alert').style.display = 'none';
-                    showToast('⚠️ Duplicate item added manually', 'warning');
-                });
-        }
-
-        // Clear current scan input
-        function clearCurrent() {
-            document.getElementById('qrInput').value = '';
-            currentScan = '';
-            document.getElementById('duplicate-alert').style.display = 'none';
-            document.getElementById('qrInput').focus();
         }
 
         // Update the display of scanned items
@@ -480,57 +443,39 @@
                 return;
             }
             
-            // Filter items based on search
-            let displayItems = allItems;
-            if (searchActive && searchTerm) {
-                displayItems = allItems.filter(item => 
-                    item.content.toLowerCase().includes(searchTerm.toLowerCase())
-                );
-            }
+            // For display, we want unique items only (no duplicates in display)
+            const uniqueItems = [];
+            const seenContent = new Set();
             
-            // Filter duplicates if option is off
-            const showDuplicates = document.getElementById('showDuplicates').checked;
-            if (!showDuplicates) {
-                // Keep only unique items (first occurrence)
-                const uniqueItems = [];
-                const seenContent = new Set();
-                
-                displayItems.forEach(item => {
-                    const contentLower = item.content.toLowerCase();
-                    if (!seenContent.has(contentLower)) {
-                        seenContent.add(contentLower);
-                        uniqueItems.push(item);
-                    }
-                });
-                displayItems = uniqueItems;
-            }
+            allItems.forEach(item => {
+                const contentLower = item.content.toLowerCase();
+                if (!seenContent.has(contentLower)) {
+                    seenContent.add(contentLower);
+                    uniqueItems.push(item);
+                }
+            });
+            
+            // Sort by scan number for display
+            uniqueItems.sort((a, b) => a.scanNumber - b.scanNumber);
             
             // Create grid of items
             let html = '<div class="scanned-items-grid">';
             
-            displayItems.forEach((item, index) => {
-                // Check if this item is a duplicate
-                const isItemDuplicate = allItems.filter(i => 
-                    i.content.toLowerCase() === item.content.toLowerCase()
-                ).length > 1;
-                
-                // Check if item matches search
+            uniqueItems.forEach((item, index) => {
                 const isHighlighted = searchActive && searchTerm && 
                     item.content.toLowerCase().includes(searchTerm.toLowerCase());
                 
                 let cardClass = 'item-card';
-                if (isItemDuplicate) cardClass += ' duplicate';
                 if (isHighlighted) cardClass += ' highlighted';
                 
                 html += `
-                    <div class="${cardClass}" onclick="selectItem('${item.id}')">
-                        ${isItemDuplicate ? '<span class="duplicate-badge">DUP</span>' : ''}
-                        <div class="item-number">#${displayItems.length - index}</div>
+                    <div class="${cardClass}">
+                        <div class="item-number">#${item.displayNumber || item.scanNumber}</div>
                         <div class="item-content">${escapeHtml(item.content)}</div>
                         <div class="mt-2">
                             <small class="text-muted">
-                                ${formatTime(item.timestamp)}<br>
-                                By: ${item.scannedBy}
+                                Scanned by: ${item.scannedBy}<br>
+                                ${formatTime(item.timestamp)}
                             </small>
                         </div>
                     </div>
@@ -542,7 +487,7 @@
             
             // Update display count
             document.getElementById('display-count').textContent = 
-                `Displaying ${displayItems.length} items`;
+                `${uniqueItems.length} unique items`;
         }
 
         // Update statistics
@@ -551,49 +496,13 @@
             
             // Calculate unique items
             const uniqueContent = new Set();
-            const duplicateCounts = {};
-            
             allItems.forEach(item => {
-                const contentLower = item.content.toLowerCase();
-                if (uniqueContent.has(contentLower)) {
-                    duplicateCounts[contentLower] = (duplicateCounts[contentLower] || 1) + 1;
-                } else {
-                    uniqueContent.add(contentLower);
-                    duplicateCounts[contentLower] = 1;
-                }
+                uniqueContent.add(item.content.toLowerCase());
             });
             
             const uniqueItems = Array.from(uniqueContent).length;
-            const totalDuplicates = allItems.length - uniqueItems;
-            
             document.getElementById('unique-count').textContent = uniqueItems;
-            document.getElementById('duplicate-count').textContent = totalDuplicates;
-            
-            // Update last scan time
-            if (allItems.length > 0) {
-                const lastItem = allItems[0];
-                document.getElementById('last-scan-time').textContent = 
-                    `${formatTime(lastItem.timestamp)} by ${lastItem.scannedBy}`;
-            }
-        }
-
-        // Update connected user count
-        function updateUserCount() {
-            const userRef = database.ref('users');
-            const user = userRef.push({
-                connected: true,
-                lastSeen: Date.now()
-            });
-            
-            // Remove user when they disconnect
-            user.onDisconnect().remove();
-            
-            // Count connected users
-            userRef.on('value', (snapshot) => {
-                const users = snapshot.val();
-                const count = users ? Object.keys(users).length : 0;
-                document.getElementById('connected-users').textContent = count;
-            });
+            document.getElementById('duplicate-count').textContent = duplicatesBlocked;
         }
 
         // Search items
@@ -610,14 +519,14 @@
             document.getElementById('searchResults').style.display = 'block';
             document.getElementById('searchTerm').textContent = searchTerm;
             
-            // Count search results
-            const results = allItems.filter(item => 
+            // Count search results (only unique items)
+            const uniqueItems = getUniqueItems();
+            const results = uniqueItems.filter(item => 
                 item.content.toLowerCase().includes(searchTerm.toLowerCase())
             );
-            document.getElementById('searchResultsCount').textContent = results.length;
             
+            document.getElementById('searchResultsCount').textContent = results.length;
             updateDisplay();
-            showToast(`🔍 Found ${results.length} items matching "${searchTerm}"`, 'info');
         }
 
         // Clear search
@@ -629,36 +538,60 @@
             updateDisplay();
         }
 
-        // Toggle duplicate display
-        function toggleDuplicates() {
-            updateDisplay();
+        // Show scan indicator (top right)
+        function showScanIndicator(message, type) {
+            const indicator = document.getElementById('scanIndicator');
+            indicator.textContent = message;
+            indicator.className = 'scan-indicator';
+            
+            if (type === 'success') {
+                indicator.classList.add('scan-success');
+            } else if (type === 'duplicate') {
+                indicator.classList.add('scan-duplicate');
+            } else if (type === 'warning') {
+                indicator.style.backgroundColor = '#f8d7da';
+                indicator.style.color = '#721c24';
+                indicator.style.borderColor = '#f5c6cb';
+            }
+            
+            indicator.style.display = 'block';
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                indicator.style.display = 'none';
+            }, 3000);
         }
 
-        // Highlight duplicates
-        function highlightDuplicates() {
-            const highlight = document.getElementById('highlightDuplicates').checked;
-            const cards = document.querySelectorAll('.item-card.duplicate');
+        // Clear input field
+        function clearInput() {
+            document.getElementById('qrInput').value = '';
+            document.getElementById('qrInput').focus();
+            document.getElementById('duplicate-alert').style.display = 'none';
+            document.getElementById('success-alert').style.display = 'none';
+        }
+
+        // Get unique items only
+        function getUniqueItems() {
+            const uniqueItems = [];
+            const seenContent = new Set();
             
-            cards.forEach(card => {
-                if (highlight) {
-                    card.classList.add('duplicate');
-                } else {
-                    card.classList.remove('duplicate');
+            allItems.forEach(item => {
+                const contentLower = item.content.toLowerCase();
+                if (!seenContent.has(contentLower)) {
+                    seenContent.add(contentLower);
+                    uniqueItems.push(item);
                 }
             });
-        }
-
-        // Select an item (for future functionality)
-        function selectItem(itemId) {
-            const item = allItems.find(i => i.id === itemId);
-            if (item) {
-                document.getElementById('qrInput').value = item.content;
-                document.getElementById('qrInput').focus();
-                showToast(`📋 Copied "${item.content}" to input field`, 'info');
-            }
+            
+            return uniqueItems.sort((a, b) => a.scanNumber - b.scanNumber);
         }
 
         // Utility functions
+        function getRandomUser() {
+            const users = ['User 1', 'User 2', 'User 3', 'User 4'];
+            return users[Math.floor(Math.random() * users.length)];
+        }
+
         function formatTime(timestamp) {
             const date = new Date(timestamp);
             return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -670,34 +603,10 @@
             return div.innerHTML;
         }
 
-        function showToast(message, type = 'info') {
-            // Create toast element
-            const toast = document.createElement('div');
-            toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-            toast.style.cssText = `
-                top: 20px;
-                right: 20px;
-                z-index: 1000;
-                min-width: 300px;
-            `;
-            toast.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            
-            document.body.appendChild(toast);
-            
-            // Auto remove after 3 seconds
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
-        }
-
-        // Keyboard shortcuts help
-        console.log('Keyboard Shortcuts:');
-        console.log('- Enter: Add current scan');
-        console.log('- Escape: Clear current input or search');
-        console.log('- In search: Enter to search, Escape to clear');
+        // Keyboard shortcuts
+        console.log('QR Scanner Ready!');
+        console.log('Scanner will auto-detect and block duplicates');
+        console.log('Duplicate items show their original scan number');
     </script>
 </body>
 </html>
