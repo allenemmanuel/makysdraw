@@ -265,7 +265,7 @@
     </div>
 
     <script>
-        // Firebase Configuration - SAME AS YOUR DRAWING PROGRAM
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
             authDomain: "makysdraw-87237.firebaseapp.com",
@@ -285,46 +285,36 @@
         let duplicatesBlocked = 0;
         let searchActive = false;
         let searchTerm = '';
+        let isProcessing = false; // Flag to prevent multiple simultaneous scans
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
             setupFirebaseListeners();
             setupEventListeners();
+            initializeDatabase();
         });
 
         // Set up Firebase real-time listeners
         function setupFirebaseListeners() {
-            // Listen to the SAME database path as your drawing program
+            // Listen to the database path
             const itemsRef = database.ref('drawResults/items');
             
             itemsRef.on('value', (snapshot) => {
-                allItems = [];
                 const itemsData = snapshot.val();
+                allItems = [];
                 
-                if (itemsData) {
-                    // Your drawing program expects a simple array of strings
-                    // So we store items as strings in the array
-                    if (Array.isArray(itemsData)) {
-                        itemsData.forEach((item, index) => {
-                            // Handle both string items and object items (for backward compatibility)
-                            let content = item;
-                            if (typeof item === 'object' && item !== null && item.data) {
-                                content = item.data;
-                            }
-                            allItems.push({
-                                id: index,
-                                content: String(content),
-                                timestamp: Date.now(),
-                                scannedBy: 'Scanner',
-                                scanNumber: index + 1,
-                                displayNumber: index + 1
-                            });
+                if (itemsData && Array.isArray(itemsData)) {
+                    // Create item objects for display
+                    itemsData.forEach((item, index) => {
+                        allItems.push({
+                            id: index,
+                            content: String(item),
+                            timestamp: Date.now(),
+                            scannedBy: 'Scanner',
+                            scanNumber: index + 1,
+                            displayNumber: index + 1
                         });
-                    } else {
-                        // If it's not an array yet, initialize it
-                        console.log('Initializing items array...');
-                        database.ref('drawResults/items').set([]);
-                    }
+                    });
                 }
                 
                 updateDisplay();
@@ -344,18 +334,6 @@
                 }
             });
             
-            // Handle input from scanner (immediate processing for scanners that don't send Enter)
-            let scannerTimeout;
-            qrInput.addEventListener('input', (e) => {
-                // If scanner quickly fills the field, process it
-                clearTimeout(scannerTimeout);
-                scannerTimeout = setTimeout(() => {
-                    if (e.target.value.length > 0) {
-                        processScan();
-                    }
-                }, 100);
-            });
-            
             // Search functionality
             const searchInput = document.getElementById('searchInput');
             searchInput.addEventListener('keypress', (e) => {
@@ -367,6 +345,11 @@
 
         // Main function to process scans
         function processScan() {
+            if (isProcessing) {
+                console.log('Already processing a scan, please wait...');
+                return;
+            }
+            
             const qrInput = document.getElementById('qrInput');
             const content = qrInput.value.trim();
             
@@ -379,78 +362,88 @@
                 return;
             }
             
-            // Check for duplicate (case-insensitive)
-            const existingItem = allItems.find(item => 
-                item.content.toLowerCase() === content.toLowerCase()
-            );
+            isProcessing = true;
             
-            if (existingItem) {
-                // DUPLICATE DETECTED - DO NOT ADD
-                duplicatesBlocked++;
-                
-                // Show duplicate warning with original scan number
-                const duplicateAlert = document.getElementById('duplicate-alert');
-                duplicateAlert.style.display = 'block';
-                document.getElementById('duplicate-info').innerHTML = 
-                    `Item "<strong>${escapeHtml(content)}</strong>" was already scanned as item #${existingItem.displayNumber}`;
-                
-                // Show scan indicator
-                showScanIndicator(`Duplicate blocked! (Was #${existingItem.displayNumber})`, 'duplicate');
-                
-                // Clear input and refocus for next scan
-                setTimeout(() => {
-                    qrInput.value = '';
-                    qrInput.focus();
-                }, 100);
-                
-                updateStats();
-                return;
-            }
-            
-            // UNIQUE ITEM - Add to database
-            const scanNumber = allItems.length + 1;
-            
-            // Get current items from Firebase
+            // Get current items from Firebase to check for duplicates
             database.ref('drawResults/items').once('value')
                 .then((snapshot) => {
                     let currentItems = snapshot.val() || [];
                     
-                    // Ensure it's an array
                     if (!Array.isArray(currentItems)) {
                         currentItems = [];
                     }
                     
-                    // Add the new item as a simple string
+                    // Check for duplicate (case-insensitive)
+                    const isDuplicate = currentItems.some(item => 
+                        String(item).toLowerCase() === content.toLowerCase()
+                    );
+                    
+                    if (isDuplicate) {
+                        // DUPLICATE DETECTED - DO NOT ADD
+                        duplicatesBlocked++;
+                        
+                        // Find the original item number
+                        const originalIndex = currentItems.findIndex(item => 
+                            String(item).toLowerCase() === content.toLowerCase()
+                        );
+                        const originalNumber = originalIndex + 1;
+                        
+                        // Show duplicate warning with original scan number
+                        const duplicateAlert = document.getElementById('duplicate-alert');
+                        duplicateAlert.style.display = 'block';
+                        document.getElementById('duplicate-info').innerHTML = 
+                            `Item "<strong>${escapeHtml(content)}</strong>" was already scanned as item #${originalNumber}`;
+                        
+                        // Show scan indicator
+                        showScanIndicator(`Duplicate blocked! (Was #${originalNumber})`, 'duplicate');
+                        
+                        isProcessing = false;
+                        return;
+                    }
+                    
+                    // UNIQUE ITEM - Add to database
                     currentItems.push(content);
                     
                     // Save back to Firebase
                     return database.ref('drawResults/items').set(currentItems);
                 })
-                .then(() => {
-                    // Also update the display locally
-                    allItems.push({
-                        id: allItems.length,
-                        content: content,
-                        timestamp: Date.now(),
-                        scannedBy: getRandomUser(),
-                        scanNumber: scanNumber,
-                        displayNumber: scanNumber
-                    });
-                    
-                    // Show success
-                    document.getElementById('success-alert').style.display = 'block';
-                    showScanIndicator(`Added as item #${scanNumber}`, 'success');
+                .then((result) => {
+                    if (result) { // Only if we saved successfully
+                        const scanNumber = allItems.length + 1;
+                        
+                        // Show success
+                        document.getElementById('success-alert').style.display = 'block';
+                        showScanIndicator(`Added as item #${scanNumber}`, 'success');
+                        
+                        // Add to local array for immediate display
+                        allItems.push({
+                            id: allItems.length,
+                            content: content,
+                            timestamp: Date.now(),
+                            scannedBy: getRandomUser(),
+                            scanNumber: scanNumber,
+                            displayNumber: scanNumber
+                        });
+                        
+                        updateDisplay();
+                        updateStats();
+                    }
                     
                     // Clear input and refocus for next scan
+                    const qrInput = document.getElementById('qrInput');
                     qrInput.value = '';
                     qrInput.focus();
-                    
-                    updateDisplay();
-                    updateStats();
+                    isProcessing = false;
                 })
                 .catch((error) => {
                     console.error('Error adding item:', error);
                     showScanIndicator('Error adding item', 'error');
+                    isProcessing = false;
+                    
+                    // Still clear the input field
+                    const qrInput = document.getElementById('qrInput');
+                    qrInput.value = '';
+                    qrInput.focus();
                 });
         }
 
@@ -611,6 +604,22 @@
             return uniqueItems.sort((a, b) => a.scanNumber - b.scanNumber);
         }
 
+        // Initialize database if empty
+        function initializeDatabase() {
+            database.ref('drawResults').once('value')
+                .then((snapshot) => {
+                    if (!snapshot.val()) {
+                        // Initialize with empty structure
+                        database.ref('drawResults').set({
+                            items: [],
+                            drawnItems: [],
+                            allResults: []
+                        });
+                        console.log('Database initialized with empty structure');
+                    }
+                });
+        }
+
         // Utility functions
         function getRandomUser() {
             const users = ['User 1', 'User 2', 'User 3', 'User 4'];
@@ -628,28 +637,8 @@
             return div.innerHTML;
         }
 
-        // Initialize database if empty
-        function initializeDatabase() {
-            database.ref('drawResults').once('value')
-                .then((snapshot) => {
-                    if (!snapshot.val()) {
-                        // Initialize with empty structure
-                        database.ref('drawResults').set({
-                            items: [],
-                            drawnItems: [],
-                            allResults: []
-                        });
-                        console.log('Database initialized with empty structure');
-                    }
-                });
-        }
-
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', initializeDatabase);
-
         console.log('QR Scanner Ready!');
-        console.log('Items will be saved to: drawResults/items');
-        console.log('Format: Simple array of strings (e.g., ["item1", "item2", "item3"])');
+        console.log('Duplicate detection now works correctly with Firebase data');
     </script>
 </body>
 </html>
