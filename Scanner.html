@@ -265,7 +265,7 @@
     </div>
 
     <script>
-        // Firebase Configuration
+        // Firebase Configuration - SAME AS YOUR DRAWING PROGRAM
         const firebaseConfig = {
             apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
             authDomain: "makysdraw-87237.firebaseapp.com",
@@ -294,31 +294,37 @@
 
         // Set up Firebase real-time listeners
         function setupFirebaseListeners() {
-            const itemsRef = database.ref('items');
+            // Listen to the SAME database path as your drawing program
+            const itemsRef = database.ref('drawResults/items');
             
             itemsRef.on('value', (snapshot) => {
                 allItems = [];
                 const itemsData = snapshot.val();
                 
                 if (itemsData) {
-                    Object.keys(itemsData).forEach(key => {
-                        allItems.push({
-                            id: key,
-                            content: itemsData[key].content,
-                            timestamp: itemsData[key].timestamp || Date.now(),
-                            scannedBy: itemsData[key].scannedBy || 'Unknown',
-                            scanNumber: itemsData[key].scanNumber || 0
+                    // Your drawing program expects a simple array of strings
+                    // So we store items as strings in the array
+                    if (Array.isArray(itemsData)) {
+                        itemsData.forEach((item, index) => {
+                            // Handle both string items and object items (for backward compatibility)
+                            let content = item;
+                            if (typeof item === 'object' && item !== null && item.data) {
+                                content = item.data;
+                            }
+                            allItems.push({
+                                id: index,
+                                content: String(content),
+                                timestamp: Date.now(),
+                                scannedBy: 'Scanner',
+                                scanNumber: index + 1,
+                                displayNumber: index + 1
+                            });
                         });
-                    });
-                    
-                    // Sort by timestamp (newest first for display, but keep original order for numbering)
-                    allItems.sort((a, b) => b.timestamp - a.timestamp);
-                    
-                    // Re-number items based on original scan order
-                    const sortedByScanNumber = [...allItems].sort((a, b) => a.scanNumber - b.scanNumber);
-                    sortedByScanNumber.forEach((item, index) => {
-                        item.displayNumber = index + 1;
-                    });
+                    } else {
+                        // If it's not an array yet, initialize it
+                        console.log('Initializing items array...');
+                        database.ref('drawResults/items').set([]);
+                    }
                 }
                 
                 updateDisplay();
@@ -345,10 +351,9 @@
                 clearTimeout(scannerTimeout);
                 scannerTimeout = setTimeout(() => {
                     if (e.target.value.length > 0) {
-                        // Check if this looks like scanner input (fast typing or complete data)
                         processScan();
                     }
-                }, 100); // Short delay to catch scanner input
+                }, 100);
             });
             
             // Search functionality
@@ -360,7 +365,7 @@
             });
         }
 
-        // Main function to process scans (works for both manual and QR scanner input)
+        // Main function to process scans
         function processScan() {
             const qrInput = document.getElementById('qrInput');
             const content = qrInput.value.trim();
@@ -404,15 +409,34 @@
             
             // UNIQUE ITEM - Add to database
             const scanNumber = allItems.length + 1;
-            const newItem = {
-                content: content,
-                timestamp: Date.now(),
-                scannedBy: getRandomUser(),
-                scanNumber: scanNumber
-            };
             
-            database.ref('items').push(newItem)
+            // Get current items from Firebase
+            database.ref('drawResults/items').once('value')
+                .then((snapshot) => {
+                    let currentItems = snapshot.val() || [];
+                    
+                    // Ensure it's an array
+                    if (!Array.isArray(currentItems)) {
+                        currentItems = [];
+                    }
+                    
+                    // Add the new item as a simple string
+                    currentItems.push(content);
+                    
+                    // Save back to Firebase
+                    return database.ref('drawResults/items').set(currentItems);
+                })
                 .then(() => {
+                    // Also update the display locally
+                    allItems.push({
+                        id: allItems.length,
+                        content: content,
+                        timestamp: Date.now(),
+                        scannedBy: getRandomUser(),
+                        scanNumber: scanNumber,
+                        displayNumber: scanNumber
+                    });
+                    
                     // Show success
                     document.getElementById('success-alert').style.display = 'block';
                     showScanIndicator(`Added as item #${scanNumber}`, 'success');
@@ -421,6 +445,7 @@
                     qrInput.value = '';
                     qrInput.focus();
                     
+                    updateDisplay();
                     updateStats();
                 })
                 .catch((error) => {
@@ -443,7 +468,7 @@
                 return;
             }
             
-            // For display, we want unique items only (no duplicates in display)
+            // For display, we want unique items only
             const uniqueItems = [];
             const seenContent = new Set();
             
@@ -519,7 +544,7 @@
             document.getElementById('searchResults').style.display = 'block';
             document.getElementById('searchTerm').textContent = searchTerm;
             
-            // Count search results (only unique items)
+            // Count search results
             const uniqueItems = getUniqueItems();
             const results = uniqueItems.filter(item => 
                 item.content.toLowerCase().includes(searchTerm.toLowerCase())
@@ -538,7 +563,7 @@
             updateDisplay();
         }
 
-        // Show scan indicator (top right)
+        // Show scan indicator
         function showScanIndicator(message, type) {
             const indicator = document.getElementById('scanIndicator');
             indicator.textContent = message;
@@ -603,10 +628,28 @@
             return div.innerHTML;
         }
 
-        // Keyboard shortcuts
+        // Initialize database if empty
+        function initializeDatabase() {
+            database.ref('drawResults').once('value')
+                .then((snapshot) => {
+                    if (!snapshot.val()) {
+                        // Initialize with empty structure
+                        database.ref('drawResults').set({
+                            items: [],
+                            drawnItems: [],
+                            allResults: []
+                        });
+                        console.log('Database initialized with empty structure');
+                    }
+                });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initializeDatabase);
+
         console.log('QR Scanner Ready!');
-        console.log('Scanner will auto-detect and block duplicates');
-        console.log('Duplicate items show their original scan number');
+        console.log('Items will be saved to: drawResults/items');
+        console.log('Format: Simple array of strings (e.g., ["item1", "item2", "item3"])');
     </script>
 </body>
 </html>
