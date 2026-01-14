@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Scanner Data Collector</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .scanner-input {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .scanned-items-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .item-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+            word-break: break-word;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+        }
+        .item-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .item-card.duplicate {
+            background-color: #fff3cd;
+            border-color: #ffc107;
+        }
+        .item-card.highlighted {
+            background-color: #d1ecf1;
+            border-color: #0dcaf0;
+            animation: pulse 1.5s infinite;
+        }
+        .item-number {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        .item-content {
+            font-weight: 500;
+            color: #495057;
+        }
+        .current-scan {
+            background-color: #e7f5ff;
+            border: 2px solid #339af0;
+        }
+        .stats-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .search-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .duplicate-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #ffc107;
+            color: #856404;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .controls-row {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(13, 202, 240, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(13, 202, 240, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(13, 202, 240, 0); }
+        }
+        @media (max-width: 1400px) {
+            .scanned-items-grid {
+                grid-template-columns: repeat(8, 1fr);
+            }
+        }
+        @media (max-width: 1200px) {
+            .scanned-items-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+        }
+        @media (max-width: 992px) {
+            .scanned-items-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .scanned-items-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media (max-width: 576px) {
+            .scanned-items-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">📱 QR Code Scanner Data Collector</h1>
+        
+        <!-- Stats Section -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h5>Total Scanned</h5>
+                    <h2 id="total-count" class="text-primary">0</h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h5>Unique Items</h5>
+                    <h2 id="unique-count" class="text-success">0</h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h5>Duplicates</h5>
+                    <h2 id="duplicate-count" class="text-warning">0</h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <h5>Connected Users</h5>
+                    <h2 id="connected-users" class="text-info">1</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scanner Input Section -->
+        <div class="scanner-input">
+            <h3>🔍 Current Scan</h3>
+            <div class="alert alert-warning" id="duplicate-alert" style="display: none;">
+                ⚠️ <strong>Duplicate detected!</strong> This item has already been scanned. 
+                <button class="btn btn-sm btn-outline-warning ms-2" onclick="forceAddDuplicate()">Add Anyway</button>
+            </div>
+            <div class="mb-3">
+                <label for="qrInput" class="form-label">Enter QR Code Data (or paste scanned content):</label>
+                <input type="text" class="form-control form-control-lg" id="qrInput" 
+                       placeholder="Scan QR code or type data here..." autofocus>
+                <div class="form-text">Auto-check for duplicates enabled</div>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary btn-lg flex-grow-1" onclick="addItem()">
+                    ✅ Add to Database
+                </button>
+                <button class="btn btn-outline-secondary btn-lg" onclick="clearCurrent()">
+                    ✨ Clear
+                </button>
+            </div>
+        </div>
+
+        <!-- Controls and Search Section -->
+        <div class="controls-row">
+            <div class="row">
+                <div class="col-md-8">
+                    <h5>🔍 Search & Filter</h5>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="searchInput" 
+                               placeholder="Search scanned items...">
+                        <button class="btn btn-outline-primary" onclick="searchItems()">
+                            Search
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="clearSearch()">
+                            Clear
+                        </button>
+                    </div>
+                    <div class="form-text mt-1">
+                        Search by content. Press Enter to search, Esc to clear.
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <h5>⚙️ View Options</h5>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="showDuplicates" checked 
+                               onchange="toggleDuplicates()">
+                        <label class="form-check-label" for="showDuplicates">
+                            Show Duplicates
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="highlightDuplicates" checked
+                               onchange="highlightDuplicates()">
+                        <label class="form-check-label" for="highlightDuplicates">
+                            Highlight Duplicates
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scanned Items Display Section -->
+        <div class="search-container">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3>📦 All Scanned Items</h3>
+                <span class="badge bg-primary" id="display-count">Displaying 0 items</span>
+            </div>
+            
+            <div id="searchResults" style="display: none;" class="alert alert-info mb-3">
+                Search results for: "<span id="searchTerm"></span>" 
+                (<span id="searchResultsCount">0</span> items found)
+                <button class="btn btn-sm btn-outline-info ms-2" onclick="clearSearch()">Show All</button>
+            </div>
+            
+            <div class="loading-spinner" id="loading">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading scanned items...</p>
+            </div>
+            
+            <div id="itemsContainer">
+                <!-- Items will be displayed here in a 10-column grid -->
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="alert alert-info mt-4">
+            <h5>📋 How to Use:</h5>
+            <ol class="mb-0">
+                <li>Scan a QR code or type/paste the data into the input field</li>
+                <li>The system automatically checks for duplicates</li>
+                <li>Click "Add to Database" or press Enter to save</li>
+                <li>All data syncs automatically with your team members</li>
+                <li>Use the search bar to find specific items</li>
+                <li>Toggle duplicate highlighting on/off as needed</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
+            authDomain: "makysdraw-87237.firebaseapp.com",
+            databaseURL: "https://makysdraw-87237-default-rtdb.firebaseio.com",
+            projectId: "makysdraw-87237",
+            storageBucket: "makysdraw-87237.firebasestorage.app",
+            messagingSenderId: "1044977366090",
+            appId: "1:1044977366090:web:37af3eaa9c3f5bfc7822b3"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // Global variables
+        let allItems = [];
+        let currentScan = '';
+        let isDuplicate = false;
+        let searchActive = false;
+        let searchTerm = '';
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            setupFirebaseListeners();
+            setupEventListeners();
+        });
+
+        // Set up Firebase real-time listeners
+        function setupFirebaseListeners() {
+            // Reference to the items in database
+            const itemsRef = database.ref('items');
+            
+            // Listen for changes in items
+            itemsRef.on('value', (snapshot) => {
+                allItems = [];
+                const itemsData = snapshot.val();
+                
+                if (itemsData) {
+                    // Convert object to array with IDs
+                    Object.keys(itemsData).forEach(key => {
+                        allItems.push({
+                            id: key,
+                            content: itemsData[key].content,
+                            timestamp: itemsData[key].timestamp || Date.now(),
+                            scannedBy: itemsData[key].scannedBy || 'Unknown'
+                        });
+                    });
+                    
+                    // Sort by timestamp (newest first)
+                    allItems.sort((a, b) => b.timestamp - a.timestamp);
+                }
+                
+                updateDisplay();
+                updateStats();
+                
+                // Check if current scan is a duplicate
+                checkDuplicate();
+            });
+            
+            // Monitor connected users
+            const connectedRef = database.ref('.info/connected');
+            connectedRef.on('value', (snapshot) => {
+                if (snapshot.val() === true) {
+                    updateUserCount();
+                }
+            });
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            const qrInput = document.getElementById('qrInput');
+            
+            // Enter key to add item
+            qrInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addItem();
+                }
+            });
+            
+            // Input change - check for duplicate in real-time
+            qrInput.addEventListener('input', (e) => {
+                currentScan = e.target.value.trim();
+                checkDuplicate();
+            });
+            
+            // Escape key to clear input
+            qrInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    clearCurrent();
+                }
+            });
+            
+            // Search input listeners
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    searchItems();
+                }
+            });
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    clearSearch();
+                }
+            });
+        }
+
+        // Check if current scan is a duplicate
+        function checkDuplicate() {
+            if (!currentScan) {
+                document.getElementById('duplicate-alert').style.display = 'none';
+                isDuplicate = false;
+                return;
+            }
+            
+            // Check if item already exists (case insensitive)
+            const existingItem = allItems.find(item => 
+                item.content.toLowerCase() === currentScan.toLowerCase()
+            );
+            
+            isDuplicate = !!existingItem;
+            
+            const duplicateAlert = document.getElementById('duplicate-alert');
+            if (isDuplicate) {
+                duplicateAlert.style.display = 'block';
+            } else {
+                duplicateAlert.style.display = 'none';
+            }
+        }
+
+        // Add item to database
+        function addItem() {
+            const qrInput = document.getElementById('qrInput');
+            const content = qrInput.value.trim();
+            
+            if (!content) {
+                alert('Please enter or scan some data first!');
+                return;
+            }
+            
+            // Create new item
+            const newItem = {
+                content: content,
+                timestamp: Date.now(),
+                scannedBy: 'User ' + Math.floor(Math.random() * 4 + 1) // Simulate 4 users
+            };
+            
+            // Add to Firebase
+            database.ref('items').push(newItem)
+                .then(() => {
+                    qrInput.value = '';
+                    currentScan = '';
+                    qrInput.focus();
+                    document.getElementById('duplicate-alert').style.display = 'none';
+                    
+                    // Show success message
+                    showToast('✅ Item added successfully!', 'success');
+                })
+                .catch((error) => {
+                    console.error('Error adding item:', error);
+                    alert('Error adding item. Please try again.');
+                });
+        }
+
+        // Force add duplicate item
+        function forceAddDuplicate() {
+            const qrInput = document.getElementById('qrInput');
+            const content = qrInput.value.trim();
+            
+            if (!content) return;
+            
+            const newItem = {
+                content: content,
+                timestamp: Date.now(),
+                scannedBy: 'User ' + Math.floor(Math.random() * 4 + 1),
+                isDuplicate: true
+            };
+            
+            database.ref('items').push(newItem)
+                .then(() => {
+                    qrInput.value = '';
+                    currentScan = '';
+                    qrInput.focus();
+                    document.getElementById('duplicate-alert').style.display = 'none';
+                    showToast('⚠️ Duplicate item added manually', 'warning');
+                });
+        }
+
+        // Clear current scan input
+        function clearCurrent() {
+            document.getElementById('qrInput').value = '';
+            currentScan = '';
+            document.getElementById('duplicate-alert').style.display = 'none';
+            document.getElementById('qrInput').focus();
+        }
+
+        // Update the display of scanned items
+        function updateDisplay() {
+            const container = document.getElementById('itemsContainer');
+            
+            if (allItems.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-light text-center">
+                        <h4>No items scanned yet</h4>
+                        <p class="mb-0">Start scanning QR codes to see them appear here!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Filter items based on search
+            let displayItems = allItems;
+            if (searchActive && searchTerm) {
+                displayItems = allItems.filter(item => 
+                    item.content.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+            }
+            
+            // Filter duplicates if option is off
+            const showDuplicates = document.getElementById('showDuplicates').checked;
+            if (!showDuplicates) {
+                // Keep only unique items (first occurrence)
+                const uniqueItems = [];
+                const seenContent = new Set();
+                
+                displayItems.forEach(item => {
+                    const contentLower = item.content.toLowerCase();
+                    if (!seenContent.has(contentLower)) {
+                        seenContent.add(contentLower);
+                        uniqueItems.push(item);
+                    }
+                });
+                displayItems = uniqueItems;
+            }
+            
+            // Create grid of items
+            let html = '<div class="scanned-items-grid">';
+            
+            displayItems.forEach((item, index) => {
+                // Check if this item is a duplicate
+                const isItemDuplicate = allItems.filter(i => 
+                    i.content.toLowerCase() === item.content.toLowerCase()
+                ).length > 1;
+                
+                // Check if item matches search
+                const isHighlighted = searchActive && searchTerm && 
+                    item.content.toLowerCase().includes(searchTerm.toLowerCase());
+                
+                let cardClass = 'item-card';
+                if (isItemDuplicate) cardClass += ' duplicate';
+                if (isHighlighted) cardClass += ' highlighted';
+                
+                html += `
+                    <div class="${cardClass}" onclick="selectItem('${item.id}')">
+                        ${isItemDuplicate ? '<span class="duplicate-badge">DUP</span>' : ''}
+                        <div class="item-number">#${displayItems.length - index}</div>
+                        <div class="item-content">${escapeHtml(item.content)}</div>
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                ${formatTime(item.timestamp)}<br>
+                                By: ${item.scannedBy}
+                            </small>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+            
+            // Update display count
+            document.getElementById('display-count').textContent = 
+                `Displaying ${displayItems.length} items`;
+        }
+
+        // Update statistics
+        function updateStats() {
+            document.getElementById('total-count').textContent = allItems.length;
+            
+            // Calculate unique items
+            const uniqueContent = new Set();
+            const duplicateCounts = {};
+            
+            allItems.forEach(item => {
+                const contentLower = item.content.toLowerCase();
+                if (uniqueContent.has(contentLower)) {
+                    duplicateCounts[contentLower] = (duplicateCounts[contentLower] || 1) + 1;
+                } else {
+                    uniqueContent.add(contentLower);
+                    duplicateCounts[contentLower] = 1;
+                }
+            });
+            
+            const uniqueItems = Array.from(uniqueContent).length;
+            const totalDuplicates = allItems.length - uniqueItems;
+            
+            document.getElementById('unique-count').textContent = uniqueItems;
+            document.getElementById('duplicate-count').textContent = totalDuplicates;
+            
+            // Update last scan time
+            if (allItems.length > 0) {
+                const lastItem = allItems[0];
+                document.getElementById('last-scan-time').textContent = 
+                    `${formatTime(lastItem.timestamp)} by ${lastItem.scannedBy}`;
+            }
+        }
+
+        // Update connected user count
+        function updateUserCount() {
+            const userRef = database.ref('users');
+            const user = userRef.push({
+                connected: true,
+                lastSeen: Date.now()
+            });
+            
+            // Remove user when they disconnect
+            user.onDisconnect().remove();
+            
+            // Count connected users
+            userRef.on('value', (snapshot) => {
+                const users = snapshot.val();
+                const count = users ? Object.keys(users).length : 0;
+                document.getElementById('connected-users').textContent = count;
+            });
+        }
+
+        // Search items
+        function searchItems() {
+            const searchInput = document.getElementById('searchInput');
+            searchTerm = searchInput.value.trim();
+            
+            if (!searchTerm) {
+                clearSearch();
+                return;
+            }
+            
+            searchActive = true;
+            document.getElementById('searchResults').style.display = 'block';
+            document.getElementById('searchTerm').textContent = searchTerm;
+            
+            // Count search results
+            const results = allItems.filter(item => 
+                item.content.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            document.getElementById('searchResultsCount').textContent = results.length;
+            
+            updateDisplay();
+            showToast(`🔍 Found ${results.length} items matching "${searchTerm}"`, 'info');
+        }
+
+        // Clear search
+        function clearSearch() {
+            searchActive = false;
+            searchTerm = '';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchResults').style.display = 'none';
+            updateDisplay();
+        }
+
+        // Toggle duplicate display
+        function toggleDuplicates() {
+            updateDisplay();
+        }
+
+        // Highlight duplicates
+        function highlightDuplicates() {
+            const highlight = document.getElementById('highlightDuplicates').checked;
+            const cards = document.querySelectorAll('.item-card.duplicate');
+            
+            cards.forEach(card => {
+                if (highlight) {
+                    card.classList.add('duplicate');
+                } else {
+                    card.classList.remove('duplicate');
+                }
+            });
+        }
+
+        // Select an item (for future functionality)
+        function selectItem(itemId) {
+            const item = allItems.find(i => i.id === itemId);
+            if (item) {
+                document.getElementById('qrInput').value = item.content;
+                document.getElementById('qrInput').focus();
+                showToast(`📋 Copied "${item.content}" to input field`, 'info');
+            }
+        }
+
+        // Utility functions
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showToast(message, type = 'info') {
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            toast.style.cssText = `
+                top: 20px;
+                right: 20px;
+                z-index: 1000;
+                min-width: 300px;
+            `;
+            toast.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Keyboard shortcuts help
+        console.log('Keyboard Shortcuts:');
+        console.log('- Enter: Add current scan');
+        console.log('- Escape: Clear current input or search');
+        console.log('- In search: Enter to search, Escape to clear');
+    </script>
+</body>
+</html>
