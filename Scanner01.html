@@ -6,105 +6,217 @@
     <title>QR Code Scanner Data Collector</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body {
-            background-color: #f8f9fa;
-            padding: 20px;
+        :root {
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #212529;
+            --border-color: #e9ecef;
+            --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --success-color: #198754;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+            --card-shadow: 0 4px 8px rgba(0,0,0,0.08);
         }
+
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e9ecef;
+            --border-color: #2d3748;
+            --primary-color: #3b82f6;
+            --secondary-color: #94a3b8;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --shadow: 0 4px 6px rgba(0,0,0,0.3);
+            --card-shadow: 0 4px 8px rgba(0,0,0,0.25);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
         .scanner-input {
-            background: white;
+            background: var(--card-bg);
             border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
             padding: 25px;
             margin-bottom: 30px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
         }
+
+        /* UPDATED: Scanned items grid with 5 columns */
         .scanned-items-grid {
             display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            gap: 10px;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
             margin-top: 20px;
         }
+
+        /* UPDATED: Enlarged and improved item cards */
         .item-card {
-            background: white;
-            border-radius: 8px;
-            padding: 15px;
+            background: linear-gradient(135deg, var(--card-bg) 0%, var(--bg-color) 100%);
+            border-radius: 12px;
+            padding: 20px 15px;
             text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            border: 1px solid #e9ecef;
+            box-shadow: var(--card-shadow);
+            border: 2px solid var(--border-color);
             transition: all 0.3s ease;
             word-break: break-word;
-            min-height: 100px;
+            min-height: 140px;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            align-items: center;
             position: relative;
+            overflow: hidden;
         }
+
         .item-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: translateY(-4px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            border-color: var(--primary-color);
         }
+
         .item-card.duplicate {
-            background-color: #fff3cd;
-            border-color: #ffc107;
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border-color: var(--warning-color);
         }
+
+        [data-theme="dark"] .item-card.duplicate {
+            background: linear-gradient(135deg, #443711 0%, #5a4b1a 100%);
+            border-color: #d97706;
+            color: #fef3c7;
+        }
+
         .item-card.highlighted {
-            background-color: #d1ecf1;
+            background: linear-gradient(135deg, #d1ecf1 0%, #a8e6cf 100%);
             border-color: #0dcaf0;
             animation: pulse 1.5s infinite;
         }
+
+        [data-theme="dark"] .item-card.highlighted {
+            background: linear-gradient(135deg, #0f766e 0%, #065f46 100%);
+            border-color: #0d9488;
+        }
+
+        .item-card.new-item {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border-color: var(--success-color);
+            animation: highlightNew 2s ease-out;
+        }
+
+        [data-theme="dark"] .item-card.new-item {
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+            border-color: #10b981;
+        }
+
+        /* UPDATED: Improved item number styling */
         .item-number {
-            font-size: 12px;
-            color: #6c757d;
-            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--primary-color);
+            background: rgba(13, 110, 253, 0.1);
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+            width: fit-content;
         }
+
+        [data-theme="dark"] .item-number {
+            background: rgba(59, 130, 246, 0.2);
+        }
+
+        /* UPDATED: Enlarged and improved item content */
         .item-content {
-            font-weight: 500;
-            color: #495057;
+            font-weight: 600;
+            font-size: 18px;
+            color: var(--text-color);
+            line-height: 1.4;
+            margin: 10px 0;
+            padding: 0 5px;
+            max-height: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
         }
-        .current-scan {
-            background-color: #e7f5ff;
-            border: 2px solid #339af0;
-        }
+
         .stats-card {
-            background: white;
+            background: var(--card-bg);
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
         }
+
         .search-container {
-            background: white;
+            background: var(--card-bg);
             border-radius: 10px;
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
         }
+
         .duplicate-badge {
             position: absolute;
             top: 5px;
             right: 5px;
-            background: #ffc107;
+            background: var(--warning-color);
             color: #856404;
             font-size: 10px;
             padding: 2px 6px;
             border-radius: 10px;
         }
+
         .duplicate-alert {
             animation: shake 0.5s ease-in-out;
         }
+
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
             20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
+
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
             70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
             100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
         }
+
+        @keyframes highlightNew {
+            0% { 
+                transform: scale(1.05);
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+            }
+            70% { 
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+            }
+            100% { 
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+            }
+        }
+
         .scan-indicator {
             position: fixed;
             top: 20px;
@@ -114,47 +226,165 @@
             font-weight: bold;
             z-index: 1000;
             display: none;
+            transition: all 0.3s ease;
         }
+
         .scan-success {
             background: #d4edda;
             color: #155724;
             border: 2px solid #c3e6cb;
         }
+
+        [data-theme="dark"] .scan-success {
+            background: #064e3b;
+            color: #d1fae5;
+            border-color: #065f46;
+        }
+
         .scan-duplicate {
             background: #fff3cd;
             color: #856404;
             border: 2px solid #ffeaa7;
         }
+
+        [data-theme="dark"] .scan-duplicate {
+            background: #443711;
+            color: #fef3c7;
+            border-color: #5a4b1a;
+        }
+
+        /* Dark Mode Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+
+        .theme-toggle-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
+        }
+
+        .theme-toggle-btn:hover {
+            transform: scale(1.1);
+            border-color: var(--primary-color);
+        }
+
+        .theme-toggle-btn i {
+            font-size: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        /* Dark mode specific styles for form elements */
+        [data-theme="dark"] .form-control {
+            background-color: #2d3748;
+            border-color: #4a5568;
+            color: var(--text-color);
+        }
+
+        [data-theme="dark"] .form-control:focus {
+            background-color: #2d3748;
+            border-color: var(--primary-color);
+            color: var(--text-color);
+            box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+        }
+
+        [data-theme="dark"] .form-control::placeholder {
+            color: #94a3b8;
+        }
+
+        [data-theme="dark"] .alert {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        [data-theme="dark"] .alert-info {
+            background-color: rgba(56, 189, 248, 0.1);
+            border-color: rgba(56, 189, 248, 0.2);
+            color: #bae6fd;
+        }
+
+        [data-theme="dark"] .alert-warning {
+            background-color: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.2);
+            color: #fef3c7;
+        }
+
+        [data-theme="dark"] .alert-success {
+            background-color: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.2);
+            color: #d1fae5;
+        }
+
+        [data-theme="dark"] .badge {
+            color: #1e1e1e;
+        }
+
+        /* UPDATED: Responsive adjustments for 5-column layout */
         @media (max-width: 1400px) {
             .scanned-items-grid {
-                grid-template-columns: repeat(8, 1fr);
+                grid-template-columns: repeat(5, 1fr);
             }
         }
+
         @media (max-width: 1200px) {
-            .scanned-items-grid {
-                grid-template-columns: repeat(6, 1fr);
-            }
-        }
-        @media (max-width: 992px) {
             .scanned-items-grid {
                 grid-template-columns: repeat(4, 1fr);
             }
         }
-        @media (max-width: 768px) {
+
+        @media (max-width: 992px) {
             .scanned-items-grid {
                 grid-template-columns: repeat(3, 1fr);
             }
         }
-        @media (max-width: 576px) {
+
+        @media (max-width: 768px) {
             .scanned-items-grid {
                 grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .theme-toggle {
+                position: relative;
+                top: 0;
+                left: 0;
+                margin-bottom: 20px;
+            }
+            
+            .theme-toggle-btn {
+                width: 40px;
+                height: 40px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .scanned-items-grid {
+                grid-template-columns: repeat(1, 1fr);
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="text-center mb-4"> MAKYS QR Code Scanner</h1>
+        <!-- Dark Mode Toggle Button -->
+        <div class="theme-toggle">
+            <div class="theme-toggle-btn" id="themeToggle" onclick="toggleDarkMode()">
+                <i id="themeIcon" class="bi bi-moon"></i>
+            </div>
+        </div>
+
+        <h1 class="text-center mb-4">MAKYS QR Code Scanner</h1>
         
         <!-- Scan Indicator (Top Right) -->
         <div id="scanIndicator" class="scan-indicator">
@@ -182,7 +412,6 @@
                 </div>
             </div>
         </div>
-
 
         <!-- Scanned Items Display -->
         <div class="search-container">
@@ -251,7 +480,6 @@
             </div>
         </div>
 
-
         <!-- Instructions -->
         <div class="alert alert-info mt-4">
             <h5>📋 How to Use with QR Scanner:</h5>
@@ -287,18 +515,80 @@
         let duplicatesBlocked = 0;
         let searchActive = false;
         let searchTerm = '';
-        let isProcessing = false; // Flag to prevent multiple simultaneous scans
+        let isProcessing = false;
+        let lastAddedItemId = null;
+        let isDarkMode = false;
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
             setupFirebaseListeners();
             setupEventListeners();
             initializeDatabase();
+            initializeTheme();
         });
+
+        // Initialize theme from localStorage or system preference
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                enableDarkMode();
+            } else {
+                enableLightMode();
+            }
+        }
+
+        // Toggle dark mode
+        function toggleDarkMode() {
+            if (isDarkMode) {
+                enableLightMode();
+            } else {
+                enableDarkMode();
+            }
+        }
+
+        // Enable dark mode
+        function enableDarkMode() {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.getElementById('themeIcon').className = 'bi bi-sun';
+            isDarkMode = true;
+            localStorage.setItem('theme', 'dark');
+            
+            // Update Bootstrap button classes for dark mode
+            updateButtonClassesForDarkMode();
+        }
+
+        // Enable light mode
+        function enableLightMode() {
+            document.documentElement.setAttribute('data-theme', 'light');
+            document.getElementById('themeIcon').className = 'bi bi-moon';
+            isDarkMode = false;
+            localStorage.setItem('theme', 'light');
+            
+            // Reset Bootstrap button classes
+            updateButtonClassesForLightMode();
+        }
+
+        // Update button classes for dark mode
+        function updateButtonClassesForDarkMode() {
+            // Update outline buttons to work better in dark mode
+            const outlineButtons = document.querySelectorAll('.btn-outline-primary, .btn-outline-secondary, .btn-outline-info');
+            outlineButtons.forEach(btn => {
+                btn.classList.add('border-opacity-50');
+            });
+        }
+
+        // Update button classes for light mode
+        function updateButtonClassesForLightMode() {
+            const outlineButtons = document.querySelectorAll('.btn-outline-primary, .btn-outline-secondary, .btn-outline-info');
+            outlineButtons.forEach(btn => {
+                btn.classList.remove('border-opacity-50');
+            });
+        }
 
         // Set up Firebase real-time listeners
         function setupFirebaseListeners() {
-            // Listen to the database path
             const itemsRef = database.ref('drawResults/items');
             
             itemsRef.on('value', (snapshot) => {
@@ -306,7 +596,6 @@
                 allItems = [];
                 
                 if (itemsData && Array.isArray(itemsData)) {
-                    // Create item objects for display
                     itemsData.forEach((item, index) => {
                         allItems.push({
                             id: index,
@@ -328,15 +617,13 @@
         function setupEventListeners() {
             const qrInput = document.getElementById('qrInput');
             
-            // Handle Enter key (from QR scanner or keyboard)
             qrInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
-                    e.preventDefault(); // Prevent form submission
+                    e.preventDefault();
                     processScan();
                 }
             });
             
-            // Search functionality
             const searchInput = document.getElementById('searchInput');
             searchInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
@@ -355,7 +642,6 @@
             const qrInput = document.getElementById('qrInput');
             const content = qrInput.value.trim();
             
-            // Hide previous alerts
             document.getElementById('duplicate-alert').style.display = 'none';
             document.getElementById('success-alert').style.display = 'none';
             
@@ -366,7 +652,6 @@
             
             isProcessing = true;
             
-            // Get current items from Firebase to check for duplicates
             database.ref('drawResults/items').once('value')
                 .then((snapshot) => {
                     let currentItems = snapshot.val() || [];
@@ -375,63 +660,56 @@
                         currentItems = [];
                     }
                     
-                    // Check for duplicate (case-insensitive)
                     const isDuplicate = currentItems.some(item => 
                         String(item).toLowerCase() === content.toLowerCase()
                     );
                     
                     if (isDuplicate) {
-                        // DUPLICATE DETECTED - DO NOT ADD
                         duplicatesBlocked++;
                         
-                        // Find the original item number
                         const originalIndex = currentItems.findIndex(item => 
                             String(item).toLowerCase() === content.toLowerCase()
                         );
                         const originalNumber = originalIndex + 1;
                         
-                        // Show duplicate warning with original scan number
                         const duplicateAlert = document.getElementById('duplicate-alert');
                         duplicateAlert.style.display = 'block';
                         document.getElementById('duplicate-info').innerHTML = 
                             `Item "<strong>${escapeHtml(content)}</strong>" was already scanned as item #${originalNumber}`;
                         
-                        // Show scan indicator
                         showScanIndicator(`Duplicate blocked! (Was #${originalNumber})`, 'duplicate');
                         
                         isProcessing = false;
                         return;
                     }
                     
-                    // UNIQUE ITEM - Add to database
                     currentItems.push(content);
                     
-                    // Save back to Firebase
                     return database.ref('drawResults/items').set(currentItems);
                 })
                 .then((result) => {
-                    if (result) { // Only if we saved successfully
+                    if (result) {
                         const scanNumber = allItems.length + 1;
                         
-                        // Show success
                         document.getElementById('success-alert').style.display = 'block';
                         showScanIndicator(`Added as item #${scanNumber}`, 'success');
                         
-                        // Add to local array for immediate display
-                        allItems.push({
+                        const newItem = {
                             id: allItems.length,
                             content: content,
                             timestamp: Date.now(),
                             scannedBy: getRandomUser(),
                             scanNumber: scanNumber,
                             displayNumber: scanNumber
-                        });
+                        };
+                        
+                        allItems.push(newItem);
+                        lastAddedItemId = newItem.id;
                         
                         updateDisplay();
                         updateStats();
                     }
                     
-                    // Clear input and refocus for next scan
                     const qrInput = document.getElementById('qrInput');
                     qrInput.value = '';
                     qrInput.focus();
@@ -442,7 +720,6 @@
                     showScanIndicator('Error adding item', 'error');
                     isProcessing = false;
                     
-                    // Still clear the input field
                     const qrInput = document.getElementById('qrInput');
                     qrInput.value = '';
                     qrInput.focus();
@@ -463,7 +740,6 @@
                 return;
             }
             
-            // For display, we want unique items only
             const uniqueItems = [];
             const seenContent = new Set();
             
@@ -475,29 +751,24 @@
                 }
             });
             
-            // Sort by scan number for display
-            uniqueItems.sort((a, b) => a.scanNumber - b.scanNumber);
+            uniqueItems.sort((a, b) => b.scanNumber - a.scanNumber);
             
-            // Create grid of items
             let html = '<div class="scanned-items-grid">';
             
-            uniqueItems.forEach((item, index) => {
+            uniqueItems.forEach((item) => {
                 const isHighlighted = searchActive && searchTerm && 
                     item.content.toLowerCase().includes(searchTerm.toLowerCase());
                 
+                const isNewItem = item.id === lastAddedItemId;
+                
                 let cardClass = 'item-card';
                 if (isHighlighted) cardClass += ' highlighted';
+                if (isNewItem) cardClass += ' new-item';
                 
                 html += `
                     <div class="${cardClass}">
                         <div class="item-number">#${item.displayNumber || item.scanNumber}</div>
                         <div class="item-content">${escapeHtml(item.content)}</div>
-                        <div class="mt-2">
-                            <small class="text-muted">
-                                Scanned by: ${item.scannedBy}<br>
-                                ${formatTime(item.timestamp)}
-                            </small>
-                        </div>
                     </div>
                 `;
             });
@@ -505,16 +776,21 @@
             html += '</div>';
             container.innerHTML = html;
             
-            // Update display count
             document.getElementById('display-count').textContent = 
                 `${uniqueItems.length} unique items`;
+                
+            if (lastAddedItemId !== null) {
+                setTimeout(() => {
+                    lastAddedItemId = null;
+                    updateDisplay();
+                }, 2000);
+            }
         }
 
         // Update statistics
         function updateStats() {
             document.getElementById('total-count').textContent = allItems.length;
             
-            // Calculate unique items
             const uniqueContent = new Set();
             allItems.forEach(item => {
                 uniqueContent.add(item.content.toLowerCase());
@@ -539,7 +815,6 @@
             document.getElementById('searchResults').style.display = 'block';
             document.getElementById('searchTerm').textContent = searchTerm;
             
-            // Count search results
             const uniqueItems = getUniqueItems();
             const results = uniqueItems.filter(item => 
                 item.content.toLowerCase().includes(searchTerm.toLowerCase())
@@ -569,14 +844,13 @@
             } else if (type === 'duplicate') {
                 indicator.classList.add('scan-duplicate');
             } else if (type === 'warning') {
-                indicator.style.backgroundColor = '#f8d7da';
-                indicator.style.color = '#721c24';
-                indicator.style.borderColor = '#f5c6cb';
+                indicator.style.backgroundColor = isDarkMode ? '#7f1d1d' : '#f8d7da';
+                indicator.style.color = isDarkMode ? '#fecaca' : '#721c24';
+                indicator.style.borderColor = isDarkMode ? '#991b1b' : '#f5c6cb';
             }
             
             indicator.style.display = 'block';
             
-            // Auto-hide after 3 seconds
             setTimeout(() => {
                 indicator.style.display = 'none';
             }, 3000);
@@ -603,7 +877,7 @@
                 }
             });
             
-            return uniqueItems.sort((a, b) => a.scanNumber - b.scanNumber);
+            return uniqueItems.sort((a, b) => b.scanNumber - a.scanNumber);
         }
 
         // Initialize database if empty
@@ -611,7 +885,6 @@
             database.ref('drawResults').once('value')
                 .then((snapshot) => {
                     if (!snapshot.val()) {
-                        // Initialize with empty structure
                         database.ref('drawResults').set({
                             items: [],
                             drawnItems: [],
@@ -628,11 +901,6 @@
             return users[Math.floor(Math.random() * users.length)];
         }
 
-        function formatTime(timestamp) {
-            const date = new Date(timestamp);
-            return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        }
-
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
@@ -640,7 +908,7 @@
         }
 
         console.log('QR Scanner Ready!');
-        console.log('Duplicate detection now works correctly with Firebase data');
+        console.log('Dark mode toggle added successfully');
     </script>
 </body>
 </html>
