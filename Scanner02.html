@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Scanner Data Collector</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .scanner-input {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        /* UPDATED: Scanned items grid with 5 columns */
+        .scanned-items-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        /* UPDATED: Enlarged and improved item cards */
+        .item-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 12px;
+            padding: 20px 15px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+            word-break: break-word;
+            min-height: 140px; /* Increased height */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .item-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            border-color: #0d6efd;
+        }
+        .item-card.duplicate {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border-color: #ffc107;
+        }
+        .item-card.highlighted {
+            background: linear-gradient(135deg, #d1ecf1 0%, #a8e6cf 100%);
+            border-color: #0dcaf0;
+            animation: pulse 1.5s infinite;
+        }
+        .item-card.new-item {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border-color: #28a745;
+            animation: highlightNew 2s ease-out;
+        }
+        /* UPDATED: Improved item number styling */
+        .item-number {
+            font-size: 14px;
+            font-weight: bold;
+            color: #0d6efd;
+            background: rgba(13, 110, 253, 0.1);
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+            width: fit-content;
+        }
+        /* UPDATED: Enlarged and improved item content */
+        .item-content {
+            font-weight: 600;
+            font-size: 18px; /* Increased font size */
+            color: #212529;
+            line-height: 1.4;
+            margin: 10px 0;
+            padding: 0 5px;
+            max-height: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+        .current-scan {
+            background-color: #e7f5ff;
+            border: 2px solid #339af0;
+        }
+        .stats-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .search-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .duplicate-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #ffc107;
+            color: #856404;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+        .duplicate-alert {
+            animation: shake 0.5s ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+        }
+        @keyframes highlightNew {
+            0% { 
+                transform: scale(1.05);
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+            }
+            70% { 
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+            }
+            100% { 
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+            }
+        }
+        .scan-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            z-index: 1000;
+            display: none;
+        }
+        .scan-success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        .scan-duplicate {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffeaa7;
+        }
+        /* UPDATED: Responsive adjustments for 5-column layout */
+        @media (max-width: 1400px) {
+            .scanned-items-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+        @media (max-width: 1200px) {
+            .scanned-items-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        @media (max-width: 992px) {
+            .scanned-items-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .scanned-items-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 576px) {
+            .scanned-items-grid {
+                grid-template-columns: repeat(1, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4"> MAKYS QR Code Scanner</h1>
+        
+        <!-- Scan Indicator (Top Right) -->
+        <div id="scanIndicator" class="scan-indicator">
+            Scan processed
+        </div>
+        
+        <!-- Stats Section -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <h5>Total Scanned</h5>
+                    <h2 id="total-count" class="text-primary">0</h2>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <h5>Unique Items</h5>
+                    <h2 id="unique-count" class="text-success">0</h2>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <h5>Duplicates Blocked</h5>
+                    <h2 id="duplicate-count" class="text-warning">0</h2>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Scanned Items Display -->
+        <div class="search-container">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3>📦 All Scanned Items (Unique Only)</h3>
+                <span class="badge bg-primary" id="display-count">0 items</span>
+            </div>
+            
+            <div id="searchResults" style="display: none;" class="alert alert-info mb-3">
+                Search results for: "<span id="searchTerm"></span>" 
+                (<span id="searchResultsCount">0</span> items found)
+                <button class="btn btn-sm btn-outline-info ms-2" onclick="clearSearch()">Show All</button>
+            </div>
+            
+            <div id="itemsContainer">
+                <!-- Items will be displayed here -->
+            </div>
+        </div>
+
+        <!-- Scanner Input Section -->
+        <div class="scanner-input">
+            <h3>🔍 Current Scan</h3>
+            
+            <!-- Real-time Duplicate Warning -->
+            <div class="alert alert-warning duplicate-alert" id="duplicate-alert" style="display: none;">
+                ⚠️ <strong>DUPLICATE DETECTED!</strong> 
+                <span id="duplicate-info"></span>
+                <br>
+                <small>This item was already scanned and will NOT be added again.</small>
+            </div>
+            
+            <!-- Success Message -->
+            <div class="alert alert-success" id="success-alert" style="display: none;">
+                ✅ <strong>Item added successfully!</strong>
+            </div>
+            
+            <div class="mb-3">
+                <label for="qrInput" class="form-label">Scan QR Code (or type manually):</label>
+                <input type="text" class="form-control form-control-lg" id="qrInput" 
+                       placeholder="Scan QR code here - auto-detects duplicates" autofocus>
+                <div class="form-text">QR scanners auto-press Enter - duplicates are automatically blocked</div>
+            </div>
+            
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary btn-lg flex-grow-1" onclick="processScan()">
+                    ✅ Process Scan
+                </button>
+                <button class="btn btn-outline-secondary btn-lg" onclick="clearInput()">
+                    ✨ Clear Field
+                </button>
+            </div>
+        </div>
+
+        <!-- Search Section -->
+        <div class="search-container">
+            <h5>🔍 Search Items</h5>
+            <div class="input-group mb-3">
+                <input type="text" class="form-control" id="searchInput" 
+                       placeholder="Search scanned items...">
+                <button class="btn btn-outline-primary" onclick="searchItems()">
+                    Search
+                </button>
+                <button class="btn btn-outline-secondary" onclick="clearSearch()">
+                    Clear
+                </button>
+            </div>
+        </div>
+
+
+        <!-- Instructions -->
+        <div class="alert alert-info mt-4">
+            <h5>📋 How to Use with QR Scanner:</h5>
+            <ol class="mb-0">
+                <li><strong>Scan QR code</strong> - scanner will auto-fill the field and press Enter</li>
+                <li><strong>System instantly checks</strong> if it's a duplicate</li>
+                <li><strong>If unique</strong>: Added to database with green confirmation</li>
+                <li><strong>If duplicate</strong>: Blocked automatically with warning showing original scan number</li>
+                <li><strong>Field auto-clears</strong> after each scan for next QR code</li>
+                <li><strong>All team members</strong> see updates in real-time</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5Vuf0oNnh4imHtZs9jnkVWC9VxrDkLjA",
+            authDomain: "makysdraw-87237.firebaseapp.com",
+            databaseURL: "https://makysdraw-87237-default-rtdb.firebaseio.com",
+            projectId: "makysdraw-87237",
+            storageBucket: "makysdraw-87237.firebasestorage.app",
+            messagingSenderId: "1044977366090",
+            appId: "1:1044977366090:web:37af3eaa9c3f5bfc7822b3"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // Global variables
+        let allItems = [];
+        let duplicatesBlocked = 0;
+        let searchActive = false;
+        let searchTerm = '';
+        let isProcessing = false; // Flag to prevent multiple simultaneous scans
+        let lastAddedItemId = null; // Track the last added item for highlighting
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            setupFirebaseListeners();
+            setupEventListeners();
+            initializeDatabase();
+        });
+
+        // Set up Firebase real-time listeners
+        function setupFirebaseListeners() {
+            // Listen to the database path
+            const itemsRef = database.ref('drawResults/items');
+            
+            itemsRef.on('value', (snapshot) => {
+                const itemsData = snapshot.val();
+                allItems = [];
+                
+                if (itemsData && Array.isArray(itemsData)) {
+                    // Create item objects for display
+                    itemsData.forEach((item, index) => {
+                        allItems.push({
+                            id: index,
+                            content: String(item),
+                            timestamp: Date.now(),
+                            scannedBy: 'Scanner',
+                            scanNumber: index + 1,
+                            displayNumber: index + 1
+                        });
+                    });
+                }
+                
+                updateDisplay();
+                updateStats();
+            });
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            const qrInput = document.getElementById('qrInput');
+            
+            // Handle Enter key (from QR scanner or keyboard)
+            qrInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // Prevent form submission
+                    processScan();
+                }
+            });
+            
+            // Search functionality
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    searchItems();
+                }
+            });
+        }
+
+        // Main function to process scans
+        function processScan() {
+            if (isProcessing) {
+                console.log('Already processing a scan, please wait...');
+                return;
+            }
+            
+            const qrInput = document.getElementById('qrInput');
+            const content = qrInput.value.trim();
+            
+            // Hide previous alerts
+            document.getElementById('duplicate-alert').style.display = 'none';
+            document.getElementById('success-alert').style.display = 'none';
+            
+            if (!content) {
+                showScanIndicator('Please scan a QR code first!', 'warning');
+                return;
+            }
+            
+            isProcessing = true;
+            
+            // Get current items from Firebase to check for duplicates
+            database.ref('drawResults/items').once('value')
+                .then((snapshot) => {
+                    let currentItems = snapshot.val() || [];
+                    
+                    if (!Array.isArray(currentItems)) {
+                        currentItems = [];
+                    }
+                    
+                    // Check for duplicate (case-insensitive)
+                    const isDuplicate = currentItems.some(item => 
+                        String(item).toLowerCase() === content.toLowerCase()
+                    );
+                    
+                    if (isDuplicate) {
+                        // DUPLICATE DETECTED - DO NOT ADD
+                        duplicatesBlocked++;
+                        
+                        // Find the original item number
+                        const originalIndex = currentItems.findIndex(item => 
+                            String(item).toLowerCase() === content.toLowerCase()
+                        );
+                        const originalNumber = originalIndex + 1;
+                        
+                        // Show duplicate warning with original scan number
+                        const duplicateAlert = document.getElementById('duplicate-alert');
+                        duplicateAlert.style.display = 'block';
+                        document.getElementById('duplicate-info').innerHTML = 
+                            `Item "<strong>${escapeHtml(content)}</strong>" was already scanned as item #${originalNumber}`;
+                        
+                        // Show scan indicator
+                        showScanIndicator(`Duplicate blocked! (Was #${originalNumber})`, 'duplicate');
+                        
+                        isProcessing = false;
+                        return;
+                    }
+                    
+                    // UNIQUE ITEM - Add to database
+                    currentItems.push(content);
+                    
+                    // Save back to Firebase
+                    return database.ref('drawResults/items').set(currentItems);
+                })
+                .then((result) => {
+                    if (result) { // Only if we saved successfully
+                        const scanNumber = allItems.length + 1;
+                        
+                        // Show success
+                        document.getElementById('success-alert').style.display = 'block';
+                        showScanIndicator(`Added as item #${scanNumber}`, 'success');
+                        
+                        // Add to local array for immediate display
+                        const newItem = {
+                            id: allItems.length,
+                            content: content,
+                            timestamp: Date.now(),
+                            scannedBy: getRandomUser(),
+                            scanNumber: scanNumber,
+                            displayNumber: scanNumber
+                        };
+                        
+                        allItems.push(newItem);
+                        lastAddedItemId = newItem.id; // Track this as the latest item
+                        
+                        updateDisplay();
+                        updateStats();
+                    }
+                    
+                    // Clear input and refocus for next scan
+                    const qrInput = document.getElementById('qrInput');
+                    qrInput.value = '';
+                    qrInput.focus();
+                    isProcessing = false;
+                })
+                .catch((error) => {
+                    console.error('Error adding item:', error);
+                    showScanIndicator('Error adding item', 'error');
+                    isProcessing = false;
+                    
+                    // Still clear the input field
+                    const qrInput = document.getElementById('qrInput');
+                    qrInput.value = '';
+                    qrInput.focus();
+                });
+        }
+
+        // Update the display of scanned items
+        function updateDisplay() {
+            const container = document.getElementById('itemsContainer');
+            
+            if (allItems.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-light text-center">
+                        <h4>No items scanned yet</h4>
+                        <p class="mb-0">Start scanning QR codes to see them appear here!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // For display, we want unique items only
+            const uniqueItems = [];
+            const seenContent = new Set();
+            
+            allItems.forEach(item => {
+                const contentLower = item.content.toLowerCase();
+                if (!seenContent.has(contentLower)) {
+                    seenContent.add(contentLower);
+                    uniqueItems.push(item);
+                }
+            });
+            
+            // UPDATED: Sort by scan number DESCENDING (newest first)
+            uniqueItems.sort((a, b) => b.scanNumber - a.scanNumber);
+            
+            // Create grid of items
+            let html = '<div class="scanned-items-grid">';
+            
+            uniqueItems.forEach((item, index) => {
+                const isHighlighted = searchActive && searchTerm && 
+                    item.content.toLowerCase().includes(searchTerm.toLowerCase());
+                
+                // Check if this is the latest added item
+                const isNewItem = item.id === lastAddedItemId;
+                
+                let cardClass = 'item-card';
+                if (isHighlighted) cardClass += ' highlighted';
+                if (isNewItem) cardClass += ' new-item';
+                
+                html += `
+                    <div class="${cardClass}">
+                        <div class="item-number">#${item.displayNumber || item.scanNumber}</div>
+                        <div class="item-content">${escapeHtml(item.content)}</div>
+                        <!-- REMOVED: Scanned by and timestamp information -->
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+            
+            // Update display count
+            document.getElementById('display-count').textContent = 
+                `${uniqueItems.length} unique items`;
+                
+            // Reset the new item highlight after display
+            if (lastAddedItemId !== null) {
+                setTimeout(() => {
+                    lastAddedItemId = null;
+                    updateDisplay(); // Re-render without highlight
+                }, 2000);
+            }
+        }
+
+        // Update statistics
+        function updateStats() {
+            document.getElementById('total-count').textContent = allItems.length;
+            
+            // Calculate unique items
+            const uniqueContent = new Set();
+            allItems.forEach(item => {
+                uniqueContent.add(item.content.toLowerCase());
+            });
+            
+            const uniqueItems = Array.from(uniqueContent).length;
+            document.getElementById('unique-count').textContent = uniqueItems;
+            document.getElementById('duplicate-count').textContent = duplicatesBlocked;
+        }
+
+        // Search items
+        function searchItems() {
+            const searchInput = document.getElementById('searchInput');
+            searchTerm = searchInput.value.trim();
+            
+            if (!searchTerm) {
+                clearSearch();
+                return;
+            }
+            
+            searchActive = true;
+            document.getElementById('searchResults').style.display = 'block';
+            document.getElementById('searchTerm').textContent = searchTerm;
+            
+            // Count search results
+            const uniqueItems = getUniqueItems();
+            const results = uniqueItems.filter(item => 
+                item.content.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            
+            document.getElementById('searchResultsCount').textContent = results.length;
+            updateDisplay();
+        }
+
+        // Clear search
+        function clearSearch() {
+            searchActive = false;
+            searchTerm = '';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchResults').style.display = 'none';
+            updateDisplay();
+        }
+
+        // Show scan indicator
+        function showScanIndicator(message, type) {
+            const indicator = document.getElementById('scanIndicator');
+            indicator.textContent = message;
+            indicator.className = 'scan-indicator';
+            
+            if (type === 'success') {
+                indicator.classList.add('scan-success');
+            } else if (type === 'duplicate') {
+                indicator.classList.add('scan-duplicate');
+            } else if (type === 'warning') {
+                indicator.style.backgroundColor = '#f8d7da';
+                indicator.style.color = '#721c24';
+                indicator.style.borderColor = '#f5c6cb';
+            }
+            
+            indicator.style.display = 'block';
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                indicator.style.display = 'none';
+            }, 3000);
+        }
+
+        // Clear input field
+        function clearInput() {
+            document.getElementById('qrInput').value = '';
+            document.getElementById('qrInput').focus();
+            document.getElementById('duplicate-alert').style.display = 'none';
+            document.getElementById('success-alert').style.display = 'none';
+        }
+
+        // Get unique items only
+        function getUniqueItems() {
+            const uniqueItems = [];
+            const seenContent = new Set();
+            
+            allItems.forEach(item => {
+                const contentLower = item.content.toLowerCase();
+                if (!seenContent.has(contentLower)) {
+                    seenContent.add(contentLower);
+                    uniqueItems.push(item);
+                }
+            });
+            
+            return uniqueItems.sort((a, b) => b.scanNumber - a.scanNumber); // Newest first
+        }
+
+        // Initialize database if empty
+        function initializeDatabase() {
+            database.ref('drawResults').once('value')
+                .then((snapshot) => {
+                    if (!snapshot.val()) {
+                        // Initialize with empty structure
+                        database.ref('drawResults').set({
+                            items: [],
+                            drawnItems: [],
+                            allResults: []
+                        });
+                        console.log('Database initialized with empty structure');
+                    }
+                });
+        }
+
+        // Utility functions
+        function getRandomUser() {
+            const users = ['User 1', 'User 2', 'User 3', 'User 4'];
+            return users[Math.floor(Math.random() * users.length)];
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        console.log('QR Scanner Ready!');
+        console.log('Duplicate detection now works correctly with Firebase data');
+    </script>
+</body>
+</html>
