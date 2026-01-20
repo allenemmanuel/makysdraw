@@ -154,7 +154,7 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="text-center mb-4">📱 QR Code Scanner Data Collector</h1>
+        <h1 class="text-center mb-4"> MAKYS QR Code Scanner</h1>
         
         <!-- Scan Indicator (Top Right) -->
         <div id="scanIndicator" class="scan-indicator">
@@ -180,6 +180,25 @@
                     <h5>Duplicates Blocked</h5>
                     <h2 id="duplicate-count" class="text-warning">0</h2>
                 </div>
+            </div>
+        </div>
+
+
+        <!-- Scanned Items Display -->
+        <div class="search-container">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3>📦 All Scanned Items (Unique Only)</h3>
+                <span class="badge bg-primary" id="display-count">0 items</span>
+            </div>
+            
+            <div id="searchResults" style="display: none;" class="alert alert-info mb-3">
+                Search results for: "<span id="searchTerm"></span>" 
+                (<span id="searchResultsCount">0</span> items found)
+                <button class="btn btn-sm btn-outline-info ms-2" onclick="clearSearch()">Show All</button>
+            </div>
+            
+            <div id="itemsContainer">
+                <!-- Items will be displayed here -->
             </div>
         </div>
 
@@ -232,23 +251,6 @@
             </div>
         </div>
 
-        <!-- Scanned Items Display -->
-        <div class="search-container">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3>📦 All Scanned Items (Unique Only)</h3>
-                <span class="badge bg-primary" id="display-count">0 items</span>
-            </div>
-            
-            <div id="searchResults" style="display: none;" class="alert alert-info mb-3">
-                Search results for: "<span id="searchTerm"></span>" 
-                (<span id="searchResultsCount">0</span> items found)
-                <button class="btn btn-sm btn-outline-info ms-2" onclick="clearSearch()">Show All</button>
-            </div>
-            
-            <div id="itemsContainer">
-                <!-- Items will be displayed here -->
-            </div>
-        </div>
 
         <!-- Instructions -->
         <div class="alert alert-info mt-4">
